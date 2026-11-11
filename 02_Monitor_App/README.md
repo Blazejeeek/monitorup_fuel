@@ -1,6 +1,6 @@
 # 02_Monitor_App – firmware MonitorUp (KinCony B8M)
 
-Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.0** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
+Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.1** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
 
 ## Dostęp
 
@@ -78,3 +78,12 @@ Partycje: `partitions.csv` (2 × 3 MB OTA + 9,9 MB LittleFS). Rdzeń esp32 3.3.x
 - kopia ustawień z hasłami tylko zaszyfrowana hasłem kopii; starsze kopie (także `_monitorapp`) nadal można wgrać
 - nagłówki bezpieczeństwa strony (X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
 - rejestr Modbus 0 = 40
+
+## Zmiany w 0.4.1 (11.11.2026)
+
+- nazwa MonitorUp.pl wszędzie (strona, OLED, nazwa urządzenia, SSID AP); dawne nazwy domyślne zamieniane przy starcie, prefiks MQTT bez zmian
+- domyślne wyjścia: OUT1 poziom MINIMALNY, OUT2 MAKSYMALNY, OUT3 KRYTYCZNY, OUT4 usterka zbiorcza (czujnik, ADS1115, karta SD), OUT5 buzzer (milknie po skasowaniu); nowe funkcje wyjść do wyboru w Ustawieniach → Wyjścia
+- Modbus TCP domyślnie wyłączony
+- pulpit bez „wystarczy na” (prognoza nadal w MQTT i Modbus)
+- informacje o sieci, karcie SD i systemie jedna pod drugą
+- OLED: napis „BŁĄD CZUJNIKA” mniejszy, nie zachodzi na grafikę zbiornika

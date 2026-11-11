@@ -77,10 +77,10 @@ canvas{width:100%;display:block}.chartbox{position:relative}.tip{position:absolu
 )CSS";
 
 static const char LOGIN_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp - logowanie</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp.pl - logowanie</title>
 <link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css"></head><body>
 <div class="login"><form class="lbox" id="f">
-<div class="logo"><img src="/logo.svg" alt=""><h1>MONITOR <b>APP</b></h1><div class="sub">Monitoring poziomu zbiorników</div></div>
+<div class="logo"><img src="/logo.svg" alt=""><h1>MONITORUP<b>.PL</b></h1><div class="sub">Monitoring poziomu zbiorników</div></div>
 <label for="u">Login</label><input id="u" autocomplete="username" required autofocus>
 <label for="p">Hasło</label><input id="p" type="password" autocomplete="current-password" required>
 <button class="btn" id="b">Zaloguj</button><div class="err" id="e"></div>

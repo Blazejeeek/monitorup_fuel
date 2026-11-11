@@ -203,7 +203,7 @@ String cfgFromJson(JsonObjectConst r) {
         OutCfg &c = cfg.out[k++];
         c.func = numOr(o["func"], c.func); c.blink = boolOr(o["blink"], c.blink); c.onMs = numOr(o["onMs"], c.onMs); c.offMs = numOr(o["offMs"], c.offMs);
         c.pwmPre = numOr(o["pre"], c.pwmPre); c.pwmPost = numOr(o["post"], c.pwmPost); c.manual = numOr(o["manual"], c.manual);
-        if (c.func > OF_WARN) return fail("Nieprawidłowa funkcja wyjścia");
+        if (c.func > OF_FAULT) return fail("Nieprawidłowa funkcja wyjścia");
         c.pwmPre = min<uint8_t>(c.pwmPre, 100); c.pwmPost = min<uint8_t>(c.pwmPost, 100); c.manual = min<uint8_t>(c.manual, 100);
         if (c.onMs < 100) c.onMs = 100;
         if (c.offMs < 100) c.offMs = 100;

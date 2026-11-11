@@ -55,7 +55,8 @@ struct TankExtra {
 };
 
 // Funkcje wyjsc
-enum OutFunc : uint8_t { OF_OFF = 0, OF_MANUAL, OF_SIREN, OF_LAMP, OF_COMMON, OF_TANK1, OF_TANK2, OF_WARN };
+enum OutFunc : uint8_t { OF_OFF = 0, OF_MANUAL, OF_SIREN, OF_LAMP, OF_COMMON, OF_TANK1, OF_TANK2, OF_WARN,
+                         OF_MIN, OF_MAX, OF_CRIT, OF_FAULT };   // nowe funkcje dopisywane na koncu (zgodnosc ustawien)
 struct OutCfg {
   uint8_t  func;
   uint8_t  blink;           // 0 = ciagle, 1 = przerywane

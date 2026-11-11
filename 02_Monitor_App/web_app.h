@@ -3,9 +3,9 @@
 #include <Arduino.h>
 
 static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp.pl</title>
 <link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css"></head><body>
-<header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt="">MONITOR <b>APP</b></div>
+<header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt="">MONITORUP<b>.PL</b></div>
 <nav><a href="#pulpit" data-p="pulpit">Pulpit</a><a href="#logi" data-p="logi">Logi</a><a href="#ustawienia" data-p="ustawienia">Ustawienia</a>
 <a href="#" id="lo">Wyloguj</a></nav></div></header>
 <main>
@@ -84,7 +84,7 @@ function statsHtml(t,i){if(!t.statsEn||!t.stats)return '';const s=t.stats,u=s.un
  let f=s.forecast==null?'brak danych':(s.forecast>=365?'> rok':'ok. '+fc(s.forecast,1)+' dni');
  if(s.forecast!=null&&s.forecast<365){const dd=new Date(Date.now()+s.forecast*864e5);f+=` (do ${pad(dd.getDate())}.${pad(dd.getMonth()+1)})`}
  return `<div class="stats"><div>Zużycie dziś<b>${fc(s.today,d)} ${u}</b></div><div>Średnio 7 dni<b>${fc(s.avg7,d)} ${u}/d</b></div>
- <div class="${s.fcWarn?'warn':''}">Wystarczy na<b>${f}</b></div><div>Ostatnie tankowanie<b>${s.lastRefT?'+'+fc(s.lastRef,d)+' '+u:'—'}</b>${s.lastRefT?new Date(s.lastRefT*1000).toLocaleDateString('pl-PL'):''}${s.refilling?' (w toku)':''}</div></div>`}
+ <div>Ostatnie tankowanie<b>${s.lastRefT?'+'+fc(s.lastRef,d)+' '+u:'—'}</b>${s.lastRefT?new Date(s.lastRefT*1000).toLocaleDateString('pl-PL'):''}${s.refilling?' (w toku)':''}</div></div>`}
 function spark(i){if(!hist||!hist.tanks[i])return '';const a=hist.tanks[i],v=a.filter(x=>x!=null);if(v.length<2)return '';
  let mn=Math.min(...v),mx=Math.max(...v);if(mx-mn<1){mn-=0.5;mx+=0.5}const W=300,H=40;let p='',st=false;
  a.forEach((x,k)=>{if(x==null){st=false;return}const X=k/(a.length-1)*W,Y=H-2-(x-mn)/(mx-mn)*(H-4);p+=(st?'L':'M')+X.toFixed(1)+' '+Y.toFixed(1);st=true});
@@ -101,7 +101,7 @@ function render(s){S=s;let html='',al=[];
  $('tanks').innerHTML=html;
  $('ab').style.display=s.alarm.active?'flex':'none';$('abt').textContent=al.join(' · ')+(s.alarm.acked?' – skwitowany':'');$('ackb').style.display=s.alarm.acked?'none':'';
  $('tw').style.display=s.timeOk?'none':'flex';
- const FN=['wył.','ręczne','syrena','lampka','alarm zb.','zbiornik 1','zbiornik 2','ostrzeż.'];
+ const FN=['wył.','ręczne','buzzer/syrena','lampka','alarm zb.','zbiornik 1','zbiornik 2','ostrzeż.','minimalny','maksymalny','krytyczny','usterka'];
  let o='',d='';for(let k=0;k<8;k++){o+=`<div class="o ${s.outLvl[k]?'on':''}">OUT${k+1}<br><small>${FN[s.outFunc[k]]}${s.outLvl[k]&&s.outLvl[k]<100?' '+s.outLvl[k]+'%':''}</small></div>`;d+=`<div class="o ${s.di>>k&1?'on':''}">DI${k+1}</div>`}
  $('outs').innerHTML=o;$('dis').innerHTML=d;
  const dt=s.timeOk?new Date(s.t*1000).toLocaleString('pl-PL'):'czas nieustawiony',up=s.up,n=s.net;
@@ -224,8 +224,8 @@ SET.siec=el=>{const n=S?S.net:{eth:{},wifi:{},ap:{}};
  <div class="btns"><button class="btn" id="asv">Zapisz</button></div></div></div>
  <p class="muted" style="font-size:13px">Zapis ustawień sieci uruchamia urządzenie ponownie. Jeśli adres się zmieni, nowy adres IP jest widoczny na wyświetlaczu (ekran sieci) i przez sieć AP.</p>`;
  netBind('e_');netBind('w_');
- window.onStatus=s=>{const e=s.net.eth,w=s.net.wifi;$('ethl')&&($('ethl').innerHTML=`Łącze: <b>${e.link?e.speed+' Mb/s':'brak kabla'}</b> · IP: <b>${e.ip||'—'}</b>${e.gw?' · brama <b>'+e.gw+'</b>':''} · MAC: <b>${e.mac||'—'}</b>`);
-  $('wfl')&&($('wfl').innerHTML=w.en?`Stan: <b>${w.ip?'połączono z '+esc(w.ssid):'łączenie z '+esc(w.ssid)+'…'}</b>${w.ip?' · IP <b>'+w.ip+'</b> · sygnał <b>'+w.rssi+' dBm</b>':''}`:'WiFi wyłączone')};
+ window.onStatus=s=>{const e=s.net.eth,w=s.net.wifi;$('ethl')&&($('ethl').innerHTML=`Łącze: <b>${e.link?e.speed+' Mb/s':'brak kabla'}</b><br>IP: <b>${e.ip||'—'}</b>${e.gw?'<br>Brama: <b>'+e.gw+'</b>':''}<br>MAC: <b>${e.mac||'—'}</b>`);
+  $('wfl')&&($('wfl').innerHTML=w.en?`Stan: <b>${w.ip?'połączono z '+esc(w.ssid):'łączenie z '+esc(w.ssid)+'…'}</b>${w.ip?'<br>IP: <b>'+w.ip+'</b><br>Sygnał <b>'+w.rssi+' dBm</b>':''}`:'WiFi wyłączone')};
  if(S)window.onStatus(S);
  $('esv').onclick=()=>{if(confirm('Zapisać ustawienia Ethernetu i uruchomić urządzenie ponownie?'))save({eth:{en:B('een'),net:netVal('e_')}})};
  $('wsv').onclick=()=>{const w={en:B('wen'),ssid:V('wss'),net:netVal('w_')};if(V('wpw'))w.pass=$('wpw').value;if(confirm('Zapisać ustawienia WiFi i uruchomić urządzenie ponownie?'))save({wifi:w})};
@@ -283,7 +283,7 @@ SET.alarmy=el=>{el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!t.en?'':`<
  $('asv2').onclick=()=>save({tanks:C.tanks.map((t,i)=>!t.en?{}:({thrCrit:N('ac'+i),thrMin:N('am'+i),thrHigh:N('ah'+i),hyst:N('ahy'+i),delay:+V('ad'+i)})),
   alarm:{ackDi1:B('adi'),reminderMin:+V('arm'),lampOnMin:+V('alm')}})};
 
-const FUNCS=[[0,'wyłączone'],[1,'ręczne'],[2,'syrena'],[3,'lampka'],[4,'alarm zbiorczy'],[5,'stan zbiornika 1'],[6,'stan zbiornika 2'],[7,'ostrzeżenie (MINIMALNY)']];
+const FUNCS=[[0,'wyłączone'],[1,'ręczne'],[2,'buzzer / syrena (milknie po skasowaniu)'],[3,'lampka'],[4,'alarm zbiorczy'],[5,'stan zbiornika 1'],[6,'stan zbiornika 2'],[7,'ostrzeżenie (MINIMALNY)'],[8,'poziom MINIMALNY'],[9,'poziom MAKSYMALNY (za duży)'],[10,'poziom KRYTYCZNY'],[11,'usterka zbiorcza (czujnik, ADS, karta SD)']];
 SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Funkcje wyjść</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Jasność przed skasowaniem [%]</th><th>Po skasowaniu [%]</th><th>Przerywane</th><th>Wł./wył. [ms]</th><th>Ręczne [%]</th><th>Teraz</th></tr>`+
  a.out.map((o,k)=>`<tr><td>OUT${k+1}</td><td><select id="of${k}">${FUNCS.map(([v,t])=>`<option value="${v}" ${v==o.func?'selected':''}>${t}</option>`).join('')}</select></td>
  <td><input id="op${k}" type="number" min="0" max="100" step="10" value="${o.pre}"></td><td><input id="oq${k}" type="number" min="0" max="100" step="10" value="${o.post}"></td>
@@ -329,7 +329,7 @@ SET.logi=el=>{el.innerHTML=`<div class="card" style="max-width:560px"><h2>Logi n
  <div class="btns"><button class="btn" id="lgs">Zapisz</button><button class="btn red" id="lgc">Usuń wszystkie logi</button></div></div>
  <div class="card" style="max-width:560px;margin-top:16px"><h2>Test karty SD</h2><p class="muted" style="font-size:13px">Sprawdza montowanie (20/10/4/1 MHz), typ i pojemność karty oraz zapis i odczyt pliku testowego.</p><div class="btns"><button class="btn sec" id="sdt">Testuj kartę</button></div><div class="live" id="sdr" style="display:none"></div></div>`;
  $('sdt').onclick=async()=>{$('sdr').style.display='';$('sdr').textContent='Testuję…';const r=await post('/api/v1/sd/test');
-  $('sdr').innerHTML=`<b>${esc(r.result)}</b><br>Pin wykrywania karty (GPIO5): <b>${r.cdPin}</b> · montowanie: <b>${r.mounted?'OK ('+r.freqMHz+' MHz, '+r.mountMs+' ms)':'błąd ('+r.mountMs+' ms)'}</b>`+(r.mounted?`<br>Typ: <b>${r.type}</b> · karta: <b>${r.cardMB} MB</b> · system plików: <b>${r.totalMB} MB</b>, zajęte <b>${r.usedMB} MB</b><br>Zapis: <b>${r.write?'OK':'BŁĄD'}</b> · odczyt: <b>${r.read?'OK':'BŁĄD'}</b> (${r.rwMs} ms)`:'')};
+  $('sdr').innerHTML=`<b>${esc(r.result)}</b><br>Pin wykrywania karty (GPIO5): <b>${r.cdPin}</b><br>Montowanie: <b>${r.mounted?'OK ('+r.freqMHz+' MHz, '+r.mountMs+' ms)':'błąd ('+r.mountMs+' ms)'}</b>`+(r.mounted?`<br>Typ: <b>${r.type}</b><br>Karta: <b>${r.cardMB} MB</b><br>System plików: <b>${r.totalMB} MB</b>, zajęte <b>${r.usedMB} MB</b><br>Zapis: <b>${r.write?'OK':'BŁĄD'}</b><br>Odczyt: <b>${r.read?'OK':'BŁĄD'}</b> (${r.rwMs} ms)`:'')};
  $('lgs').onclick=()=>save({logs:{intervalMin:+V('lgi'),retentionDays:+V('lgr')}});
  $('lgc').onclick=async()=>{if(confirm('Usunąć WSZYSTKIE logi, dziennik zdarzeń i statystyki z karty SD? Tej operacji nie można cofnąć.')){await post('/api/v1/logs/clear');toast('Usunięto logi')}}};
 
@@ -383,8 +383,8 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
  <p class="muted" style="font-size:12px">Kopia nie zawiera loginu, hasła ani tokenów API.</p></div>
  <div class="card"><h2>Restart i ustawienia fabryczne</h2><div class="btns"><button class="btn sec" id="srb">Uruchom ponownie</button></div>
  ${F.chk('fkc','Zachowaj kalibrację, progi i ustawienia zbiorników',true)}<div class="btns"><button class="btn red" id="sfr">Przywróć ustawienia fabryczne</button></div></div></div>`;
- window.onStatus=s=>{const e=$('sinf');if(e)e.innerHTML=`Wersja: <b>${s.fw}</b> · wolna pamięć: <b>${Math.round(s.heap/1024)} kB</b> · PSRAM: <b>${Math.round(s.psram/1024)} kB</b><br>
-  Ostatni restart: <b>${RR[s.reset]||s.reset}</b> · temp. płytki (DS3231): <b>${fc(s.rtcTemp,1)} °C</b><br>ADS1115: <b>${s.ads?'OK':'BŁĄD'}</b> · PCF8575: <b>${s.pcf?'OK':'BŁĄD'}</b> · SD: <b>${s.sd.ok?'OK':'brak'}</b>`};if(S)window.onStatus(S);
+ window.onStatus=s=>{const e=$('sinf');if(e)e.innerHTML=`Wersja: <b>${s.fw}</b><br>Wolna pamięć: <b>${Math.round(s.heap/1024)} kB</b><br>PSRAM: <b>${Math.round(s.psram/1024)} kB</b><br>
+  Ostatni restart: <b>${RR[s.reset]||s.reset}</b><br>Temp. płytki (DS3231): <b>${fc(s.rtcTemp,1)} °C</b><br>ADS1115: <b>${s.ads?'OK':'BŁĄD'}</b><br>PCF8575: <b>${s.pcf?'OK':'BŁĄD'}</b><br>SD: <b>${s.sd.ok?'OK':'brak'}</b>`};if(S)window.onStatus(S);
  $('sns').onclick=()=>save({device:{name:V('sn'),oledDimMin:+V('sod')}});
  $('oup').onclick=()=>{const f=$('ofile').files[0];if(!f){toast('Wybierz plik .bin',1);return}if(!confirm('Wgrać nowy program '+f.name+'?'))return;
   const fd=new FormData();fd.append('file',f,f.name);const x=new XMLHttpRequest();x.open('POST','/api/v1/ota');

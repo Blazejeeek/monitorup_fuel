@@ -49,14 +49,14 @@ void drawTankIcon(int x, int y, int w, int h, float level, uint8_t phase) {
   }
 }
 
-// Ekran startowy: duze logo MONITORUP + adres strony; bottom = dolny pasek (np. test wyjsc)
+// Ekran startowy: duze logo MONITOR UP.PL + adres strony; bottom = dolny pasek (np. test wyjsc)
 void oledBoot(const char *bottom, uint8_t phase) {
   if (!oledOk) return;
   u8g2.clearBuffer();
   drawTankIcon(2, 3, 26, 38, 0.6f, phase);
   u8g2.setFont(u8g2_font_helvB14_tf);
   u8g2.drawStr(34, 19, "MONITOR");
-  u8g2.drawStr(34, 39, "APP");
+  u8g2.drawStr(34, 39, "UP.PL");
   u8g2.setFont(u8g2_font_helvR08_tf);
   u8g2.drawStr(86, 39, "v" FW_VERSION);
   u8g2.drawHLine(0, 44, 128);
@@ -73,7 +73,7 @@ void oledBoot(const char *bottom, uint8_t phase) {
 
 static void drawHeader() {
   u8g2.setFont(u8g2_font_helvB08_tf);
-  u8g2.drawStr(0, 8, "MONITORUP");
+  u8g2.drawStr(0, 8, "MonitorUp.pl");
   u8g2.setFont(u8g2_font_5x7_tf);
   String ic;
   if (ethHasIp()) ic += "ETH ";
@@ -145,8 +145,8 @@ void oledTank(uint8_t i) {
     if (px + u8g2.getUTF8Width(stn.c_str()) > 108) { u8g2.setFont(u8g2_font_5x7_tf); if (e == ST_HIGH) stn = "ZA DUZY"; else if (e == ST_DROP) stn = "SPADEK"; }
     u8g2.drawUTF8(px, 52, stn.c_str());
   } else {
-    u8g2.setFont(u8g2_font_helvB10_te);
-    u8g2.drawUTF8(0, 40, s.state == ST_OFF ? "WYŁĄCZONY" : "BŁĄD CZUJNIKA");
+    u8g2.setFont(u8g2_font_helvB08_te);                 // mniejsza czcionka: napis nie wchodzi na slupek zbiornika (x >= 109)
+    u8g2.drawUTF8(0, 38, s.state == ST_OFF ? "WYŁĄCZONY" : "BŁĄD CZUJNIKA");
     u8g2.setFont(u8g2_font_5x7_tf);
     if (c.type == 0 && s.state == ST_FAULT) {
       fmtComma(b, sizeof(b), s.mA, 2);

@@ -2,7 +2,7 @@
 
 | Parametr | Wartość |
 |---|---|
-| Port | 502 (Ustawienia → Modbus) |
+| Port | 502 (Ustawienia → Modbus; Modbus domyślnie wyłączony) |
 | Unit ID | 1 (odpowiada też na 0 i 255) |
 | Klienci | do 4 jednocześnie, Ethernet i WiFi |
 | Funkcje | 01, 02, 03, 04, 05, 06, 15, 16 |
@@ -17,7 +17,7 @@ Pełna mapa (plik CSV do zaimportowania) jest do pobrania ze strony: Ustawienia 
 
 | Adres | Nazwa | Typ / jednostka |
 |---|---|---|
-| 0 | wersja programu | 40 = 0.4.0 |
+| 0 | wersja programu | 41 = 0.4.1 |
 | 1 | status (b0 SD, b1 ADS, b2 RTC, b3 czas, b4 ETH, b5 WiFi, b6 MQTT, b7 alarm, b8 skwitowany, b9 test) | bity |
 | 2–3 | czas pracy | UINT32 s |
 | 4–9 | rok, miesiąc, dzień, godzina, minuta, sekunda | czas lokalny |

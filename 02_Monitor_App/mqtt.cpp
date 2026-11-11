@@ -75,7 +75,7 @@ static void haEntity(const char *comp, const String &obj, const String &name, co
   JsonObject dev = d["dev"].to<JsonObject>();
   dev["ids"][0] = devId();
   dev["name"] = cfg.devName;
-  dev["mf"] = "MonitorUp";
+  dev["mf"] = "MonitorUp.pl";
   dev["mdl"] = "KinCony B8M";
   dev["sw"] = FW_VERSION;
   String out; serializeJson(d, out);

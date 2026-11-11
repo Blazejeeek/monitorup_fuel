@@ -143,6 +143,20 @@ void alarmLoop() {
         break;
       }
       case OF_WARN: if (warnActive) v = pre; break;
+      case OF_MIN: case OF_MAX: case OF_CRIT: {
+        const uint8_t want = o.func == OF_MIN ? ST_MIN : o.func == OF_MAX ? ST_HIGH : ST_CRIT;
+        for (uint8_t i = 0; i < TANK_COUNT; i++) {
+          if (!cfg.tank[i].enabled || tankEffState(i) != want) continue;
+          v = (o.func == OF_MIN) ? pre : (alarmAcked ? post : pre);   // MIN = ostrzezenie (bez kasowania)
+        }
+        break;
+      }
+      case OF_FAULT: {                                                  // usterka zbiorcza: czujnik, ADS1115, karta SD
+        bool f = !adsOk || !sdMounted;
+        for (uint8_t i = 0; i < TANK_COUNT; i++) if (cfg.tank[i].enabled && tankGet(i).state == ST_FAULT) f = true;
+        if (f) v = pre;
+        break;
+      }
       default: break;
     }
     if (v && (o.blink || forceBlink)) {

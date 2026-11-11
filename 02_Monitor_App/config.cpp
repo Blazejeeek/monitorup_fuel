@@ -60,7 +60,7 @@ void netDefaults() {
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
   cfg.apMode = 0;
-  snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorUp-%02X%02X", mac[4], mac[5]);
+  snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorUp.pl-%02X%02X", mac[4], mac[5]);
   strlcpy(cfg.apPass, "monitor123", sizeof(cfg.apPass));
   cfg.apChannel = 6;
   cfg.wifiEn = 0;
@@ -80,9 +80,11 @@ void accountDefaults() {
 void outDefaults() {
   memset(cfg.out, 0, sizeof(cfg.out));
   for (auto &o : cfg.out) { o.onMs = 500; o.offMs = 500; o.pwmPre = 100; o.pwmPost = 0; }
-  cfg.out[0].func = OF_SIREN;                                       // OUT1 syrena
-  cfg.out[1].func = OF_LAMP;   cfg.out[1].pwmPost = 40;             // OUT2 lampka z buzzerem
-  cfg.out[2].func = OF_COMMON; cfg.out[2].pwmPost = 100;            // OUT3 alarm zbiorczy
+  cfg.out[0].func = OF_MIN;   cfg.out[0].pwmPost = 100;            // OUT1 poziom MINIMALNY
+  cfg.out[1].func = OF_MAX;   cfg.out[1].pwmPost = 100;            // OUT2 poziom ZA DUZY (maksymalny)
+  cfg.out[2].func = OF_CRIT;  cfg.out[2].pwmPost = 100;            // OUT3 poziom KRYTYCZNY
+  cfg.out[3].func = OF_FAULT; cfg.out[3].pwmPost = 100;            // OUT4 usterka zbiorcza (przekaznik)
+  cfg.out[4].func = OF_SIREN;                                      // OUT5 buzzer – milknie po skasowaniu
 }
 
 void tankExtraDefaults(uint8_t i) {
@@ -118,7 +120,7 @@ void cfgDefaultsV2() {
   cfg.mqttUser[0] = 0; cfg.mqttPass[0] = 0;
   strlcpy(cfg.mqttPrefix, "monitorup/monitor", sizeof(cfg.mqttPrefix));
   cfg.mqttIntervalS = 10; cfg.mqttHa = 1; cfg.mqttCmdEn = 1;
-  cfg.mbEn = 1; cfg.mbPort = 502; cfg.mbUnit = 1; cfg.mbWriteEn = 0;
+  cfg.mbEn = 0; cfg.mbPort = 502; cfg.mbUnit = 1; cfg.mbWriteEn = 0;
   memset(cfg.mbAllowIp, 0, sizeof(cfg.mbAllowIp));
   memset(cfg.tok, 0, sizeof(cfg.tok));
   cfg.apiLocalRead = 0;
@@ -148,7 +150,7 @@ void cfgDefaults() {
   cfg.magic = CFG_MAGIC;
   cfg.version = CFG_VERSION;
   accountDefaults();
-  strlcpy(cfg.devName, "MonitorUp", sizeof(cfg.devName));
+  strlcpy(cfg.devName, "MonitorUp.pl", sizeof(cfg.devName));
   netDefaults();
   for (uint8_t i = 0; i < TANK_COUNT; i++) tankDefaults(i);
   cfg.bootTestEn = 1;
@@ -212,6 +214,14 @@ void cfgLoad() {
   if (ok) {
     cfgSource = "NVS";
     if (cfg.version < 3) migrateSingleTank();
+    // nazwa MonitorUp.pl: zamiana dawnych nazw domyslnych (nazwa urzadzenia, SSID AP); prefiks MQTT bez zmian
+    bool brand = false;
+    if (!strcmp(cfg.devName, "Monitor App") || !strcmp(cfg.devName, "MonitorUp")) { strlcpy(cfg.devName, "MonitorUp.pl", sizeof(cfg.devName)); brand = true; }
+    for (const char *old : {"MonitorApp-", "MonitorUp-"}) {
+      size_t n = strlen(old);
+      if (!strncmp(cfg.apSsid, old, n)) { String sfx = cfg.apSsid + n; snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorUp.pl-%s", sfx.c_str()); brand = true; break; }
+    }
+    if (brand) { cfgSource += " (nazwa MonitorUp.pl)"; cfgSave(); }
     if (len != sizeof(cfg) || cfg.version != CFG_VERSION) {
       cfgSource += " (aktualizacja ustawien do wersji " + String(CFG_VERSION) + ")";
       cfg.version = CFG_VERSION;
