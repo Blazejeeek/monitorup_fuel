@@ -1,6 +1,7 @@
 // MonitorUp - statystyki zuzycia, tankowania, prognoza, alarm naglego spadku
 #include "stats.h"
 #include <SD.h>
+#include "summary.h"
 // Zuzycie doby = poziom o 00:00 - poziom teraz + suma tankowan (odporne na szum pomiaru).
 #include <Arduino.h>
 #include "config.h"
@@ -172,7 +173,7 @@ void statsMinute(uint32_t m) {        // m = zamknieta minuta (epoch/60)
       }
       bool hadDay = s.day != 0;
       s.day = today; s.level00 = cur; s.full = hadDay; s.refCm = 0; s.refL = 0;
-      if (i == TANK_COUNT - 1 && hadDay) statsWriteDay(st[0].days[st[0].nDays - 1].day);
+      if (i == TANK_COUNT - 1 && hadDay) { statsWriteDay(st[0].days[st[0].nDays - 1].day); summaryKick(); }
     }
     if (isnan(s.level00) && !isnan(cur)) s.level00 = cur;
     if (isnan(cur) || !cfg.tank[i].enabled) continue;

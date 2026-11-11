@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.4.4** (rejestr Modbus 0 = 44) |
+| Oprogramowanie (SW) | **0.4.5** (rejestr Modbus 0 = 45) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.4.4)
+## Funkcje (stan na 0.4.5)
 
 **Pomiar**
 - Przetwornik 4–20 mA na A4 (zbiornik paliwa, walec leżący); drugi kanał A3 do włączenia w ustawieniach. Wejście i typ (4–20 mA / 0–5 V) wybieralne.
@@ -39,6 +39,9 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Nagłówki bezpieczeństwa strony. HTTP, Modbus i MQTT bez szyfrowania – tylko sieć lokalna.
 
 **Dane i system**
+- Wykresy w zakładce Logi – cztery widoki, zawsze z jednego pliku: **Dzień** (pomiary co 5 min z pliku dnia), **Miesiąc** (wartości dobowe), **Rok** (12 miesięcy), **Wszystkie lata** (do 10 lat). Średni poziom z paskiem min–max, przy włączonej pojemności: objętość (oś lewa) i wypełnienie 0–100 % (oś prawa, inny kolor). Pod spodem zużycie dla tego samego okresu; pobieranie CSV.
+- Pliki: `/logs/RRRR/MM/RRRR-MM-DD.csv` (pomiary), `/stats/miesiac_RRRR-MM.csv` (1 wiersz na dobę, po zakończeniu doby), `/stats/rok_RRRR.csv` (1 wiersz na miesiąc, po zakończeniu miesiąca), `/stats/lata.csv` (1 wiersz na rok, po zakończeniu roku). Brakujące wiersze (urządzenie wyłączone o północy, pierwsze uruchomienie) urządzenie uzupełnia samo w tle. Okres bieżący liczony na żywo.
+- Przechowywanie pomiarów domyślnie 10 lat (3650 dni); ok. 120–150 MB karty przy zapisie co 5 min.
 - Logi na karcie SD (dzienne CSV, dziennik zdarzeń, rotacja), historia 24 h w PSRAM, zużycie dzienne i tankowania (zawsze włączone; bez prognozy).
 - Karta SD: sprawdzana co 10 s i przy każdym zapisie, bez karty próba montowania co 30 s; wyjęcie lub uszkodzona partycja nie zatrzymują pomiaru i alarmów (opis w Ustawieniach → Logi, „Test karty SD”).
 - Kopia ustawień: bez haseł albo z hasłami zaszyfrowana hasłem kopii (AES-256-GCM, PBKDF2-SHA256); starsze kopie da się wgrać.
@@ -46,6 +49,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.4.5 – 11.11.2026
+- Podsumowania hierarchiczne: doba → `/stats/miesiac_RRRR-MM.csv`, miesiąc → `/stats/rok_RRRR.csv`, rok → `/stats/lata.csv`; uzupełnianie braków w tle.
+- Zakładka Logi: wybór widoku Wszystkie lata / Rok / Miesiąc / Dzień zamiast dowolnego zakresu dat; zużycie i CSV dla wybranego okresu.
+- Wykres z pojemnością: objętość + wypełnienie 0–100 % na drugiej osi (inny kolor).
+- Przechowywanie pomiarów domyślnie 10 lat. API: `GET /api/v1/summary?view=years|year|month&y=&m=`.
 
 ### 0.4.4 – 11.11.2026
 - „MonitorUp.pl” z dużymi literami M i U na ekranie logowania i w nagłówku strony.

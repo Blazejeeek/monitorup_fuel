@@ -24,6 +24,7 @@ curl -H "Authorization: Bearer ma_xxxxxxxx" http://192.168.0.12/api/v1/status
 | GET | `/api/v1/logs/csv?from=…&to=…` | plik CSV (separator `;`, przecinek dziesiętny) |
 | GET | `/api/v1/logs/files` | lista plików dziennych na karcie |
 | GET | `/api/v1/stats` | zużycie dzienne (do 30 dni), dziś |
+| GET | `/api/v1/summary?view=years` / `view=year&y=RRRR` / `view=month&y=RRRR&m=MM` | podsumowania: lata (do 10), miesiące roku, dni miesiąca – min/średnia/max poziomu, średnia objętość, zużycie, tankowania, liczba próbek; bieżący okres `full:false` |
 | GET | `/api/v1/events[?m=RRRR-MM]` | dziennik zdarzeń (bez `m`: ostatnie 60 z pamięci) |
 | GET | `/api/v1/modbus/map.csv` | mapa rejestrów Modbus |
 

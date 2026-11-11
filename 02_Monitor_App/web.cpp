@@ -22,6 +22,7 @@
 #include "modbus.h"
 #include "mqtt.h"
 #include "crypt.h"
+#include "summary.h"
 #include "web_pages.h"
 
 WebServer server(80);
@@ -816,6 +817,21 @@ static void hOtaDone() {
   scheduleReboot(1500);
 }
 
+// GET /api/v1/summary?view=years|year|month&y=RRRR&m=MM – podsumowania z plikow /stats (miesiac_, rok_, lata)
+static void hSummary() {
+  if (!auth(A_READ)) return;
+  JsonDocument d;
+  JsonObject o = d.to<JsonObject>();
+  String err = summaryView(server.arg("view"), server.arg("y").toInt(), server.arg("m").toInt(), o);
+  if (err.length()) { sendErr(400, err.c_str()); return; }
+  JsonArray ta = o["tanks"].to<JsonArray>();
+  for (uint8_t i = 0; i < TANK_COUNT; i++) {
+    JsonObject t = ta.add<JsonObject>();
+    t["name"] = cfg.tankName[i]; t["en"] = (bool)cfg.tank[i].enabled; t["vol"] = (bool)cfg.tx[i].volEn; t["height"] = cfg.tank[i].heightCm;
+  }
+  sendJson(200, d);
+}
+
 static void hModbusMap() {
   if (!auth(A_READ)) return;
   server.sendHeader("Content-Disposition", "attachment; filename=\"monitorup_modbus.csv\"");
@@ -869,6 +885,7 @@ void webBegin() {
   server.on("/api/v1/factory", HTTP_POST, hFactory);
   server.on("/api/v1/ota", HTTP_POST, hOtaDone, hOtaUpload);
   server.on("/api/v1/modbus/map.csv", HTTP_GET, hModbusMap);
+  server.on("/api/v1/summary", HTTP_GET, hSummary);
 
   server.onNotFound([] {
     if (server.uri().startsWith("/api/")) { sendErr(404, "Nie znaleziono"); return; }

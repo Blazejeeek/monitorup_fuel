@@ -117,7 +117,7 @@ void cfgDefaultsV2() {
   strlcpy(cfg.ntpServer2, "time.google.com", sizeof(cfg.ntpServer2));
   cfg.ntpIntervalMin = 60;
   cfg.logIntervalMin = 5;
-  cfg.logRetentionDays = 365;
+  cfg.logRetentionDays = 3650;      // 10 lat (0.4.5)
   cfg.mqttEn = 0; cfg.mqttHost[0] = 0; cfg.mqttPort = 1883;
   cfg.mqttUser[0] = 0; cfg.mqttPass[0] = 0;
   strlcpy(cfg.mqttPrefix, "monitorup/monitor", sizeof(cfg.mqttPrefix));

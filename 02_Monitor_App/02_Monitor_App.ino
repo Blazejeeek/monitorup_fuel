@@ -22,6 +22,7 @@
 #include "display.h"
 #include "modbus.h"
 #include "mqtt.h"
+#include "summary.h"
 #include "web.h"
 
 #define BOOT_LOGO_MS 5000
@@ -137,6 +138,7 @@ void loop() {
     tSec = now;
     netLoop();
     sdLoop();
+    summaryLoop();
     timeLoop();
     resetButtonLoop();
     if (histTick()) {

@@ -18,12 +18,12 @@ static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><he
 </section>
 <section class="page" id="logi">
  <div class="card"><h2>Wykres poziomu</h2>
-  <div class="row"><div><label>Od</label><input type="date" id="lf"></div><div><label>Do</label><input type="date" id="lt"></div>
-  <div style="flex:2" class="btns"><button class="btn sec sm" data-r="1">Doba</button><button class="btn sec sm" data-r="7">7 dni</button><button class="btn sec sm" data-r="30">30 dni</button>
-  <button class="btn sm" id="lshow">Pokaż</button><button class="btn sec sm" id="lcsv">Pobierz CSV</button></div></div>
+  <div class="row"><div><label>Widok</label><select id="lv"><option value="years">Wszystkie lata (do 10)</option><option value="year">Rok – 12 miesięcy</option><option value="month">Miesiąc – kolejne dni</option><option value="day" selected>Dzień – pomiary</option></select></div>
+  <div id="lvy"><label>Rok</label><input type="number" id="ly" min="2020" max="2100" step="1"></div><div id="lvm"><label>Miesiąc</label><input type="month" id="lm"></div><div id="lvd"><label>Dzień</label><input type="date" id="ld"></div>
+  <div style="flex:2" class="btns"><button class="btn sm" id="lshow">Pokaż</button><button class="btn sec sm" id="lcsv">Pobierz CSV</button></div></div>
   <div class="legend" id="lleg"></div><div class="chartbox"><canvas id="lch" height="320"></canvas><div class="tip" id="ltip"></div></div>
-  <p class="muted" style="font-size:12px;margin:6px 0 0">Zaznacz myszą fragment wykresu, aby go powiększyć. Dwuklik przywraca cały zakres.</p></div>
- <div class="card" style="margin-top:16px"><h2>Zużycie dzienne <select id="stk" style="width:auto"></select></h2><div class="chartbox"><canvas id="bch" height="220"></canvas><div class="tip" id="btip"></div></div></div>
+  <p class="muted" style="font-size:12px;margin:6px 0 0" id="lnote"></p></div>
+ <div class="card" style="margin-top:16px"><h2><span id="btitle">Zużycie</span> <select id="stk" style="width:auto"></select></h2><div class="chartbox" id="bbox"><canvas id="bch" height="220"></canvas><div class="tip" id="btip"></div></div><div class="live" id="bday" style="display:none"></div></div>
  <div class="grid" style="margin-top:16px">
   <div class="card"><h2>Dziennik zdarzeń <select id="evm" style="width:auto"></select></h2><div style="max-height:420px;overflow:auto"><table id="evt"></table></div></div>
   <div class="card"><h2>Pliki na karcie SD</h2><div id="sdinfo" class="muted"></div><div style="max-height:380px;overflow:auto"><table id="sdf"></table></div></div>
@@ -122,25 +122,26 @@ function niceTicks(mn,mx,n){const sp=(mx-mn)||1,st0=Math.pow(10,Math.floor(Math.
  for(let v=Math.ceil(mn/st)*st;v<=mx+1e-9;v+=st)a.push(v);return a}
 function lineChart(cv,tip,series,opt){const ctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.height/ (cv._dpr||1);
  cv._dpr=dpr;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';ctx.scale(dpr,dpr);
- let t0=Infinity,t1=-Infinity,v0=Infinity,v1=-Infinity;series.forEach(s=>s.data.forEach(([t,v])=>{if(v==null)return;t0=Math.min(t0,t);t1=Math.max(t1,t);v0=Math.min(v0,v);v1=Math.max(v1,v)}));
+ let t0=Infinity,t1=-Infinity,v0=Infinity,v1=-Infinity;series.forEach(s=>s.data.forEach(([t,v])=>{if(v==null)return;t0=Math.min(t0,t);t1=Math.max(t1,t);if(s.axis!='r'){v0=Math.min(v0,v);v1=Math.max(v1,v)}}));const hasR=series.some(s=>s.axis=='r');
  (opt.thr||[]).forEach(h=>{v0=Math.min(v0,h.v);v1=Math.max(v1,h.v)});
  if(opt.zoom){t0=opt.zoom[0];t1=opt.zoom[1]}
  if(!isFinite(t0)){ctx.fillStyle='#8b9bb8';ctx.font='14px system-ui';ctx.fillText('Brak danych w wybranym zakresie',20,40);return}
  if(v1-v0<1){v0-=1;v1+=1}const pv=(v1-v0)*0.08;v0-=pv;v1+=pv;if(t1==t0)t1=t0+60;
- const L=48,R=10,T=10,B=26,X=t=>L+(t-t0)/(t1-t0)*(W-L-R),Y=v=>T+(1-(v-v0)/(v1-v0))*(H-T-B);
+ const L=48,R=hasR?44:10,T=10,B=26,X=t=>L+(t-t0)/(t1-t0)*(W-L-R),Y=v=>T+(1-(v-v0)/(v1-v0))*(H-T-B),YR=v=>T+(1-v/100)*(H-T-B);
+ if(hasR){const rc=series.find(s=>s.axis=='r').c;ctx.font='11px system-ui';ctx.fillStyle=rc;[0,25,50,75,100].forEach(p=>ctx.fillText(p+' %',W-R+4,YR(p)+4))}
  ctx.font='11px system-ui';ctx.fillStyle='#8b9bb8';ctx.strokeStyle='#26324d';ctx.lineWidth=1;
  niceTicks(v0,v1,5).forEach(v=>{ctx.beginPath();ctx.moveTo(L,Y(v));ctx.lineTo(W-R,Y(v));ctx.stroke();ctx.fillText(fc(v,v1-v0<10?1:0),4,Y(v)+4)});
  const span=t1-t0,tk=niceTicks(t0,t1,Math.max(2,Math.floor(W/110)));
  tk.forEach(t=>{const d=new Date(t*1000);const s=span>2*86400?pad(d.getDate())+'.'+pad(d.getMonth()+1):pad(d.getHours())+':'+pad(d.getMinutes());ctx.fillText(s,X(t)-14,H-8)});
  (opt.thr||[]).forEach(h=>{ctx.strokeStyle=h.c;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(L,Y(h.v));ctx.lineTo(W-R,Y(h.v));ctx.stroke();ctx.setLineDash([])});
  ctx.save();ctx.beginPath();ctx.rect(L,T,W-L-R,H-T-B);ctx.clip();
- series.forEach(s=>{ctx.strokeStyle=s.c;ctx.lineWidth=1.8;ctx.beginPath();let pen=false,lt=0;
-  s.data.forEach(([t,v])=>{if(v==null||(pen&&t-lt>opt.gap)){pen=false}if(v==null)return;pen?ctx.lineTo(X(t),Y(v)):ctx.moveTo(X(t),Y(v));pen=true;lt=t});ctx.stroke()});
+ series.forEach(s=>{const YY=s.axis=='r'?YR:Y;ctx.strokeStyle=s.c;ctx.lineWidth=1.8;if(s.dash)ctx.setLineDash([6,4]);ctx.beginPath();let pen=false,lt=0;
+  s.data.forEach(([t,v])=>{if(v==null||(pen&&t-lt>opt.gap)){pen=false}if(v==null)return;pen?ctx.lineTo(X(t),YY(v)):ctx.moveTo(X(t),YY(v));pen=true;lt=t});ctx.stroke();ctx.setLineDash([])});
  ctx.restore();
  let drag=null;
  cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),mx=e.clientX-r.left;if(mx<L||mx>W-R){tip.style.display='none';return}
   const t=t0+(mx-L)/(W-L-R)*(t1-t0);let h=`<b>${new Date(t*1000).toLocaleString('pl-PL')}</b>`;
-  series.forEach(s=>{let best=null;for(const p of s.data){if(best==null||Math.abs(p[0]-t)<Math.abs(best[0]-t))best=p}if(best&&best[1]!=null)h+=`<br><span style="color:${s.c}">■</span> ${esc(s.n)}: ${fc(best[1],1)} ${opt.unit}`});
+  series.forEach(s=>{let best=null;for(const p of s.data){if(best==null||Math.abs(p[0]-t)<Math.abs(best[0]-t))best=p}if(best&&best[1]!=null)h+=`<br><span style="color:${s.c}">■</span> ${esc(s.n)}: ${fc(best[1],s.u=='l'?0:1)} ${s.u||opt.unit}`});
   tip.innerHTML=h;tip.style.display='block';tip.style.left=Math.min(mx+12,W-170)+'px';tip.style.top='10px';
   if(drag!=null){ctx.fillStyle='#38bdf822';}};
  cv.onmouseleave=()=>tip.style.display='none';
@@ -148,45 +149,87 @@ function lineChart(cv,tip,series,opt){const ctx=cv.getContext('2d'),dpr=window.d
  cv.onmouseup=e=>{const r=cv.getBoundingClientRect(),x2=e.clientX-r.left;if(drag!=null&&Math.abs(x2-drag)>10){const a=Math.min(drag,x2),b=Math.max(drag,x2);
   opt.zoom=[t0+(a-L)/(W-L-R)*(t1-t0),t0+(b-L)/(W-L-R)*(t1-t0)];lineChart(cv,tip,series,opt)}drag=null};
  cv.ondblclick=()=>{opt.zoom=null;lineChart(cv,tip,series,opt)}}
+function catChart(cv,tip,labels,series,opt){const ctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.height/(cv._dpr||1);
+ cv._dpr=dpr;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';ctx.scale(dpr,dpr);ctx.font='11px system-ui';const n=labels.length;
+ if(!n){ctx.fillStyle='#8b9bb8';ctx.font='14px system-ui';ctx.fillText(opt.empty||'Brak danych w wybranym okresie',20,40);cv.onmousemove=null;return}
+ let v0=Infinity,v1=-Infinity;series.filter(s=>s.axis!='r').forEach(s=>s.data.forEach((v,k)=>{[v,s.lo&&s.lo[k],s.hi&&s.hi[k]].forEach(x=>{if(x!=null){v0=Math.min(v0,x);v1=Math.max(v1,x)}})}));
+ if(!isFinite(v0)){v0=0;v1=1}if(v1-v0<1){v0-=1;v1+=1}const pv=(v1-v0)*0.08;v0-=pv;v1+=pv;const hasR=series.some(s=>s.axis=='r');
+ const L=48,R=hasR?44:10,T=10,B=26,cw=(W-L-R)/n,X=k=>L+(k+0.5)*cw,Y=v=>T+(1-(v-v0)/(v1-v0))*(H-T-B),YR=v=>T+(1-v/100)*(H-T-B);
+ ctx.strokeStyle='#26324d';ctx.fillStyle='#8b9bb8';niceTicks(v0,v1,5).forEach(v=>{ctx.beginPath();ctx.moveTo(L,Y(v));ctx.lineTo(W-R,Y(v));ctx.stroke();ctx.fillText(fc(v,v1-v0<10?1:0),4,Y(v)+4)});
+ if(hasR){ctx.fillStyle=series.find(s=>s.axis=='r').c;[0,25,50,75,100].forEach(p=>ctx.fillText(p+' %',W-R+4,YR(p)+4))}
+ ctx.fillStyle='#8b9bb8';const ev=Math.ceil(n/14);labels.forEach((l,k)=>{if(k%ev==0)ctx.fillText(l,X(k)-ctx.measureText(l).width/2,H-8)});
+ series.forEach(s=>{const YY=s.axis=='r'?YR:Y;if(s.lo){ctx.strokeStyle=s.c+'88';ctx.lineWidth=Math.max(2,Math.min(10,cw*0.3));s.lo.forEach((lo,k)=>{const hi=s.hi[k];if(lo==null||hi==null)return;ctx.beginPath();ctx.moveTo(X(k),YY(lo));ctx.lineTo(X(k),YY(hi));ctx.stroke()})}
+  ctx.strokeStyle=s.c;ctx.lineWidth=1.8;if(s.dash)ctx.setLineDash([6,4]);ctx.beginPath();let pen=false;s.data.forEach((v,k)=>{if(v==null){pen=false;return}pen?ctx.lineTo(X(k),YY(v)):ctx.moveTo(X(k),YY(v));pen=true});ctx.stroke();ctx.setLineDash([]);
+  s.data.forEach((v,k)=>{if(v==null)return;ctx.beginPath();ctx.arc(X(k),YY(v),3,0,7);if(opt.partial&&opt.partial[k]){ctx.strokeStyle=s.c;ctx.stroke()}else{ctx.fillStyle=s.c;ctx.fill()}})});
+ cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),k=Math.floor((e.clientX-r.left-L)/cw);if(k<0||k>=n){tip.style.display='none';return}
+  let h=`<b>${esc(opt.full?opt.full[k]:labels[k])}</b>${opt.partial&&opt.partial[k]?' (w toku)':''}`;
+  series.forEach(s=>{const v=s.data[k];if(v==null)return;h+=`<br><span style="color:${s.c}">■</span> ${esc(s.n)}: ${fc(v,s.u=='l'?0:1)} ${s.u}`+(s.lo&&s.lo[k]!=null?` (min ${fc(s.lo[k],1)}, max ${fc(s.hi[k],1)})`:'')});
+  tip.innerHTML=h;tip.style.display='block';tip.style.left=Math.min(e.clientX-r.left+12,W-220)+'px';tip.style.top='10px'};
+ cv.onmouseleave=()=>tip.style.display='none';cv.onmousedown=cv.onmouseup=cv.ondblclick=null}
 function barChart(cv,tip,labels,vals,full,color,unit){const ctx=cv.getContext('2d'),dpr=window.devicePixelRatio||1,W=cv.clientWidth,H=cv.height/(cv._dpr||1);
  cv._dpr=dpr;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';ctx.scale(dpr,dpr);ctx.font='11px system-ui';
- if(!vals.length){ctx.fillStyle='#8b9bb8';ctx.font='14px system-ui';ctx.fillText('Brak danych – statystyki pojawią się po pierwszej pełnej dobie pracy',20,40);return}
+ if(!vals.length){ctx.fillStyle='#8b9bb8';ctx.font='14px system-ui';ctx.fillText('Brak danych w wybranym okresie',20,40);cv.onmousemove=null;return}
  const mx=Math.max(1,...vals.map(v=>v||0))*1.15,L=48,B=26,T=10,bw=(W-L-10)/vals.length;
  niceTicks(0,mx,4).forEach(v=>{const y=T+(1-v/mx)*(H-T-B);ctx.strokeStyle='#26324d';ctx.beginPath();ctx.moveTo(L,y);ctx.lineTo(W-10,y);ctx.stroke();ctx.fillStyle='#8b9bb8';ctx.fillText(fc(v,0),4,y+4)});
  vals.forEach((v,k)=>{const h=(v||0)/mx*(H-T-B);ctx.fillStyle=full[k]?color:color+'66';ctx.fillRect(L+k*bw+2,H-B-h,Math.max(2,bw-4),h);
-  if(vals.length<=31&&(k%Math.ceil(vals.length/10)==0)){ctx.fillStyle='#8b9bb8';ctx.fillText(labels[k],L+k*bw,H-8)}});
+  if(k%Math.ceil(vals.length/14)==0){ctx.fillStyle='#8b9bb8';ctx.fillText(labels[k],L+k*bw+Math.max(0,bw/2-8),H-8)}});
  cv.onmousemove=e=>{const r=cv.getBoundingClientRect(),k=Math.floor((e.clientX-r.left-L)/bw);if(k<0||k>=vals.length){tip.style.display='none';return}
-  tip.innerHTML=`<b>${labels[k]}</b><br>${fc(vals[k],unit=='l'?0:1)} ${unit}${full[k]?'':' (niepełna doba)'}`;tip.style.display='block';tip.style.left=Math.min(e.clientX-r.left+10,W-150)+'px';tip.style.top='10px'};
+  tip.innerHTML=`<b>${labels[k]}</b><br>${fc(vals[k],unit=='l'?0:1)} ${unit}${full[k]?'':' (niepełny okres)'}`;tip.style.display='block';tip.style.left=Math.min(e.clientX-r.left+10,W-150)+'px';tip.style.top='10px'};
  cv.onmouseleave=()=>tip.style.display='none'}
 
-// ---------- logi ----------
-let logsReady=false,lastRows=null,statsData=null;
-function setRange(days){const t=new Date(),f=new Date(Date.now()-(days-1)*864e5);$('lf').value=dstr(f);$('lt').value=dstr(t)}
-async function logsLoad(){if(!S)return;const f=$('lf').value,t=$('lt').value;
- try{const r=await api(`/api/v1/logs?from=${f}&to=${t}`);if(!r.ok){const j=await r.json();toast(j.error||'Błąd',1);return}
- const j=await r.json();lastRows=j.rows;drawLogs()}catch(e){}}
-function drawLogs(){if(!lastRows||!S)return;const ser=[],thr=[],useL=false;
- S.tanks.forEach((t,i)=>{if(!t.en)return;ser.push({n:t.name,c:TC[i],data:lastRows.map(r=>[r[0],r[1+i]])})});
- const one=S.tanks.filter(t=>t.en);if(one.length==1){const t=one[0];thr.push({v:t.thrCrit,c:'#ef4444'},{v:t.thrMin,c:'#f59e0b'},{v:t.thrHigh,c:'#a855f7'})}
- $('lleg').innerHTML=ser.map(s=>`<span><i style="background:${s.c}"></i>${esc(s.n)}</span>`).join('')+(thr.length?'<span>progi: przerywane linie</span>':'');
- lineChart($('lch'),$('ltip'),ser,{thr,unit:'cm',gap:3600})}
-async function statsLoad(){try{statsData=await (await api('/api/v1/stats')).json();const sel=$('stk');
- if(!sel.options.length)statsData.tanks.forEach((t,i)=>{if(t.en)sel.add(new Option(t.name,i))});sel.style.display=sel.options.length>1?'':'none';drawStats()}catch(e){}}
-function drawStats(){if(!statsData)return;const t=statsData.tanks[$('stk').value||0];const L=[],V=[],F=[];
- t.days.forEach(d=>{const s=String(d[0]);L.push(s.slice(6,8)+'.'+s.slice(4,6));V.push(d[1]);F.push(d[3])});
- if(t.today!=null){L.push('dziś');V.push(t.today);F.push(0)}barChart($('bch'),$('btip'),L,V,F,'#38bdf8',t.unit)}
+// ---------- logi: widoki Dzień / Miesiąc / Rok / Wszystkie lata (zawsze z jednego pliku) ----------
+let logsReady=false,lastRows=null,sumData=null,dayCons=null;
+const MN=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
+function lvShow(){const v=$('lv').value;$('lvy').style.display=v=='year'?'':'none';$('lvm').style.display=v=='month'?'':'none';$('lvd').style.display=v=='day'?'':'none'}
+async function logsLoad(){if(!S)return;const v=$('lv').value;lastRows=null;sumData=null;dayCons=null;
+ try{if(v=='day'){const d=$('ld').value;const r=await api(`/api/v1/logs?from=${d}&to=${d}`);if(!r.ok){const j=await r.json();toast(j.error||'Błąd',1);return}lastRows=(await r.json()).rows;
+   const [y,m]=d.split('-');const q=await api(`/api/v1/summary?view=month&y=${+y}&m=${+m}`);if(q.ok){const j=await q.json();dayCons=j.rows.find(x=>x.k==d||(x.k=='dziś'&&d==dstr(new Date())))||null}}
+  else{const y=v=='month'?+$('lm').value.slice(0,4):+$('ly').value,m=v=='month'?+$('lm').value.slice(5,7):0;
+   const r=await api(`/api/v1/summary?view=${v=='year'?'year':v=='month'?'month':'years'}&y=${y}&m=${m}`);const j=await r.json();if(!r.ok){toast(j.error||'Błąd',1);return}sumData=j}
+  drawLogs();drawStats()}catch(e){}}
+function tankOpts(){return S.tanks.map((t,i)=>({t,i})).filter(x=>x.t.en)}
+function drawLogs(){if(!S)return;const ser=[],thr=[],en=tankOpts();let note='';
+ if($('lv').value=='day'){if(!lastRows)return;
+  en.forEach(({t,i})=>{const vol=t.volEn;ser.push({n:t.name+(vol?' – objętość':' – poziom'),c:TC[i],u:vol?'l':'cm',data:lastRows.map(r=>[r[0],vol?r[3+i]:r[1+i]])});
+   if(vol&&t.height>0)ser.push({n:t.name+' – wypełnienie',c:'#22c55e',u:'%',axis:'r',dash:1,data:lastRows.map(r=>[r[0],r[1+i]==null?null:Math.max(0,Math.min(100,r[1+i]/t.height*100))])})});
+  if(en.length==1&&!en[0].t.volEn){const t=en[0].t;thr.push({v:t.thrCrit,c:'#ef4444'},{v:t.thrMin,c:'#f59e0b'},{v:t.thrHigh,c:'#a855f7'})}
+  note='Pomiary z pliku dnia (co '+(C&&C.logs?C.logs.intervalMin:5)+' min). Zaznacz myszą fragment, aby powiększyć; dwuklik przywraca całość.';
+  lineChart($('lch'),$('ltip'),ser,{thr,unit:'cm',gap:3600})}
+ else{if(!sumData)return;const v=$('lv').value,rows=sumData.rows;
+  const lab=rows.map(r=>r.k=='dziś'?'dziś':v=='month'?r.k.slice(8,10):v=='year'?MN[+r.k.slice(5,7)-1]:r.k);
+  const full=rows.map(r=>r.k=='dziś'?'dziś':v=='month'?r.k.split('-').reverse().join('.'):v=='year'?MN[+r.k.slice(5,7)-1]+' '+r.k.slice(0,4):'rok '+r.k);
+  en.forEach(({t,i})=>{const vol=t.volEn,st=sumData.tanks[i];
+   if(vol)ser.push({n:t.name+' – średnia objętość',c:TC[i],u:'l',data:rows.map(r=>r.t[i].lAvg)});
+   else ser.push({n:t.name+' – średni poziom',c:TC[i],u:'cm',data:rows.map(r=>r.t[i].avg),lo:rows.map(r=>r.t[i].min),hi:rows.map(r=>r.t[i].max)});
+   if(vol&&st.height>0)ser.push({n:t.name+' – średnie wypełnienie',c:'#22c55e',u:'%',axis:'r',dash:1,data:rows.map(r=>r.t[i].avg==null?null:Math.max(0,Math.min(100,r.t[i].avg/st.height*100)))})});
+  note=(v=='years'?'Wartości roczne z pliku /stats/lata.csv':v=='year'?'Wartości miesięczne z pliku /stats/rok_RRRR.csv':'Wartości dobowe z pliku /stats/miesiac_RRRR-MM.csv')+
+   '. Punkt pusty = okres w toku.'+(ser.some(s=>s.lo)?' Pionowy pasek: min–max poziomu.':'')+(sumData.catchUp?' Trwa uzupełnianie podsumowań z wcześniejszych plików – odśwież za chwilę.':'');
+  catChart($('lch'),$('ltip'),lab,ser,{partial:rows.map(r=>!r.full),full})}
+ $('lleg').innerHTML=ser.map(s=>`<span><i style="background:${s.c}"></i>${esc(s.n)}${s.axis=='r'?' (oś prawa)':''}</span>`).join('')+(thr.length?'<span>progi: przerywane linie</span>':'');
+ $('lnote').textContent=note}
+function drawStats(){if(!S)return;const sel=$('stk'),en=tankOpts();if(!sel.options.length)en.forEach(({t,i})=>sel.add(new Option(t.name,i)));sel.style.display=sel.options.length>1?'':'none';
+ const i=+(sel.value||0),t=S.tanks[i],vol=t&&t.volEn,u=vol?'l':'cm',v=$('lv').value;
+ if(v=='day'){$('bbox').style.display='none';$('bday').style.display='';$('btitle').textContent='Zużycie w dniu';
+  const x=dayCons&&dayCons.t[i];$('bday').innerHTML=x?`Zużycie: <b>${fc(vol?x.consL:x.cons,vol?0:1)} ${u}</b><br>Tankowania: <b>${fc(vol?x.refL:x.ref,vol?0:1)} ${u}</b>${dayCons.full?'':'<br>(doba niepełna lub w toku)'}`:'Brak danych dla tego dnia';return}
+ $('bbox').style.display='';$('bday').style.display='none';$('btitle').textContent=v=='years'?'Zużycie roczne':v=='year'?'Zużycie miesięczne':'Zużycie dzienne';
+ if(!sumData)return;const rows=sumData.rows;
+ barChart($('bch'),$('btip'),rows.map(r=>r.k=='dziś'?'dziś':v=='month'?r.k.slice(8,10)+'.'+r.k.slice(5,7):v=='year'?MN[+r.k.slice(5,7)-1]:r.k),rows.map(r=>vol?r.t[i].consL:r.t[i].cons),rows.map(r=>r.full),'#38bdf8',u)}
+function logsCsv(){const v=$('lv').value;if(v=='day'){location=`/api/v1/logs/csv?from=${$('ld').value}&to=${$('ld').value}`;return}
+ if(!sumData||!sumData.rows.length){toast('Najpierw pokaż dane',1);return}const en=tankOpts(),n=x=>x==null?'':String(x).replace('.',',');
+ let h='okres';en.forEach(({t})=>{const z=t.name.replace(/;/g,',');h+=`;${z} min cm;${z} średnio cm;${z} max cm;${z} średnio l;${z} zużycie cm;${z} zużycie l;${z} tankowania cm;${z} tankowania l`});h+=';pełny okres';
+ const lines=[h].concat(sumData.rows.map(r=>r.k+en.map(({i})=>{const x=r.t[i];return ';'+[x.min,x.avg,x.max,x.lAvg,x.cons,x.consL,x.ref,x.refL].map(n).join(';')}).join('')+';'+(r.full?1:0)));
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv'}));a.download='monitorup_'+v+'_'+(v=='years'?'lata':v=='year'?$('ly').value:$('lm').value)+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
 async function eventsLoad(){const m=$('evm').value;try{const j=await (await api('/api/v1/events'+(m?'?m='+m:''))).json();
  $('evt').innerHTML='<tr><th>Czas</th><th>Typ</th><th>Opis</th></tr>'+j.events.map(e=>`<tr><td style="white-space:nowrap">${tstr(e[0])}</td><td>${esc(e[1])}</td><td>${esc(e[2])}</td></tr>`).join('')}catch(e){}}
 async function filesLoad(){try{const j=await (await api('/api/v1/logs/files')).json();
  $('sdinfo').textContent=j.sd?`Zajęte ${j.usedMB} MB z ${j.totalMB} MB`:'Brak karty SD';
  $('sdf').innerHTML='<tr><th>Dzień</th><th>Rozmiar</th><th></th></tr>'+(j.days||[]).sort().reverse().map(d=>`<tr><td>${d[0]}</td><td>${(d[1]/1024).toFixed(1)} kB</td><td><a href="/api/v1/logs/csv?from=${d[0]}&to=${d[0]}">CSV</a></td></tr>`).join('')}catch(e){}}
-function logsInit(){if(!logsReady){logsReady=true;setRange(1);
- document.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{setRange(+b.dataset.r);logsLoad()});
- $('lshow').onclick=logsLoad;$('lcsv').onclick=()=>location=`/api/v1/logs/csv?from=${$('lf').value}&to=${$('lt').value}`;
- $('stk').onchange=drawStats;const sel=$('evm');sel.add(new Option('bieżące (ostatnie 60)',''));
+function logsInit(){if(!logsReady){logsReady=true;const d=new Date();$('ld').value=dstr(d);$('lm').value=d.getFullYear()+'-'+pad(d.getMonth()+1);$('ly').value=d.getFullYear();lvShow();
+ $('lv').onchange=()=>{lvShow();logsLoad()};$('lshow').onclick=logsLoad;$('lcsv').onclick=logsCsv;$('stk').onchange=drawStats;
+ const sel=$('evm');sel.add(new Option('bieżące (ostatnie 60)',''));
  for(let k=0;k<12;k++){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-k);const v=d.getFullYear()+'-'+pad(d.getMonth()+1);sel.add(new Option(v,v))}
  sel.onchange=eventsLoad;window.addEventListener('resize',()=>{drawLogs();drawStats()})}
- logsLoad();statsLoad();eventsLoad();filesLoad()}
+ logsLoad();eventsLoad();filesLoad()}
 
 // ---------- ustawienia: pola ----------
 const F={txt:(id,l,v,ph='')=>`<div><label>${l}</label><input id="${id}" value="${esc(v)}" placeholder="${esc(ph)}"></div>`,
