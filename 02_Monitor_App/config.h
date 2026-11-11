@@ -154,6 +154,8 @@ struct Config {
   uint8_t  faultMask;
   // Kasowanie alarmu: 0 = reczne (alarm trwa do skasowania), 1 = automatyczne (bez kasowania, gasnie po powrocie do normy) (0.4.4)
   uint8_t  ackAuto;
+  // Przy bledzie czujnika migaja kontrolki WY1-WY3 (1 Hz) niezaleznie od funkcji wyjsc (0.4.6)
+  uint8_t  faultBlink;
 };
 
 extern Config cfg;

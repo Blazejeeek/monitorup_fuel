@@ -1,6 +1,6 @@
 # 02_Monitor_App – firmware MonitorUp (KinCony B8M)
 
-Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.5** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
+Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.6** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
 
 ## Dostęp
 

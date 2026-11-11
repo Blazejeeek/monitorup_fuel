@@ -138,6 +138,7 @@ void alarmLoop() {
   if (outTestRun) { outputsTestStep(); return; }
 
   bool blinkPh;
+  const bool sensorFault = cfg.faultBlink && (faultBits() & FAULT_SENSOR);
   uint8_t lampLvl = 0;
   for (uint8_t k = 0; k < 8; k++) {
     const OutCfg &o = cfg.out[k];
@@ -173,6 +174,9 @@ void alarmLoop() {
       uint32_t onT = forceBlink ? 1000 : o.onMs, offT = forceBlink ? 1000 : o.offMs;
       blinkPh = (millis() % (onT + offT)) < onT;
       if (!blinkPh) v = 0;
+    }
+    if (sensorFault && k < 3) {                       // blad czujnika: WY1-WY3 migaja 1 Hz
+      v = (millis() % 1000) < 500 ? (o.pwmPre ? o.pwmPre : 100) : 0;
     }
     outLevel[k] = v;
     if (o.func == OF_LAMP && v > lampLvl) lampLvl = v;

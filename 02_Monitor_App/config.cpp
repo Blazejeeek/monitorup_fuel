@@ -87,6 +87,7 @@ void outDefaults() {
   cfg.out[4].func = OF_SIREN;                                      // OUT5 buzzer – milknie po skasowaniu
   cfg.faultMask = FAULT_DEFAULT;
   cfg.ackAuto = 0;
+  cfg.faultBlink = 1;
 }
 
 void tankExtraDefaults(uint8_t i) {

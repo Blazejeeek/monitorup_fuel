@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.4.5** (rejestr Modbus 0 = 45) |
+| Oprogramowanie (SW) | **0.4.6** (rejestr Modbus 0 = 46) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.4.5)
+## Funkcje (stan na 0.4.6)
 
 **Pomiar**
 - Przetwornik 4–20 mA na A4 (zbiornik paliwa, walec leżący); drugi kanał A3 do włączenia w ustawieniach. Wejście i typ (4–20 mA / 0–5 V) wybieralne.
@@ -25,6 +25,7 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Alarm nagłego spadku (wyciek / kradzież): spadek o Y cm w T min, okno nocne z czulszym progiem.
 - Domyślne wyjścia: OUT1 poziom minimalny, OUT2 poziom maksymalny, OUT3 poziom krytyczny, OUT4 usterka zbiorcza (przekaźnik), OUT5 buzzer (milknie po skasowaniu). Funkcje wyjść do zmiany w Ustawieniach → Wyjścia.
 - Usterka zbiorcza – wybór przyczyn w Ustawieniach → Wyjścia, z podglądem na żywo: błąd czujnika, ADS1115, karta SD (domyślnie), a także czas nieustawiony, brak sieci, brak połączenia MQTT, PCF8575.
+- Błąd czujnika: kontrolki WY1–WY3 migają 1 Hz, niezależnie od funkcji wyjść (przełącznik w Ustawieniach → Wyjścia, domyślnie włączony).
 - PWM programowy 100 Hz (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalny sprzętowy PWM lampki (GPIO13/14/21).
 - Kasowanie alarmu do wyboru: ręczne (DI1, strona, Modbus, MQTT, API; przypomnienie po X min) albo automatyczne – bez kasowania, alarm gaśnie po powrocie poziomu do normy.
 
@@ -49,6 +50,9 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.4.6 – 11.11.2026
+- Przy błędzie czujnika migają kontrolki WY1–WY3 (1 Hz); przełącznik „Przy błędzie czujnika migają kontrolki WY1–WY3” w Ustawieniach → Wyjścia (domyślnie włączony). API: `alarm.faultBlink`.
 
 ### 0.4.5 – 11.11.2026
 - Podsumowania hierarchiczne: doba → `/stats/miesiac_RRRR-MM.csv`, miesiąc → `/stats/rok_RRRR.csv`, rok → `/stats/lata.csv`; uzupełnianie braków w tle.
@@ -88,6 +92,5 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Wszystkie etapy 1–9 planu: pomiar, kalibracja, litry, progi, wyjścia z PWM, OLED, sieć, czas, logi SD, statystyki, Modbus TCP, MQTT/HA, API z tokenami, OTA, kopia ustawień, watchdog. Domyślnie jeden zbiornik (paliwo, A4).
 
 ## Znane sprawy otwarte
-- Do ustalenia: czy przy błędzie czujnika mają mrugać wszystkie wyjścia.
 - Przy starcie 2× komunikat watchdoga „task not found” (nieszkodliwy, do poprawy).
 - W terenie: kalibracja przetwornika, działanie buzzera lampki przy obniżonej jasności, dopuszczalny prąd wyjść MOSFET.

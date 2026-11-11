@@ -335,13 +335,14 @@ SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Funkcje wyj
  <div class="btns"><button class="btn" id="osv">Zapisz</button><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza – co sygnalizuje</h2><p class="muted" style="font-size:13px">Wyjście z funkcją „usterka zbiorcza” włącza się, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
  ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}
+ <div style="margin-top:10px">${F.chk('ffb','Przy błędzie czujnika migają kontrolki WY1–WY3 (1 Hz, niezależnie od funkcji wyjść)',a.faultBlink??true)}</div>
  <div class="btns"><button class="btn" id="fsv">Zapisz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Test wyjść przy starcie</h2>${F.chk('bte','Test przy włączeniu zasilania',a.bootTest)}
  <label>Wyjścia w teście</label><div class="outs">${[0,1,2,3,4,5,6,7].map(k=>`<label class="o" style="cursor:pointer"><input type="checkbox" id="bm${k}" ${a.bootMask>>k&1?'checked':''} style="width:auto"> OUT${k+1}</label>`).join('')}</div>
  <div class="g2">${F.num('bms','Czas na wyjście [ms]',a.bootMs,100)}<div>${F.chk('bss','Pomijaj po restarcie programowym (watchdog, aktualizacja)',a.bootSkipSw)}</div></div>
  <div class="btns"><button class="btn" id="bsv">Zapisz</button></div></div>`;
  window.onStatus=s=>{for(let k=0;k<8;k++){const e=$('ol'+k);if(e)e.textContent=s.outLvl[k]?s.outLvl[k]+' %':'wył.'}FAULTS.forEach(([b])=>{const d=$('fd'+b);if(d)d.className='dot '+((s.fault&b)?'r':'g')})};
- $('fsv').onclick=()=>save({alarm:{faultMask:FAULTS.reduce((m,[b])=>m|(B('fm'+b)?b:0),0)}});if(S)window.onStatus(S);
+ $('fsv').onclick=()=>save({alarm:{faultMask:FAULTS.reduce((m,[b])=>m|(B('fm'+b)?b:0),0),faultBlink:B('ffb')}});if(S)window.onStatus(S);
  const outs=()=>a.out.map((o,k)=>({func:+V('of'+k),pre:+V('op'+k),post:+V('oq'+k),blink:B('ob'+k),onMs:+V('on'+k),offMs:+V('oo'+k),manual:+V('om'+k)}));
  $('osv').onclick=()=>save({alarm:{out:outs(),lampGpio:+V('olg')}},'Zapisano ustawienia wyjść');
  $('otst').onclick=async()=>{await post('/api/v1/outputs',{test:true});toast('Test wyjść uruchomiony')};
