@@ -1,4 +1,4 @@
-// MonitorUp - MQTT + autodiscovery Home Assistant
+// MonitorUp - MQTT
 #pragma once
 #include <Arduino.h>
 

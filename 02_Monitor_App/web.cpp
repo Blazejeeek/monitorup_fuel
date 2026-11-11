@@ -236,7 +236,7 @@ static void hStatus() {
   d["di"] = diState;
   d["test"] = (bool)outTestRun;
   JsonObject a = d["alarm"].to<JsonObject>();
-  a["active"] = alarmActive; a["acked"] = alarmAcked; a["warn"] = warnActive; a["since"] = alarmSince;
+  a["active"] = alarmActive; a["acked"] = alarmAcked; a["auto"] = (bool)cfg.ackAuto; a["warn"] = warnActive; a["since"] = alarmSince;
   JsonObject sd = d["sd"].to<JsonObject>();
   sd["ok"] = sdMounted; sd["present"] = sdMounted;
   if (sdMounted) { sd["totalMB"] = (uint32_t)(SD.totalBytes() >> 20); sd["usedMB"] = (uint32_t)(SD.usedBytes() >> 20); }
@@ -280,7 +280,6 @@ static void hStatus() {
     }
     t["drop"] = st[i].drop;
     if (st[i].drop) jnum(t["dropCm"], st[i].dropAmount, 1);
-    if (st[i].suspendUntil > (uint32_t)time(nullptr)) t["suspendUntil"] = st[i].suspendUntil;
   }
   JsonObject n = d["net"].to<JsonObject>();
   JsonObject e = n["eth"].to<JsonObject>();
@@ -412,16 +411,6 @@ static void hNtpSync() { if (!auth(A_ADMIN)) return; timeSyncNow(); sendOk(); }
 
 static void hAck() { if (!auth(A_CTRL)) return; alarmAck(curToken >= 0 ? 4 : 1); sendOk(); }
 
-static void hSuspend() {
-  if (!auth(A_CTRL)) return;
-  JsonDocument d;
-  if (!parseBody(d)) return;
-  uint8_t i = d["tank"] | 0;
-  uint16_t m = d["minutes"] | 120;
-  if (i >= TANK_COUNT || m > 1440) { sendErr(400, "Nieprawidłowe dane"); return; }
-  statsSuspend(i, m);
-  sendOk();
-}
 
 static void hOutputs() {
   if (!auth(A_CTRL)) return;
@@ -861,7 +850,6 @@ void webBegin() {
   server.on("/api/v1/time", HTTP_POST, hTime);
   server.on("/api/v1/time/sync", HTTP_POST, hNtpSync);
   server.on("/api/v1/alarm/ack", HTTP_POST, hAck);
-  server.on("/api/v1/alarm/suspend", HTTP_POST, hSuspend);
   server.on("/api/v1/outputs", HTTP_POST, hOutputs);
   server.on("/api/v1/logs", HTTP_GET, hLogs);
   server.on("/api/v1/logs/csv", HTTP_GET, hLogsCsv);

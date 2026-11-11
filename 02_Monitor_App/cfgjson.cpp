@@ -84,6 +84,7 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
   al["bootTest"] = (bool)cfg.bootTestEn; al["bootMask"] = cfg.bootTestMask; al["bootMs"] = cfg.bootTestMs;
   al["bootSkipSw"] = (bool)cfg.bootTestSkipSw;
   al["faultMask"] = cfg.faultMask;
+  al["ackAuto"] = (bool)cfg.ackAuto;
   JsonArray oa = al["out"].to<JsonArray>();
   for (auto &o : cfg.out) {
     JsonObject j = oa.add<JsonObject>();
@@ -171,7 +172,7 @@ String cfgFromJson(JsonObjectConst r) {
           x.tblCm[x.tblN] = p[0].as<float>(); x.tblL[x.tblN] = p[1].as<float>(); x.tblN++;
         }
       }
-      x.statsEn = boolOr(t["statsEn"], x.statsEn); x.refillCm = numOr(t["refill"], x.refillCm); x.fcRef = numOr(t["fcRef"], x.fcRef); x.fcWarnDays = numOr(t["fcWarn"], x.fcWarnDays);
+      x.statsEn = 1;   /* statystyki zawsze wlaczone (0.4.4) */ x.refillCm = numOr(t["refill"], x.refillCm); x.fcRef = numOr(t["fcRef"], x.fcRef); x.fcWarnDays = numOr(t["fcWarn"], x.fcWarnDays);
       x.dropEn = boolOr(t["dropEn"], x.dropEn); x.dropCm = numOr(t["dropCm"], x.dropCm); x.dropMin = numOr(t["dropMin"], x.dropMin);
       x.nightEn = boolOr(t["nightEn"], x.nightEn); x.nightFrom = numOr(t["nightFrom"], x.nightFrom); x.nightTo = numOr(t["nightTo"], x.nightTo); x.nightCm = numOr(t["nightCm"], x.nightCm);
 
@@ -196,6 +197,7 @@ String cfgFromJson(JsonObjectConst r) {
     cfg.bootTestEn = boolOr(a["bootTest"], cfg.bootTestEn); cfg.bootTestMask = numOr(a["bootMask"], cfg.bootTestMask); cfg.bootTestMs = numOr(a["bootMs"], cfg.bootTestMs);
     cfg.bootTestSkipSw = boolOr(a["bootSkipSw"], cfg.bootTestSkipSw);
     cfg.faultMask = numOr(a["faultMask"], cfg.faultMask) & 0x7F;
+    cfg.ackAuto = boolOr(a["ackAuto"], cfg.ackAuto);
     if (cfg.lampHwGpio && cfg.lampHwGpio != 13 && cfg.lampHwGpio != 14 && cfg.lampHwGpio != 21) return fail("GPIO lampki: 13, 14 lub 21");
     if (cfg.bootTestMs < 100 || cfg.bootTestMs > 5000) return fail("Czas testu wyjścia: 100–5000 ms");
     if (a["out"].is<JsonArrayConst>()) {

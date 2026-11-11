@@ -33,8 +33,7 @@ Kody stanu zbiornika (`state`): 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY
 
 | Metoda | Adres | Treść |
 |---|---|---|
-| POST | `/api/v1/alarm/ack` | `{}` – kasowanie alarmu |
-| POST | `/api/v1/alarm/suspend` | `{"tank":1,"minutes":120}` – wstrzymanie alarmu nagłego spadku |
+| POST | `/api/v1/alarm/ack` | `{}` – kasowanie alarmu (nie działa przy kasowaniu automatycznym) |
 | POST | `/api/v1/outputs` | `{"n":4,"value":60}` – wyjście w trybie „ręczne” (0–100 %); `{"test":true}` – test wyjść |
 
 ## Konfiguracja (token: konfiguracja – sekcje `tanks`, `alarm`, `logs`)

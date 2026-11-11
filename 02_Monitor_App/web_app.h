@@ -5,7 +5,7 @@
 static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp.pl</title>
 <link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css"></head><body>
-<header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt="">MONITORUP<b>.PL</b></div>
+<header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt="">MonitorUp<b>.pl</b></div>
 <nav><a href="#pulpit" data-p="pulpit">Pulpit</a><a href="#logi" data-p="logi">Logi</a><a href="#ustawienia" data-p="ustawienia">Ustawienia</a>
 <a href="#" id="lo">Wyloguj</a></nav></div></header>
 <main>
@@ -92,14 +92,12 @@ function spark(i){if(!hist||!hist.tanks[i])return '';const a=hist.tanks[i],v=a.f
 function render(s){S=s;let html='',al=[];
  s.tanks.forEach((t,i)=>{if(!t.en)return;if(t.state==2||t.state==3||t.state==6)al.push(t.name+': '+ST[t.state]+(t.state==6&&t.dropCm?' ('+fc(t.dropCm,1)+' cm)':''));
  const vol=t.volEn&&t.vol!=null?`<span>Objętość</span><b>${fc(t.vol,0)} / ${fc(t.volTotal,0)} l</b>`:'';
- const sus=t.suspendUntil?`<span>Alarm spadku</span><b>wstrzymany do ${new Date(t.suspendUntil*1000).toLocaleTimeString('pl-PL',{hour:'2-digit',minute:'2-digit'})}</b>`:'';
- html+=`<div class="card"><h2>${esc(t.name)}<span class="badge s${t.state==6?2:t.state}">${s.alarm.acked&&[2,3,6].includes(t.state)?'SKWITOWANY – ':''}${ST[t.state]}</span></h2><div class="tank">${tankSvg(t,i)}<div style="flex:1">
+ html+=`<div class="card"><h2>${esc(t.name)}<span class="badge s${t.state==6?2:t.state}">${s.alarm.acked&&[2,3,6].includes(t.state)?'SKASOWANY – ':''}${ST[t.state]}</span></h2><div class="tank">${tankSvg(t,i)}<div style="flex:1">
  <div class="big">${t.valid?fc(t.cm,1):'—'} <small>cm</small></div><div class="pct">${t.valid?fc(t.pct,0)+' %':'brak pomiaru'} <span style="font-size:14px">${trendTxt(t)}</span></div>
  <div class="kv">${vol}<span>Prąd</span><b>${fc(t.mA,2)} mA</b><span>Wejście</span><b>A${t.ch+1}</b>
- <span>Progi</span><b>${fc(t.thrCrit,0)} / ${fc(t.thrMin,0)} / ${fc(t.thrHigh,0)} cm</b>${sus}</div></div></div>${statsHtml(t,i)}${spark(i)}
- ${t.statsEn?`<div class="btns"><button class="btn sec sm" onclick="suspendDrop(${i})">Planowany pobór (wstrzymaj alarm spadku na 2 h)</button></div>`:''}</div>`});
+ <span>Progi</span><b>${fc(t.thrCrit,0)} / ${fc(t.thrMin,0)} / ${fc(t.thrHigh,0)} cm</b></div></div></div>${statsHtml(t,i)}${spark(i)}</div>`});
  $('tanks').innerHTML=html;
- $('ab').style.display=s.alarm.active?'flex':'none';$('abt').textContent=al.join(' · ')+(s.alarm.acked?' – skwitowany':'');$('ackb').style.display=s.alarm.acked?'none':'';
+ $('ab').style.display=s.alarm.active?'flex':'none';$('abt').textContent=al.join(' · ')+(s.alarm.acked?' – skasowany':'');$('ackb').style.display=(s.alarm.acked||s.alarm.auto)?'none':'';
  $('tw').style.display=s.timeOk?'none':'flex';
  const FN=['wył.','ręczne','buzzer/syrena','lampka','alarm zb.','zbiornik 1','zbiornik 2','ostrzeż.','minimalny','maksymalny','krytyczny','usterka'];
  let o='',d='';for(let k=0;k<8;k++){o+=`<div class="o ${s.outLvl[k]?'on':''}">OUT${k+1}<br><small>${FN[s.outFunc[k]]}${s.outLvl[k]&&s.outLvl[k]<100?' '+s.outLvl[k]+'%':''}</small></div>`;d+=`<div class="o ${s.di>>k&1?'on':''}">DI${k+1}</div>`}
@@ -115,8 +113,7 @@ function render(s){S=s;let html='',al=[];
  if(window.onStatus)window.onStatus(s)}
 async function tick(){try{const r=await api('/api/v1/status');render(await r.json())}catch(e){if(e!==0)$('sb').textContent='Brak połączenia z urządzeniem…'}}
 async function histLoad(){try{hist=await (await api('/api/v1/history')).json()}catch(e){}}
-window.suspendDrop=async i=>{await post('/api/v1/alarm/suspend',{tank:i,minutes:120});toast('Alarm nagłego spadku wstrzymany na 2 h');tick()};
-$('ackb').onclick=async()=>{await post('/api/v1/alarm/ack');toast('Alarm skwitowany');tick()};
+$('ackb').onclick=async()=>{await post('/api/v1/alarm/ack');toast('Alarm skasowany');tick()};
 async function tsync(){await post('/api/v1/time',{epoch:Math.floor(Date.now()/1000)});toast('Ustawiono czas z przeglądarki');tick()}
 $('tsync').onclick=tsync;
 
@@ -276,12 +273,12 @@ SET.alarmy=el=>{el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!t.en?'':`<
  <div class="g3">${F.num('ac'+i,'KRYTYCZNY ≤ [cm]',t.thrCrit)}${F.num('am'+i,'MINIMALNY ≤ [cm]',t.thrMin)}${F.num('ah'+i,'ZA DUŻY ≥ [cm]',t.thrHigh)}</div>
  <div class="g2">${F.num('ahy'+i,'Histereza [cm]',t.hyst)}${F.num('ad'+i,'Opóźnienie alarmu [s]',t.delay,1)}</div>
  <p class="muted" style="font-size:12px">Kolejność: krytyczny &lt; minimalny &lt; za duży. Wysokość zbiornika: ${fc(t.height,0)} cm.</p></div>`).join('')+
- `<div class="card"><h2>Kasowanie i przypomnienia</h2>${F.chk('adi','Kasowanie alarmu wejściem DI1 (przycisk)',C.alarm.ackDi1)}
+ `<div class="card"><h2>Kasowanie i przypomnienia</h2>${F.sel('aam','Kasowanie alarmu',C.alarm.ackAuto?1:0,[[0,'ręczne – alarm trwa do skasowania (przycisk DI1, strona, Modbus, MQTT, API)'],[1,'automatyczne – bez kasowania, alarm gaśnie po powrocie poziomu do normy']])}${F.chk('adi','Kasowanie alarmu wejściem DI1 (przycisk)',C.alarm.ackDi1)}
  ${F.num('arm','Przypomnienie: ponowna syrena po [min] (0 = wyłączone)',C.alarm.reminderMin,1)}
  ${F.sel('alm','Lampka przy stanie MINIMALNYM / błędzie czujnika',C.alarm.lampOnMin,[[0,'wyłączona'],[1,'słabe mruganie']])}</div></div>
  <div class="btns"><button class="btn" id="asv2">Zapisz</button></div>`;
  $('asv2').onclick=()=>save({tanks:C.tanks.map((t,i)=>!t.en?{}:({thrCrit:N('ac'+i),thrMin:N('am'+i),thrHigh:N('ah'+i),hyst:N('ahy'+i),delay:+V('ad'+i)})),
-  alarm:{ackDi1:B('adi'),reminderMin:+V('arm'),lampOnMin:+V('alm')}})};
+  alarm:{ackAuto:+V('aam')==1,ackDi1:B('adi'),reminderMin:+V('arm'),lampOnMin:+V('alm')}})};
 
 const FUNCS=[[0,'wyłączone'],[1,'ręczne'],[2,'buzzer / syrena (milknie po skasowaniu)'],[3,'lampka'],[4,'alarm zbiorczy'],[5,'stan zbiornika 1'],[6,'stan zbiornika 2'],[7,'ostrzeżenie (MINIMALNY)'],[8,'poziom MINIMALNY'],[9,'poziom MAKSYMALNY (za duży)'],[10,'poziom KRYTYCZNY'],[11,'usterka zbiorcza (wg ustawień niżej)']];
 const FAULTS=[[1,'błąd czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
@@ -309,13 +306,11 @@ SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Funkcje wyj
 window.manOut=async k=>{if(+V('of'+k)!=1||C.alarm.out[k].func!=1){toast('Najpierw ustaw i zapisz funkcję „ręczne”',1);return}await post('/api/v1/outputs',{n:k+1,value:+V('om'+k)})};
 
 SET.statystyki=el=>{el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!t.en?'':`<div class="card"><h2>${esc(t.name)}</h2>
- ${F.chk('se'+i,'Statystyki zużycia i prognoza',t.statsEn)}
- <div class="g2">${F.num('sr'+i,'Tankowanie: wzrost o ≥ [cm] w 15 min',t.refill)}${F.num('sw'+i,'Ostrzeżenie, gdy prognoza < [dni] (0 = wył.)',t.fcWarn,1)}</div>
- ${F.sel('sf'+i,'Prognoza „wystarczy na” liczona do',t.fcRef,[[0,'progu MINIMALNEGO'],[1,'progu KRYTYCZNEGO'],[2,'dna zbiornika']])}
+ ${F.num('sr'+i,'Tankowanie: wzrost o ≥ [cm] w 15 min',t.refill)}
  <h2 style="margin-top:14px;font-size:15px">Alarm nagłego spadku (wyciek / kradzież)</h2>${F.chk('sd'+i,'Włączony',t.dropEn)}
  <div class="g2">${F.num('sdc'+i,'Spadek o ≥ [cm]',t.dropCm)}${F.num('sdm'+i,'w czasie [min]',t.dropMin,1)}</div>
  ${F.chk('sn'+i,'Okno nocne (czulszy próg)',t.nightEn)}<div class="g3">${F.num('snf'+i,'Od godziny',t.nightFrom,1)}${F.num('snt'+i,'Do godziny',t.nightTo,1)}${F.num('snc'+i,'Spadek o ≥ [cm]',t.nightCm)}</div></div>`).join('')+'</div><div class="btns"><button class="btn" id="ssv">Zapisz</button></div>';
- $('ssv').onclick=()=>save({tanks:C.tanks.map((t,i)=>!t.en?{}:({statsEn:B('se'+i),refill:N('sr'+i),fcWarn:+V('sw'+i),fcRef:+V('sf'+i),dropEn:B('sd'+i),dropCm:N('sdc'+i),dropMin:+V('sdm'+i),
+ $('ssv').onclick=()=>save({tanks:C.tanks.map((t,i)=>!t.en?{}:({refill:N('sr'+i),dropEn:B('sd'+i),dropCm:N('sdc'+i),dropMin:+V('sdm'+i),
   nightEn:B('sn'+i),nightFrom:+V('snf'+i),nightTo:+V('snt'+i),nightCm:N('snc'+i)}))})};
 
 SET.czas=el=>{const t=C.time;el.innerHTML=`<div class="grid"><div class="card"><h2>Data i czas</h2><div class="live" id="tml"></div>
@@ -332,7 +327,7 @@ SET.czas=el=>{const t=C.time;el.innerHTML=`<div class="grid"><div class="card"><
 SET.logi=el=>{el.innerHTML=`<div class="card" style="max-width:560px"><h2>Logi na karcie SD</h2>${F.num('lgi','Zapis pomiarów co [min] (1–60)',C.logs.intervalMin,1)}
  ${F.num('lgr','Przechowuj pliki przez [dni]',C.logs.retentionDays,1)}<p class="muted" style="font-size:12px">Pliki dzienne /logs/RRRR/MM/RRRR-MM-DD.csv (separator ;, przecinek dziesiętny – otwierają się w Excelu). Dodatkowy wpis przy każdej zmianie stanu alarmu. Przy &lt; 10 % wolnego miejsca najstarsze pliki są usuwane.</p>
  <div class="btns"><button class="btn" id="lgs">Zapisz</button><button class="btn red" id="lgc">Usuń wszystkie logi</button></div></div>
- <div class="card" style="max-width:560px;margin-top:16px"><h2>Test karty SD</h2><p class="muted" style="font-size:13px">Sprawdza montowanie (20/10/4/1 MHz), typ i pojemność karty oraz zapis i odczyt pliku testowego.</p><div class="btns"><button class="btn sec" id="sdt">Testuj kartę</button></div><div class="live" id="sdr" style="display:none"></div></div>`;
+ <div class="card" style="max-width:560px;margin-top:16px"><h2>Test karty SD</h2><p class="muted" style="font-size:13px">Sprawdza montowanie (20/10/4/1 MHz), typ i pojemność karty oraz zapis i odczyt pliku testowego.</p><div class="live" style="line-height:1.6"><b>Jak urządzenie pilnuje karty</b><br>Zamontowana karta jest sprawdzana co 10 s, a także przy każdym zapisie.<br>Bez karty urządzenie próbuje ją zamontować co 30 s.<br><b>Wyjęcie w trakcie pracy:</b> wykrycie w ciągu ok. 10 s albo przy najbliższym zapisie; zdarzenie „Utracono kartę SD”. Pomiar, alarmy, wyjścia i wykres 24 h (pamięć PSRAM) działają dalej. Pomiary z czasu bez karty nie trafiają do logów; może przepaść ostatni wiersz zapisywany w chwili wyjęcia. Po włożeniu karta montuje się sama (do 30 s).<br><b>Uszkodzona partycja lub karta niesformatowana:</b> karta traktowana jak brak karty, ponowne próby co 30 s. Urządzenie nie formatuje karty samo – sformatuj ją w komputerze jako FAT32.<br><b>Pełna karta:</b> stare logi są kasowane według ustawień rotacji (dni albo &lt; 10 % wolnego miejsca).<br>Brak karty może włączać usterkę zbiorczą (Ustawienia → Wyjścia).</div><div class="btns"><button class="btn sec" id="sdt">Testuj kartę</button></div><div class="live" id="sdr" style="display:none"></div></div>`;
  $('sdt').onclick=async()=>{$('sdr').style.display='';$('sdr').textContent='Testuję…';const r=await post('/api/v1/sd/test');
   $('sdr').innerHTML=`<b>${esc(r.result)}</b><br>Pin wykrywania karty (GPIO5): <b>${r.cdPin}</b><br>Montowanie: <b>${r.mounted?'OK ('+r.freqMHz+' MHz, '+r.mountMs+' ms)':'błąd ('+r.mountMs+' ms)'}</b>`+(r.mounted?`<br>Typ: <b>${r.type}</b><br>Karta: <b>${r.cardMB} MB</b><br>System plików: <b>${r.totalMB} MB</b>, zajęte <b>${r.usedMB} MB</b><br>Zapis: <b>${r.write?'OK':'BŁĄD'}</b><br>Odczyt: <b>${r.read?'OK':'BŁĄD'}</b> (${r.rwMs} ms)`:'')};
  $('lgs').onclick=()=>save({logs:{intervalMin:+V('lgi'),retentionDays:+V('lgr')}});
@@ -340,10 +335,10 @@ SET.logi=el=>{el.innerHTML=`<div class="card" style="max-width:560px"><h2>Logi n
 
 SET.mqtt=el=>{const m=C.mqtt;el.innerHTML=`<div class="card" style="max-width:640px"><h2>MQTT</h2><div class="live">Stan: <b>${S&&S.mqtt?'połączono':esc(S&&S.mqttMsg||'brak połączenia')}</b></div>
  ${F.chk('mqe','MQTT włączone',m.en)}<div class="g2">${F.txt('mqh','Broker (adres)',m.host,'192.168.1.10')}${F.num('mqp','Port',m.port,1)}${F.txt('mqu','Użytkownik',m.user)}${F.pw('mqw','Hasło',m.hasPass?'•••••• (bez zmian)':'')}</div>
- ${F.txt('mqx','Prefiks tematów',m.prefix)}${F.num('mqi','Wysyłanie co [s]',m.intervalS,1)}${F.chk('mqa','Home Assistant – autodiscovery',m.ha)}${F.chk('mqc','Przyjmuj komendy (kasowanie alarmu, wyjścia ręczne)',m.cmd)}
- <p class="muted" style="font-size:12px">Tematy: ${esc(m.prefix)}/zbiornik1/poziom_cm, …/procent, …/stan, …/litry, …/zuzycie_dzis, …/prognoza_dni, ${esc(m.prefix)}/alarm, ${esc(m.prefix)}/status (online/offline). Komendy: ${esc(m.prefix)}/cmd/kasuj, ${esc(m.prefix)}/cmd/out/N.</p>
+ ${F.txt('mqx','Prefiks tematów',m.prefix)}${F.num('mqi','Wysyłanie co [s]',m.intervalS,1)}${F.chk('mqc','Przyjmuj komendy (kasowanie alarmu, wyjścia ręczne)',m.cmd)}
+ <p class="muted" style="font-size:12px">Tematy: ${esc(m.prefix)}/zbiornik1/poziom_cm, …/procent, …/stan, …/litry, …/zuzycie_dzis, ${esc(m.prefix)}/alarm, ${esc(m.prefix)}/status (online/offline). Komendy: ${esc(m.prefix)}/cmd/kasuj, ${esc(m.prefix)}/cmd/out/N.</p>
  <div class="btns"><button class="btn" id="mqs">Zapisz</button></div></div>`;
- $('mqs').onclick=()=>{const o={en:B('mqe'),host:V('mqh'),port:+V('mqp'),user:V('mqu'),prefix:V('mqx'),intervalS:+V('mqi'),ha:B('mqa'),cmd:B('mqc')};if($('mqw').value)o.pass=$('mqw').value;save({mqtt:o})}};
+ $('mqs').onclick=()=>{const o={en:B('mqe'),host:V('mqh'),port:+V('mqp'),user:V('mqu'),prefix:V('mqx'),intervalS:+V('mqi'),cmd:B('mqc')};if($('mqw').value)o.pass=$('mqw').value;save({mqtt:o})}};
 
 SET.modbus=el=>{const m=C.modbus;el.innerHTML=`<div class="card" style="max-width:640px"><h2>Modbus TCP</h2><div class="live">Połączeni klienci: <b>${S?S.mb:0}</b></div>
  ${F.chk('mbe','Serwer Modbus TCP włączony',m.en)}<div class="g2">${F.num('mbp','Port',m.port,1)}${F.num('mbu','Adres urządzenia (Unit ID)',m.unit,1)}</div>
@@ -359,9 +354,23 @@ SET.api=async el=>{const j=await (await api('/api/v1/tokens')).json();const P=['
  <h2 style="margin-top:18px;font-size:15px">Nowy token</h2><div class="g2">${F.txt('tkn','Nazwa (np. SCADA)','')}${F.sel('tkp','Uprawnienia','0',[[0,P[0]],[1,P[1]],[2,P[2]]])}
  ${F.num('tkd','Ważność [dni] (0 = bez terminu)',0,1)}${F.txt('tki','Tylko z adresu IP (opcjonalnie)','')}</div><div class="btns"><button class="btn" id="tkg">Generuj token</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Ustawienia i użycie</h2>${F.chk('alr','Odczyt bez tokenu z sieci lokalnej (status, logi)',j.localRead)}<div class="btns"><button class="btn" id="als">Zapisz</button></div>
- <p class="muted" style="font-size:13px">Token wysyłaj w nagłówku <code>Authorization: Bearer &lt;token&gt;</code>. Przykład:</p>
+ <h2 style="margin-top:18px;font-size:15px">Jak używać API</h2>
+ <p class="muted" style="font-size:13px">Adres: <code>http://${location.host}/api/v1/…</code>. Token wygeneruj wyżej i wysyłaj w nagłówku <code>Authorization: Bearer &lt;token&gt;</code>. Odpowiedzi w JSON, błędy jako <code>{"error":"opis"}</code> (401 brak tokenu, 403 za małe uprawnienia, 429 za dużo zapytań – limit 10/s).</p>
+ <table><tr><th>Uprawnienie</th><th>Zapytanie</th><th>Co zwraca / robi</th></tr>
+ <tr><td>odczyt</td><td><code>GET /api/v1/status</code></td><td>poziom (cm, %, litry), prąd mA, stan, alarm, wyjścia, wejścia, sieć, czas, karta SD</td></tr>
+ <tr><td>odczyt</td><td><code>GET /api/v1/history</code></td><td>ostatnie 24 h co 5 min (do wykresu)</td></tr>
+ <tr><td>odczyt</td><td><code>GET /api/v1/logs?from=RRRR-MM-DD&amp;to=RRRR-MM-DD</code></td><td>pomiary z karty SD (JSON)</td></tr>
+ <tr><td>odczyt</td><td><code>GET /api/v1/logs/csv?from=…&amp;to=…</code></td><td>pomiary jako plik CSV (separator ;)</td></tr>
+ <tr><td>odczyt</td><td><code>GET /api/v1/stats</code></td><td>zużycie dzienne (do 30 dni)</td></tr>
+ <tr><td>odczyt</td><td><code>GET /api/v1/events</code></td><td>dziennik zdarzeń</td></tr>
+ <tr><td>odczyt + sterowanie</td><td><code>POST /api/v1/alarm/ack</code></td><td>kasowanie alarmu (gdy kasowanie ręczne)</td></tr>
+ <tr><td>odczyt + sterowanie</td><td><code>POST /api/v1/outputs {"n":4,"value":60}</code></td><td>wyjście w trybie „ręczne”, 0–100 %</td></tr>
+ <tr><td>konfiguracja</td><td><code>POST /api/v1/config {"tanks":[{"thrMin":70}]}</code></td><td>zmiana progów i ustawień (sekcje tanks, alarm, logs)</td></tr></table>
+ <p class="muted" style="font-size:13px;margin-top:10px">Przykłady (wiersz poleceń):</p>
  <div class="mono">curl -H "Authorization: Bearer ma_…" http://${location.host}/api/v1/status</div>
- <p class="muted" style="font-size:12px">Odczyt: /api/v1/status, /api/v1/logs?from=RRRR-MM-DD&amp;to=…, /api/v1/logs/csv, /api/v1/stats, /api/v1/history, /api/v1/events. Sterowanie: POST /api/v1/alarm/ack, /api/v1/alarm/suspend, /api/v1/outputs. Konfiguracja: POST /api/v1/config (sekcje tanks, alarm, logs). Hasło, tokeny i aktualizacja wymagają zalogowania na stronie. Połączenie HTTP nie jest szyfrowane – do dostępu zdalnego używaj VPN.</p></div>`;
+ <div class="mono">curl -H "Authorization: Bearer ma_…" -o logi.csv "http://${location.host}/api/v1/logs/csv?from=2026-11-01&amp;to=2026-11-11"</div>
+ <div class="mono">curl -X POST -H "Authorization: Bearer ma_…" http://${location.host}/api/v1/alarm/ack</div>
+ <p class="muted" style="font-size:12px">Kody stanu (<code>state</code>): 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY, 4 BŁĄD CZUJNIKA, 5 WYŁĄCZONY, 6 NAGŁY SPADEK. Hasło, tokeny, kopia ustawień i aktualizacja wymagają zalogowania na stronie. Połączenie HTTP nie jest szyfrowane – tylko sieć lokalna.</p></div>`;
  $('tkg').onclick=async()=>{const r=await post('/api/v1/tokens',{name:V('tkn'),perm:+V('tkp'),days:+V('tkd'),ip:V('tki')});
   modal('Nowy token API',`<p>Skopiuj token teraz – <b>nie będzie można go ponownie wyświetlić</b>.</p><div class="mono" id="tkv">${r.token}</div><div class="btns"><button class="btn sec" onclick="navigator.clipboard.writeText('${r.token}');toast('Skopiowano')">Kopiuj</button></div>`);settingsShow('api')};
  $('als').onclick=()=>save({api:{localRead:B('alr')}})};
@@ -415,7 +424,7 @@ onhashchange();tick();setInterval(tick,1500);histLoad().then(tick);setInterval(h
 
 static const char MODBUS_CSV[] PROGMEM = R"CSV(typ;adres;adres_SCADA;nazwa;typ_danych;jednostka_opis
 FC04 rejestr wejsciowy;0;30001;Wersja programu;UINT16;20 = 0.2.0
-FC04 rejestr wejsciowy;1;30002;Status urzadzenia;UINT16 bity;b0 SD, b1 ADS1115, b2 RTC, b3 czas OK, b4 Ethernet, b5 WiFi, b6 MQTT, b7 alarm aktywny, b8 alarm skwitowany, b9 test wyjsc
+FC04 rejestr wejsciowy;1;30002;Status urzadzenia;UINT16 bity;b0 SD, b1 ADS1115, b2 RTC, b3 czas OK, b4 Ethernet, b5 WiFi, b6 MQTT, b7 alarm aktywny, b8 alarm skasowany, b9 test wyjsc
 FC04 rejestr wejsciowy;2-3;30003;Czas pracy;UINT32;s
 FC04 rejestr wejsciowy;4;30005;Rok;UINT16;czas lokalny
 FC04 rejestr wejsciowy;5;30006;Miesiac;UINT16;1-12
@@ -432,7 +441,7 @@ FC04 rejestr wejsciowy;100 / 200;30101 / 30201;Poziom (zbiornik 1 / 2);INT16;cm 
 FC04 rejestr wejsciowy;101 / 201;30102 / 30202;Wypelnienie;INT16;% x10
 FC04 rejestr wejsciowy;102 / 202;30103 / 30203;Prad przetwornika;INT16;mA x100
 FC04 rejestr wejsciowy;103 / 203;30104 / 30204;Stan;UINT16;0 NORMALNY 1 MINIMALNY 2 KRYTYCZNY 3 ZA DUZY 4 BLAD CZUJNIKA 5 WYLACZONY 6 NAGLY SPADEK
-FC04 rejestr wejsciowy;104 / 204;30105 / 30205;Flagi;UINT16 bity;b0 skwitowany, b1 pomiar wazny, b2 kalibracja
+FC04 rejestr wejsciowy;104 / 204;30105 / 30205;Flagi;UINT16 bity;b0 skasowany, b1 pomiar wazny, b2 kalibracja
 FC04 rejestr wejsciowy;105 / 205;30106 / 30206;Trend;INT16;cm/h x10
 FC04 rejestr wejsciowy;106 / 206;30107 / 30207;Surowy odczyt ADC;INT16;ADS1115
 FC04 rejestr wejsciowy;107 / 207;30108 / 30208;Napiecie wejscia;INT16;mV
@@ -451,7 +460,7 @@ FC04 rejestr wejsciowy;124-125 / 224-225;30125 / 30225;Zuzycie dzis;FLOAT32 ABCD
 FC04 rejestr wejsciowy;126-127 / 226-227;30127 / 30227;Srednie zuzycie 7 dni;FLOAT32 ABCD;l/dobe
 FC02 wejscie dyskretne;0-7;10001-10008;DI1-DI8;BIT;1 = styk zwarty
 FC02 wejscie dyskretne;8;10009;Alarm aktywny;BIT;
-FC02 wejscie dyskretne;9;10010;Alarm skwitowany;BIT;
+FC02 wejscie dyskretne;9;10010;Alarm skasowany;BIT;
 FC02 wejscie dyskretne;10-13;10011-10014;Z1 KRYTYCZNY / MINIMALNY / ZA DUZY / BLAD CZUJNIKA;BIT;
 FC02 wejscie dyskretne;14-17;10015-10018;Z2 KRYTYCZNY / MINIMALNY / ZA DUZY / BLAD CZUJNIKA;BIT;
 FC02 wejscie dyskretne;18;10019;Karta SD OK;BIT;

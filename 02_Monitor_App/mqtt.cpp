@@ -1,4 +1,4 @@
-// MonitorUp - MQTT + autodiscovery Home Assistant
+// MonitorUp - MQTT (bez autodiscovery Home Assistant od 0.4.4)
 #include "mqtt.h"
 #include <Arduino.h>
 #include <WiFi.h>
@@ -57,52 +57,6 @@ static String topic(const String &s) { return String(cfg.mqttPrefix) + "/" + s; 
 static void mqttPub(const String &t, const String &v, bool retain = true) { mqtt.publish(topic(t).c_str(), v.c_str(), retain); }
 static String fnum(float v, int d) { return isnan(v) ? String("") : String(v, d); }
 
-static void haEntity(const char *comp, const String &obj, const String &name, const String &stateT, const char *unit,
-                     const char *devClass, const char *icon, const String &cmdT = "") {
-  JsonDocument d;
-  String uid = devId() + "_" + obj;
-  d["name"] = name;
-  d["uniq_id"] = uid;
-  d["obj_id"] = uid;
-  if (stateT.length()) d["stat_t"] = topic(stateT);
-  if (cmdT.length()) d["cmd_t"] = topic(cmdT);
-  d["avty_t"] = topic("status");
-  if (unit) d["unit_of_meas"] = unit;
-  if (devClass) d["dev_cla"] = devClass;
-  if (icon) d["ic"] = icon;
-  if (!strcmp(comp, "sensor") && unit) d["stat_cla"] = "measurement";
-  if (!strcmp(comp, "binary_sensor")) { d["pl_on"] = "1"; d["pl_off"] = "0"; }
-  JsonObject dev = d["dev"].to<JsonObject>();
-  dev["ids"][0] = devId();
-  dev["name"] = cfg.devName;
-  dev["mf"] = "MonitorUp.pl";
-  dev["mdl"] = "KinCony B8M";
-  dev["sw"] = FW_VERSION;
-  dev["hw"] = HW_VERSION;
-  String out; serializeJson(d, out);
-  mqtt.publish((String("homeassistant/") + comp + "/" + uid + "/config").c_str(), out.c_str(), true);
-}
-
-static void haDiscovery() {
-  for (uint8_t i = 0; i < TANK_COUNT; i++) {
-    if (!cfg.tank[i].enabled) continue;
-    String z = "zbiornik" + String(i + 1), n = cfg.tankName[i];
-    haEntity("sensor", z + "_cm", n + " poziom", z + "/poziom_cm", "cm", "distance", "mdi:waves-arrow-up");
-    haEntity("sensor", z + "_proc", n + " wypełnienie", z + "/procent", "%", nullptr, "mdi:gauge");
-    haEntity("sensor", z + "_ma", n + " prąd", z + "/mA", "mA", "current", nullptr);
-    haEntity("sensor", z + "_stan", n + " stan", z + "/stan", nullptr, nullptr, "mdi:alert-circle-outline");
-    if (cfg.tx[i].volEn) haEntity("sensor", z + "_l", n + " objętość", z + "/litry", "L", "volume_storage", nullptr);
-    if (cfg.tx[i].statsEn) {
-      const char *u = cfg.tx[i].volEn ? "L" : "cm";
-      haEntity("sensor", z + "_zuz", n + " zużycie dziś", z + "/zuzycie_dzis", u, nullptr, "mdi:chart-bar");
-      haEntity("sensor", z + "_zuz7", n + " zużycie średnie 7 dni", z + "/zuzycie_7d", u, nullptr, "mdi:chart-line");
-      haEntity("sensor", z + "_prog", n + " wystarczy na", z + "/prognoza_dni", "d", nullptr, "mdi:calendar-clock");
-    }
-  }
-  haEntity("binary_sensor", "alarm", "Alarm", "alarm_aktywny", nullptr, "problem", nullptr);
-  if (cfg.mqttCmdEn) haEntity("button", "kasuj", "Kasuj alarm", "", nullptr, nullptr, "mdi:bell-cancel", "cmd/kasuj");
-}
-
 static void mqttPublishAll() {
   for (uint8_t i = 0; i < TANK_COUNT; i++) {
     if (!cfg.tank[i].enabled) continue;
@@ -117,11 +71,10 @@ static void mqttPublishAll() {
       bool L = cfg.tx[i].volEn;
       mqttPub(z + "zuzycie_dzis", fnum(statConsToday(i, L), L ? 0 : 1));
       mqttPub(z + "zuzycie_7d", fnum(statAvg(i, 7, L), L ? 0 : 1));
-      mqttPub(z + "prognoza_dni", fnum(statForecast(i), 1));
     }
   }
   JsonDocument d;
-  d["aktywny"] = alarmActive; d["skwitowany"] = alarmAcked;
+  d["aktywny"] = alarmActive; d["skasowany"] = alarmAcked; d["skwitowany"] = alarmAcked;   // stary klucz zostaje dla zgodnosci
   String o; serializeJson(d, o);
   mqttPub("alarm", o);
   mqttPub("alarm_aktywny", alarmActive ? "1" : "0");
@@ -179,7 +132,6 @@ static void mqttStep() {
     mqPost(MQ_LOG, 0, 0, String("Połączono z ") + host);
     mqttPub("status", "online");
     if (cfg.mqttCmdEn) mqtt.subscribe(topic("cmd/#").c_str());
-    if (cfg.mqttHa) haDiscovery();
     mqttPubNow = true;
   }
   mqtt.loop();

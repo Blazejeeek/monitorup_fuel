@@ -119,7 +119,7 @@ struct Config {
   OutCfg   out[8];
   uint8_t  lampHwGpio;       // 0 = brak, 13/14/21 = sprzetowy PWM lampki na wolnym GPIO (przez modul MOSFET)
   uint8_t  lampOnMin;        // lampka przy MINIMALNYM: 0 = wyl., 1 = slabe mruganie
-  uint16_t reminderMin;      // ponowna syrena po X min trwania skwitowanego alarmu (0 = wyl.)
+  uint16_t reminderMin;      // ponowna syrena po X min trwania skasowanego alarmu (0 = wyl.)
   uint8_t  ackDi1En;         // kasowanie alarmu wejsciem DI1
   // czas
   uint8_t  ntpEn;
@@ -152,6 +152,8 @@ struct Config {
   uint16_t oledDimMin;
   // Usterka zbiorcza (wyjscie OF_FAULT): co ja wlacza, bity FAULT_* (pole dopisane w 0.4.2)
   uint8_t  faultMask;
+  // Kasowanie alarmu: 0 = reczne (alarm trwa do skasowania), 1 = automatyczne (bez kasowania, gasnie po powrocie do normy) (0.4.4)
+  uint8_t  ackAuto;
 };
 
 extern Config cfg;

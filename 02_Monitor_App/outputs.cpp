@@ -44,10 +44,10 @@ bool isWarnState(uint8_t s) { return s == ST_MIN || s == ST_FAULT; }
 const char *ackSrcName(uint8_t s) { static const char *n[] = {"DI1", "WWW", "Modbus", "MQTT", "API"}; return s < 5 ? n[s] : "?"; }
 
 void alarmAck(uint8_t src) {
-  if (!alarmActive || alarmAcked) return;
+  if (cfg.ackAuto || !alarmActive || alarmAcked) return;   // tryb automatyczny: bez kasowania
   alarmAcked = true;
   ackTime = millis();
-  logEvent("ALARM", String("Skwitowano alarm (") + ackSrcName(src) + ")");
+  logEvent("ALARM", String("Skasowano alarm (") + ackSrcName(src) + ")");
 }
 
 // ---------------- Programowy PWM (PCF8575, ok. 100 Hz, 10 poziomow) ----------------
@@ -132,6 +132,7 @@ void alarmLoop() {
     alarmAcked = false;
     logEvent("ALARM", "Przypomnienie – alarm nadal trwa");
   }
+  if (cfg.ackAuto) alarmAcked = false;                  // tryb automatyczny: alarm trwa do powrotu do normy
   statsDropClear(alarmAcked);
 
   if (outTestRun) { outputsTestStep(); return; }

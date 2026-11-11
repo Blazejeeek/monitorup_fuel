@@ -86,6 +86,7 @@ void outDefaults() {
   cfg.out[3].func = OF_FAULT; cfg.out[3].pwmPost = 100;            // OUT4 usterka zbiorcza (przekaznik)
   cfg.out[4].func = OF_SIREN;                                      // OUT5 buzzer – milknie po skasowaniu
   cfg.faultMask = FAULT_DEFAULT;
+  cfg.ackAuto = 0;
 }
 
 void tankExtraDefaults(uint8_t i) {
@@ -94,7 +95,7 @@ void tankExtraDefaults(uint8_t i) {
   x.volEn = 0;
   x.shape = SH_HCYL;             // zbiornik paliwa: walec lezacy
   x.dimA = 200; x.dimB = 300; x.dimC = 0;
-  x.statsEn = i == 0;            // statystyki dla zbiornika paliwa
+  x.statsEn = 1;                 // statystyki zuzycia zawsze wlaczone (0.4.4)
   x.refillCm = 2.0f;
   x.fcRef = 0;
   x.fcWarnDays = 3;
@@ -143,7 +144,7 @@ void migrateSingleTank() {
   cfg.tank[1].enabled = 0;
   strlcpy(cfg.tankName[1], "Zbiornik 2", sizeof(cfg.tankName[1]));
   tankExtraDefaults(1);
-  cfg.tx[1].statsEn = 0; cfg.tx[1].nightEn = 0;
+  cfg.tx[1].statsEn = 1; cfg.tx[1].nightEn = 0;
 }
 
 void cfgDefaults() {
@@ -223,6 +224,7 @@ void cfgLoad() {
       if (!strncmp(cfg.apSsid, old, n)) { String sfx = cfg.apSsid + n; snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorUp.pl-%s", sfx.c_str()); brand = true; break; }
     }
     if (brand) { cfgSource += " (nazwa MonitorUp.pl)"; cfgSave(); }
+    for (auto &x : cfg.tx) x.statsEn = 1;   // 0.4.4: bez przelacznika statystyk
     if (len != sizeof(cfg) || cfg.version != CFG_VERSION) {
       cfgSource += " (aktualizacja ustawien do wersji " + String(CFG_VERSION) + ")";
       cfg.version = CFG_VERSION;

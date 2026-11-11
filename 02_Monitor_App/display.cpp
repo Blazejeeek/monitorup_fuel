@@ -142,7 +142,7 @@ void oledTank(uint8_t i) {
     u8g2.drawStr(0, 52, p);
     uint8_t e = tankEffState(i);
     String stn = stateName(e);
-    if (isAlarmState(e) && alarmAcked) stn = "SKWITOWANY";
+    if (isAlarmState(e) && alarmAcked) stn = "SKASOWANY";
     int px = u8g2.getStrWidth(p) + 5;
     if (px + u8g2.getUTF8Width(stn.c_str()) > 108) { u8g2.setFont(u8g2_font_5x7_tf); if (e == ST_HIGH) stn = "ZA DUZY"; else if (e == ST_DROP) stn = "SPADEK"; }
     u8g2.drawUTF8(px, 52, stn.c_str());

@@ -1,6 +1,6 @@
 # 02_Monitor_App – firmware MonitorUp (KinCony B8M)
 
-Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.3** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
+Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.4** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
 
 ## Dostęp
 
@@ -23,7 +23,7 @@ Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.
 - **Czas:** DS3231 (UTC), NTP (2 serwery, interwał), ustawianie z przeglądarki lub ręcznie, strefa Polska z czasem letnim.
 - **Logi SD:** `/logs/RRRR/MM/RRRR-MM-DD.csv` co X min + przy zmianie stanu, dziennik zdarzeń `/events/RRRR-MM.csv`, rotacja (dni / < 10 % wolnego), historia 24 h w PSRAM. Strona Logi: wykres z powiększaniem, CSV, zużycie dzienne (słupki), zdarzenia, lista plików.
 - **Statystyki:** zużycie dzienne (poziom o północy − teraz + tankowania), rozpoznawanie tankowań, średnie 7/30 dni, prognoza „wystarczy na X dni”, ostrzeżenie prognozy, **alarm nagłego spadku** (Y cm w T min + okno nocne), wstrzymanie na planowany pobór. `/stats/RRRR.csv`.
-- **Modbus TCP** (port 502, mapa w MODBUS.md, zapis domyślnie wyłączony), **MQTT** + Home Assistant autodiscovery (we własnym zadaniu – strona i Modbus nie zwalniają przy niedostępnym brokerze), **API** z tokenami (Bearer).
+- **Modbus TCP** (port 502, mapa w MODBUS.md, zapis domyślnie wyłączony), **MQTT** (bez autodiscovery Home Assistant; we własnym zadaniu – strona i Modbus nie zwalniają przy niedostępnym brokerze), **API** z tokenami (Bearer).
 - **System:** OTA przez stronę, kopia ustawień JSON (pobierz/wgraj; z hasłami tylko zaszyfrowana hasłem kopii – AES-256-GCM, PBKDF2-SHA256), restart, ustawienia fabryczne, watchdog 30 s, przyciemnianie OLED.
 - **Ustawienia:** NVS + kopia kalibracji i progów w EEPROM 24C02 (CRC). Nowe pola dopisywane na końcu struktury, więc aktualizacja programu nie kasuje ustawień.
 

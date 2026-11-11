@@ -40,6 +40,7 @@ float statYesterday(uint8_t i, bool litres) {
 
 // Prognoza "wystarczy na X dni" (NAN = brak danych)
 float statForecast(uint8_t i) {
+  return NAN;                    // prognoza „wystarczy na” usunieta (0.4.4); Modbus zwraca „brak danych”
   TankState t = tankGet(i);
   if (!t.valid || !cfg.tx[i].statsEn) return NAN;
   const TankCal &c = cfg.tank[i];
@@ -53,6 +54,7 @@ float statForecast(uint8_t i) {
 }
 
 bool statForecastWarn(uint8_t i) {
+  return false;                  // ostrzezenie prognozy usuniete (0.4.4)
   float f = statForecast(i);
   return cfg.tx[i].statsEn && cfg.tx[i].fcWarnDays && !isnan(f) && f < cfg.tx[i].fcWarnDays;
 }

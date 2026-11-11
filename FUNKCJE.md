@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.4.3** (rejestr Modbus 0 = 43) |
+| Oprogramowanie (SW) | **0.4.4** (rejestr Modbus 0 = 44) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.4.3)
+## Funkcje (stan na 0.4.4)
 
 **Pomiar**
 - Przetwornik 4–20 mA na A4 (zbiornik paliwa, walec leżący); drugi kanał A3 do włączenia w ustawieniach. Wejście i typ (4–20 mA / 0–5 V) wybieralne.
@@ -21,29 +21,39 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Litry (opcja): walec leżący, walec stojący, prostopadłościan, tabela cm → litry.
 
 **Alarmy i wyjścia**
-- Progi w cm: KRYTYCZNY < MINIMALNY < ZA DUŻY (maksymalny), histereza, opóźnienie; alarm nagłego spadku.
+- Progi w cm: KRYTYCZNY < MINIMALNY < ZA DUŻY (maksymalny), histereza, opóźnienie.
+- Alarm nagłego spadku (wyciek / kradzież): spadek o Y cm w T min, okno nocne z czulszym progiem.
 - Domyślne wyjścia: OUT1 poziom minimalny, OUT2 poziom maksymalny, OUT3 poziom krytyczny, OUT4 usterka zbiorcza (przekaźnik), OUT5 buzzer (milknie po skasowaniu). Funkcje wyjść do zmiany w Ustawieniach → Wyjścia.
 - Usterka zbiorcza – wybór przyczyn w Ustawieniach → Wyjścia, z podglądem na żywo: błąd czujnika, ADS1115, karta SD (domyślnie), a także czas nieustawiony, brak sieci, brak połączenia MQTT, PCF8575.
 - PWM programowy 100 Hz (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalny sprzętowy PWM lampki (GPIO13/14/21).
-- Kasowanie alarmu: wejście DI1, strona, Modbus, MQTT, API; przypomnienie po X min.
+- Kasowanie alarmu do wyboru: ręczne (DI1, strona, Modbus, MQTT, API; przypomnienie po X min) albo automatyczne – bez kasowania, alarm gaśnie po powrocie poziomu do normy.
 
 **Wyświetlacz OLED**
 - Start: ikona zbiornika, „MonitorUp.pl” w jednej linii, pod spodem SW i HW, adres www.monitorup.pl, test wyjść (pomijany po restarcie programowym).
 - Ekrany: zbiornik (poziom, %, litry, stan, słupek z progami) i sieć (ETH, WiFi, AP, wersje SW/HW); górny pasek „MonitorUp.pl” i ikony sieci.
 
 **Strona WWW i integracje (sieć lokalna, dla BMS)**
-- Pulpit: poziom, zużycie dziś, średnio 7 dni, ostatnie tankowanie, wykres 24 h. Logi, ustawienia, informacje jedna pod drugą.
+- Pulpit: poziom, zużycie dziś, średnio 7 dni, ostatnie tankowanie, wykres 24 h. Logi, ustawienia, informacje jedna pod drugą. Napis „MonitorUp.pl” (duże M i U) na ekranie logowania i w nagłówku.
 - Logowanie z blokadą po 5 błędnych próbach, wymuszona zmiana admin/admin; tokeny API (Bearer) z uprawnieniami, terminem i limitem zapytań.
-- Modbus TCP (port 502, domyślnie wyłączony, zapis domyślnie wyłączony), MQTT z Home Assistant (osobne zadanie, ponawianie 15 s → 5 min), API `/api/v1`.
+- Modbus TCP (port 502, domyślnie wyłączony, zapis domyślnie wyłączony), MQTT (osobne zadanie, ponawianie 15 s → 5 min, bez autodiscovery Home Assistant), API `/api/v1` z opisem zapytań i przykładami w Ustawieniach → API.
 - Nagłówki bezpieczeństwa strony. HTTP, Modbus i MQTT bez szyfrowania – tylko sieć lokalna.
 
 **Dane i system**
-- Logi na karcie SD (dzienne CSV, dziennik zdarzeń, rotacja), historia 24 h w PSRAM, statystyki zużycia i tankowań.
+- Logi na karcie SD (dzienne CSV, dziennik zdarzeń, rotacja), historia 24 h w PSRAM, zużycie dzienne i tankowania (zawsze włączone; bez prognozy).
+- Karta SD: sprawdzana co 10 s i przy każdym zapisie, bez karty próba montowania co 30 s; wyjęcie lub uszkodzona partycja nie zatrzymują pomiaru i alarmów (opis w Ustawieniach → Logi, „Test karty SD”).
 - Kopia ustawień: bez haseł albo z hasłami zaszyfrowana hasłem kopii (AES-256-GCM, PBKDF2-SHA256); starsze kopie da się wgrać.
 - OTA przez stronę, ustawienia fabryczne (z zachowaniem kalibracji), reset hasła przyciskiem DOWNLOAD (10 s), watchdog 30 s.
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.4.4 – 11.11.2026
+- „MonitorUp.pl” z dużymi literami M i U na ekranie logowania i w nagłówku strony.
+- „Skasowany” zamiast „skwitowany” (strona, OLED, dziennik); w MQTT nowy klucz `skasowany`, stary `skwitowany` zostaje dla zgodności.
+- Nowe ustawienie: kasowanie alarmu ręczne albo automatyczne (bez kasowania, alarm gaśnie po powrocie do normy). API: `alarm.ackAuto`, w statusie `alarm.auto`.
+- Usunięte: wstrzymanie alarmu spadku na 2 h („planowany pobór”, także `POST /api/v1/alarm/suspend`), prognoza „wystarczy na” i jej ostrzeżenie (Modbus zwraca „brak danych”), przełącznik statystyk (zużycie zawsze liczone), autodiscovery Home Assistant.
+- Ustawienia → API: tabela zapytań z uprawnieniami i przykłady `curl`.
+- Ustawienia → Logi: opis, jak urządzenie pilnuje karty SD (co ile, wyjęcie w trakcie, uszkodzona partycja, pełna karta).
 
 ### 0.4.3 – 11.11.2026
 - OLED, start: „MonitorUp.pl” w jednej linii, pod spodem wersja oprogramowania (SW) i płytki (HW 1.0).
