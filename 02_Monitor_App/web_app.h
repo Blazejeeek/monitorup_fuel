@@ -1,9 +1,9 @@
-// Monitor App - aplikacja WWW po zalogowaniu (pulpit, logi, ustawienia) + mapa Modbus CSV
+// MonitorUp - aplikacja WWW po zalogowaniu (pulpit, logi, ustawienia) + mapa Modbus CSV
 #pragma once
 #include <Arduino.h>
 
 static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Monitor App</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp</title>
 <link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css"></head><body>
 <header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt="">MONITOR <b>APP</b></div>
 <nav><a href="#pulpit" data-p="pulpit">Pulpit</a><a href="#logi" data-p="logi">Logi</a><a href="#ustawienia" data-p="ustawienia">Ustawienia</a>
@@ -333,7 +333,7 @@ SET.logi=el=>{el.innerHTML=`<div class="card" style="max-width:560px"><h2>Logi n
  $('lgs').onclick=()=>save({logs:{intervalMin:+V('lgi'),retentionDays:+V('lgr')}});
  $('lgc').onclick=async()=>{if(confirm('Usunąć WSZYSTKIE logi, dziennik zdarzeń i statystyki z karty SD? Tej operacji nie można cofnąć.')){await post('/api/v1/logs/clear');toast('Usunięto logi')}}};
 
-SET.mqtt=el=>{const m=C.mqtt;el.innerHTML=`<div class="card" style="max-width:640px"><h2>MQTT</h2><div class="live">Stan: <b>${S&&S.mqtt?'połączono':'brak połączenia'}</b></div>
+SET.mqtt=el=>{const m=C.mqtt;el.innerHTML=`<div class="card" style="max-width:640px"><h2>MQTT</h2><div class="live">Stan: <b>${S&&S.mqtt?'połączono':esc(S&&S.mqttMsg||'brak połączenia')}</b></div>
  ${F.chk('mqe','MQTT włączone',m.en)}<div class="g2">${F.txt('mqh','Broker (adres)',m.host,'192.168.1.10')}${F.num('mqp','Port',m.port,1)}${F.txt('mqu','Użytkownik',m.user)}${F.pw('mqw','Hasło',m.hasPass?'•••••• (bez zmian)':'')}</div>
  ${F.txt('mqx','Prefiks tematów',m.prefix)}${F.num('mqi','Wysyłanie co [s]',m.intervalS,1)}${F.chk('mqa','Home Assistant – autodiscovery',m.ha)}${F.chk('mqc','Przyjmuj komendy (kasowanie alarmu, wyjścia ręczne)',m.cmd)}
  <p class="muted" style="font-size:12px">Tematy: ${esc(m.prefix)}/zbiornik1/poziom_cm, …/procent, …/stan, …/litry, …/zuzycie_dzis, …/prognoza_dni, ${esc(m.prefix)}/alarm, ${esc(m.prefix)}/status (online/offline). Komendy: ${esc(m.prefix)}/cmd/kasuj, ${esc(m.prefix)}/cmd/out/N.</p>
@@ -378,8 +378,8 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
  <div class="btns"><button class="btn" id="sns">Zapisz</button></div><div class="live" id="sinf"></div></div>
  <div class="card"><h2>Aktualizacja programu (OTA)</h2><p class="muted" style="font-size:13px">Wybierz plik <b>02_Monitor_App.ino.bin</b> (folder build). Po wgraniu urządzenie uruchomi się ponownie. Przy błędzie zostaje dotychczasowa wersja.</p>
  <input type="file" id="ofile" accept=".bin"><div class="btns"><button class="btn" id="oup">Wgraj</button></div><div id="oprog" class="muted"></div></div>
- <div class="card"><h2>Kopia ustawień</h2>${F.chk('bks','Dołącz hasła WiFi, AP i MQTT',false)}<div class="btns"><button class="btn sec" id="bkd">Pobierz kopię</button></div>
- <label>Wgraj kopię (plik .json)</label><input type="file" id="rfile" accept=".json"><div class="btns"><button class="btn" id="rup">Wgraj kopię</button></div>
+ <div class="card"><h2>Kopia ustawień</h2>${F.chk('bks','Dołącz hasła WiFi, AP i MQTT (kopia zaszyfrowana hasłem)',false)}<div class="g2">${F.pw('bkp','Hasło kopii (min. 8 znaków)')}${F.pw('bkp2','Powtórz hasło')}</div><div class="btns"><button class="btn sec" id="bkd">Pobierz kopię</button></div>
+ <label>Wgraj kopię (plik .json)</label><input type="file" id="rfile" accept=".json">${F.pw('rpw','Hasło kopii (tylko dla kopii z hasłami)')}<div class="btns"><button class="btn" id="rup">Wgraj kopię</button></div>
  <p class="muted" style="font-size:12px">Kopia nie zawiera loginu, hasła ani tokenów API.</p></div>
  <div class="card"><h2>Restart i ustawienia fabryczne</h2><div class="btns"><button class="btn sec" id="srb">Uruchom ponownie</button></div>
  ${F.chk('fkc','Zachowaj kalibrację, progi i ustawienia zbiorników',true)}<div class="btns"><button class="btn red" id="sfr">Przywróć ustawienia fabryczne</button></div></div></div>`;
@@ -391,9 +391,12 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
   x.upload.onprogress=e=>$('oprog').textContent='Wysyłanie: '+Math.round(e.loaded/e.total*100)+' %';
   x.onload=()=>{let j={};try{j=JSON.parse(x.responseText)}catch(e){}if(x.status==200)rebootWait('Aktualizacja wgrana. Urządzenie uruchamia się ponownie.');else{$('oprog').textContent='';toast(j.error||'Błąd aktualizacji',1)}};
   x.onerror=()=>toast('Błąd połączenia',1);x.send(fd)};
- $('bkd').onclick=()=>location='/api/v1/backup'+(B('bks')?'?secrets=1':'');
+ $('bkd').onclick=async()=>{if(!B('bks')){location='/api/v1/backup';return}const p=V('bkp');if(p.length<8){toast('Hasło kopii: min. 8 znaków',1);return}if(p!==V('bkp2')){toast('Hasła kopii są różne',1);return}
+  toast('Szyfrowanie kopii…');const r=await api('/api/v1/backup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pass:p})});if(!r.ok){let j={};try{j=await r.json()}catch(e){}toast(j.error||'Błąd kopii',1);return}
+  const b=await r.blob(),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(r.headers.get('Content-Disposition')||'').match(/filename="([^"]+)"/)?.[1]||'monitorup_ustawienia.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);$('bkp').value=$('bkp2').value=''};
  $('rup').onclick=async()=>{const f=$('rfile').files[0];if(!f){toast('Wybierz plik kopii',1);return}let o;try{o=JSON.parse(await f.text())}catch(e){toast('Plik nie jest poprawnym JSON',1);return}
-  if(!confirm('Wgrać ustawienia z pliku i uruchomić urządzenie ponownie?'))return;await post('/api/v1/restore',o);rebootWait('Wgrano kopię ustawień.')};
+  if(o.enc){const p=V('rpw');if(!p){toast('Ta kopia jest zaszyfrowana – podaj jej hasło',1);return}o._pass=p}
+  if(!confirm('Wgrać ustawienia z pliku i uruchomić urządzenie ponownie?'))return;const rr=await api('/api/v1/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(!rr.ok){let j={};try{j=await rr.json()}catch(e){}toast(j.error||'Błąd wgrywania kopii',1);return}rebootWait('Wgrano kopię ustawień.')};
  $('srb').onclick=async()=>{if(confirm('Uruchomić urządzenie ponownie?')){await post('/api/v1/reboot');rebootWait()}};
  $('sfr').onclick=async()=>{if(confirm('Przywrócić ustawienia fabryczne? Login/hasło wrócą do admin/admin, sieć do ustawień domyślnych.')){await post('/api/v1/factory',{keepCal:B('fkc')});rebootWait('Przywrócono ustawienia fabryczne. Zaloguj się: admin / admin.')}}};
 

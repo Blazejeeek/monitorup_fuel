@@ -1,4 +1,4 @@
-// Monitor App - czas: DS3231 (UTC) jako zrodlo, NTP, ustawianie z przegladarki, strefa Polska
+// MonitorUp - czas: DS3231 (UTC) jako zrodlo, NTP, ustawianie z przegladarki, strefa Polska
 #include "timesync.h"
 #include <Arduino.h>
 #include <esp_sntp.h>

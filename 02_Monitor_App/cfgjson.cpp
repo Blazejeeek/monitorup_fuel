@@ -1,4 +1,4 @@
-// Monitor App - ustawienia <-> JSON (strona Ustawienia, kopia ustawien, import)
+// MonitorUp - ustawienia <-> JSON (strona Ustawienia, kopia ustawien, import)
 #include "cfgjson.h"
 // Ta sama para funkcji obsluguje odczyt, zapis czesciowy (tylko podane klucze) i kopie zapasowa.
 #include <Arduino.h>
@@ -110,7 +110,7 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
   JsonObject api = r["api"].to<JsonObject>();
   api["localRead"] = (bool)cfg.apiLocalRead;
 
-  if (backup) r["_monitorapp"] = CFG_VERSION;
+  if (backup) r["_monitorup"] = CFG_VERSION;
 }
 
 // Zapis czesciowy: zmieniane tylko podane klucze. Zwraca "" albo opis bledu (nic nie zapisano).

@@ -1,4 +1,4 @@
-// Monitor App - serwer Modbus TCP (mapa rejestrow: PLAN.md sekcja 12, MODBUS.md)
+// MonitorUp - serwer Modbus TCP (mapa rejestrow: PLAN.md sekcja 12, MODBUS.md)
 #include "modbus.h"
 #include <Arduino.h>
 #include <WiFi.h>
@@ -12,7 +12,7 @@
 #include "logger.h"
 #include <SD.h>
 
-#define FW_NUM 30            // wersja programu w rejestrze 0 (30 = 0.3.0)
+#define FW_NUM 40            // wersja programu w rejestrze 0 (30 = 0.3.0)
 #define MB_MAX_CLIENTS 4
 
 static WiFiServer *mbServer = nullptr;

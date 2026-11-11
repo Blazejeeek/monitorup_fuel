@@ -1,4 +1,4 @@
-// Monitor App - wyswietlacz OLED SSD1306 128x64 (U8g2)
+// MonitorUp - wyswietlacz OLED SSD1306 128x64 (U8g2)
 #include "display.h"
 #include <Arduino.h>
 #include <U8g2lib.h>
@@ -15,7 +15,7 @@
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 bool oledOk = false;
 
-#define WWW_ADDR   "www.monitorapp.pl"
+#define WWW_ADDR   "www.monitorup.pl"
 
 // Wysylanie po jednym wierszu (8 px): krotkie blokady I2C, zeby PWM wyjsc nie migotal
 void oledSend() {
@@ -49,7 +49,7 @@ void drawTankIcon(int x, int y, int w, int h, float level, uint8_t phase) {
   }
 }
 
-// Ekran startowy: duze logo MONITOR APP + adres strony; bottom = dolny pasek (np. test wyjsc)
+// Ekran startowy: duze logo MONITORUP + adres strony; bottom = dolny pasek (np. test wyjsc)
 void oledBoot(const char *bottom, uint8_t phase) {
   if (!oledOk) return;
   u8g2.clearBuffer();
@@ -73,7 +73,7 @@ void oledBoot(const char *bottom, uint8_t phase) {
 
 static void drawHeader() {
   u8g2.setFont(u8g2_font_helvB08_tf);
-  u8g2.drawStr(0, 8, "MONITOR APP");
+  u8g2.drawStr(0, 8, "MONITORUP");
   u8g2.setFont(u8g2_font_5x7_tf);
   String ic;
   if (ethHasIp()) ic += "ETH ";

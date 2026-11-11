@@ -1,4 +1,4 @@
-// Monitor App - serwer WWW: logowanie (sesja w ciasteczku) i tokeny API (Bearer), API JSON /api/v1, strony
+// MonitorUp - serwer WWW: logowanie (sesja w ciasteczku) i tokeny API (Bearer), API JSON /api/v1, strony
 #include "web.h"
 #include <Arduino.h>
 #include <WebServer.h>
@@ -21,6 +21,7 @@
 #include <mbedtls/sha256.h>
 #include "modbus.h"
 #include "mqtt.h"
+#include "crypt.h"
 #include "web_pages.h"
 
 WebServer server(80);
@@ -96,7 +97,13 @@ static void ipBad(uint32_t ip) {
 static bool isPrivate(IPAddress a) { return a[0] == 10 || (a[0] == 192 && a[1] == 168) || (a[0] == 172 && (a[1] & 0xF0) == 16); }
 
 // ---------------- Pomocnicze ----------------
+static void secHeaders() {
+  server.sendHeader("X-Frame-Options", "DENY");
+  server.sendHeader("X-Content-Type-Options", "nosniff");
+  server.sendHeader("Referrer-Policy", "no-referrer");
+}
 static void sendJson(int code, JsonDocument &d) {
+  secHeaders();
   String out;
   serializeJson(d, out);
   server.sendHeader("Cache-Control", "no-store");
@@ -144,6 +151,7 @@ static bool auth(uint8_t level) {
 static String who() { return curToken >= 0 ? String("token „") + cfg.tok[curToken].name + "”" : String("WWW"); }
 
 static void sendPage(const char *ctype, const char *data) {
+  secHeaders();
   server.sendHeader("Cache-Control", "no-cache");
   server.send_P(200, ctype, data);
 }
@@ -234,6 +242,7 @@ static void hStatus() {
   d["ads"] = adsOk;
   d["pcf"] = pcfOk;
   d["mqtt"] = mqttConnected();
+  d["mqttMsg"] = mqttStatusText();
   d["mb"] = mbClientCount();
   d["rtcTemp"] = rtcInfo.temp;
   JsonArray ta = d["tanks"].to<JsonArray>();
@@ -486,7 +495,7 @@ static void hLogsCsv() {
   if (!sdMounted) { sendErr(503, "Brak karty SD"); return; }
   auto files = dayFiles();
   String a = server.arg("from"), b = server.arg("to");
-  chunkBegin("text/csv; charset=utf-8", "monitorapp_" + a + (b.length() && b != a ? "_" + b : "") + ".csv");
+  chunkBegin("text/csv; charset=utf-8", "monitorup_" + a + (b.length() && b != a ? "_" + b : "") + ".csv");
   server.sendContent("\xEF\xBB\xBF");   // BOM - Excel rozpozna UTF-8
   uint8_t buf[1024];
   String lastHdr;
@@ -704,20 +713,55 @@ static void hTokenRevoke() {
 // ---------------- Kopia ustawien, system, OTA ----------------
 static void hBackup() {
   if (!auth(A_ADMIN)) return;
+  if (server.arg("secrets") == "1") { sendErr(400, "Kopia z hasłami tylko zaszyfrowana – użyj hasła kopii"); return; }
   JsonDocument d;
-  cfgToJson(d.to<JsonObject>(), server.arg("secrets") == "1", true);
+  cfgToJson(d.to<JsonObject>(), false, true);
   String out; serializeJsonPretty(d, out);
-  char fn[48]; fmtTime(fn, sizeof(fn), "monitorapp_ustawienia_%Y-%m-%d.json");
+  char fn[48]; fmtTime(fn, sizeof(fn), "monitorup_ustawienia_%Y-%m-%d.json");
   server.sendHeader("Content-Disposition", String("attachment; filename=\"") + fn + "\"");
+  secHeaders();
   server.send(200, "application/json", out);
 }
-
+// POST {pass}: kopia z haslami WiFi/AP/MQTT, zaszyfrowana haslem kopii (AES-256-GCM, PBKDF2-SHA256)
+static void hBackupEnc() {
+  if (!auth(A_ADMIN)) return;
+  JsonDocument b;
+  if (!parseBody(b)) return;
+  String pass = b["pass"] | "";
+  JsonDocument d;
+  cfgToJson(d.to<JsonObject>(), true, true);
+  String plain; serializeJson(d, plain);
+  JsonDocument e;
+  JsonObject o = e.to<JsonObject>();
+  o["_monitorup"] = CFG_VERSION;
+  String err = backupEncrypt(plain, pass, o);
+  plain = "";
+  if (err.length()) { sendErr(400, err.c_str()); return; }
+  String out; serializeJsonPretty(e, out);
+  char fn[56]; fmtTime(fn, sizeof(fn), "monitorup_ustawienia_hasla_%Y-%m-%d.json");
+  server.sendHeader("Content-Disposition", String("attachment; filename=\"") + fn + "\"");
+  secHeaders();
+  server.send(200, "application/json", out);
+  logEvent("USTAWIENIA", "Pobrano zaszyfrowaną kopię ustawień z hasłami");
+}
+static bool isBackup(JsonObjectConst o) { return o["_monitorup"].is<int>() || o["_monitorapp"].is<int>(); }
 static void hRestore() {
   if (!auth(A_ADMIN)) return;
   JsonDocument d;
   if (!parseBody(d)) return;
-  if (!d["_monitorapp"].is<int>()) { sendErr(400, "To nie jest plik kopii ustawień Monitor App"); return; }
-  String err = cfgFromJson(d.as<JsonObjectConst>());
+  if (!isBackup(d.as<JsonObjectConst>())) { sendErr(400, "To nie jest plik kopii ustawień MonitorUp"); return; }
+  JsonDocument plainDoc;
+  JsonObjectConst src = d.as<JsonObjectConst>();
+  if (d["enc"].is<const char *>()) {
+    String plain;
+    String err = backupDecrypt(src, String((const char *)(d["_pass"] | "")), plain);
+    if (err.length()) { sendErr(400, err.c_str()); return; }
+    DeserializationError de = deserializeJson(plainDoc, plain);
+    plain = "";
+    if (de || !isBackup(plainDoc.as<JsonObjectConst>())) { sendErr(400, "Nieprawidłowa zawartość kopii"); return; }
+    src = plainDoc.as<JsonObjectConst>();
+  }
+  String err = cfgFromJson(src);
   if (err.length()) { sendErr(400, err.c_str()); return; }
   cfgSave();
   logEvent("USTAWIENIA", "Wgrano kopię ustawień – restart");
@@ -783,7 +827,7 @@ static void hOtaDone() {
 
 static void hModbusMap() {
   if (!auth(A_READ)) return;
-  server.sendHeader("Content-Disposition", "attachment; filename=\"monitorapp_modbus.csv\"");
+  server.sendHeader("Content-Disposition", "attachment; filename=\"monitorup_modbus.csv\"");
   server.send_P(200, "text/csv; charset=utf-8", MODBUS_CSV);
 }
 
@@ -829,6 +873,7 @@ void webBegin() {
   server.on("/api/v1/tokens", HTTP_POST, hTokenNew);
   server.on("/api/v1/tokens/revoke", HTTP_POST, hTokenRevoke);
   server.on("/api/v1/backup", HTTP_GET, hBackup);
+  server.on("/api/v1/backup", HTTP_POST, hBackupEnc);
   server.on("/api/v1/restore", HTTP_POST, hRestore);
   server.on("/api/v1/reboot", HTTP_POST, hReboot);
   server.on("/api/v1/factory", HTTP_POST, hFactory);

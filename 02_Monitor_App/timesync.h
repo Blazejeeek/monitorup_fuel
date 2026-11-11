@@ -1,4 +1,4 @@
-// Monitor App - czas: DS3231 (UTC), NTP, ustawianie z przegladarki, strefa Polska
+// MonitorUp - czas: DS3231 (UTC), NTP, ustawianie z przegladarki, strefa Polska
 #pragma once
 #include <Arduino.h>
 

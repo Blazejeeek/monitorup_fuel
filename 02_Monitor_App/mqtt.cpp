@@ -1,4 +1,4 @@
-// Monitor App - MQTT + autodiscovery Home Assistant
+// MonitorUp - MQTT + autodiscovery Home Assistant
 #include "mqtt.h"
 #include <Arduino.h>
 #include <WiFi.h>
@@ -13,14 +13,43 @@
 #include "hw.h"
 #include <esp_mac.h>
 
+// MQTT dziala we wlasnym zadaniu FreeRTOS (rdzen 0): laczenie z brokerem (DNS, TCP) nie blokuje
+// petli glownej, wiec strona WWW i Modbus odpowiadaja niezaleznie od stanu brokera.
+// Polecenia z MQTT i wpisy do dziennika ida kolejka do petli glownej (mqttLoop), bo tam dzialaja
+// wyjscia i karta SD.
 static WiFiClient mqttNet;
 static PubSubClient mqtt(mqttNet);
-static uint32_t mqttLastTry = 0, mqttLastPub = 0;
+static uint32_t mqttLastPub = 0;
 static bool mqttPubNow = false;
 static uint8_t mqttLastEff[TANK_COUNT] = {255, 255};
 static bool mqttLastAlarm = false, mqttLastAck = false;
 
-bool mqttConnected() { return cfg.mqttEn && mqtt.connected(); }
+static const uint32_t RETRY_MIN_MS = 15000, RETRY_MAX_MS = 300000;
+static volatile bool mqttUp = false, mqttApplyReq = false;
+static volatile uint32_t mqttNextTryAt = 0, mqttRetryMs = RETRY_MIN_MS, mqttFails = 0;
+
+enum MqMsgKind : uint8_t { MQ_ACK, MQ_OUT, MQ_LOG };
+struct MqMsg { MqMsgKind kind; int8_t out; int16_t val; char text[72]; };
+static QueueHandle_t mqttQ = nullptr;
+
+static void mqPost(MqMsgKind k, int8_t out = 0, int16_t val = 0, const String &text = "") {
+  if (!mqttQ) return;
+  MqMsg m{}; m.kind = k; m.out = out; m.val = val; strlcpy(m.text, text.c_str(), sizeof(m.text));
+  xQueueSend(mqttQ, &m, 0);
+}
+
+bool mqttConnected() { return cfg.mqttEn && mqttUp; }
+
+String mqttStatusText() {
+  if (!cfg.mqttEn) return "wyłączone";
+  if (!cfg.mqttHost[0]) return "brak adresu brokera";
+  if (mqttUp) return "połączono";
+  if (!ethHasIp() && !wifiHasIp()) return "brak sieci";
+  int32_t s = (int32_t)(mqttNextTryAt - millis()) / 1000;
+  String r = mqttFails ? String("brak połączenia (prób: ") + mqttFails + ")" : String("łączenie");
+  if (mqttFails && s > 0) r += ", następna próba za " + String(s) + " s";
+  return r;
+}
 
 static String devId() { uint8_t m[6]; esp_read_mac(m, ESP_MAC_WIFI_STA); char b[16]; snprintf(b, sizeof(b), "ma_%02x%02x%02x", m[3], m[4], m[5]); return b; }
 static String topic(const String &s) { return String(cfg.mqttPrefix) + "/" + s; }
@@ -46,7 +75,7 @@ static void haEntity(const char *comp, const String &obj, const String &name, co
   JsonObject dev = d["dev"].to<JsonObject>();
   dev["ids"][0] = devId();
   dev["name"] = cfg.devName;
-  dev["mf"] = "Monitor App";
+  dev["mf"] = "MonitorUp";
   dev["mdl"] = "KinCony B8M";
   dev["sw"] = FW_VERSION;
   String out; serializeJson(d, out);
@@ -106,34 +135,47 @@ static void mqttCallback(char *t, byte *payload, unsigned int len) {
   String tp = t, pre = topic("cmd/");
   if (!tp.startsWith(pre)) return;
   String cmd = tp.substring(pre.length());
-  String val; for (unsigned i = 0; i < len; i++) val += (char)payload[i];
-  if (cmd == "kasuj") alarmAck(3);
+  String val; for (unsigned i = 0; i < len && i < 16; i++) val += (char)payload[i];
+  if (cmd == "kasuj") mqPost(MQ_ACK);
   else if (cmd.startsWith("out/")) {
     int k = cmd.substring(4).toInt() - 1;
-    if (k >= 0 && k < 8 && cfg.out[k].func == OF_MANUAL) cfg.out[k].manual = constrain(val.toInt(), 0, 100);
+    if (k >= 0 && k < 8) mqPost(MQ_OUT, k, constrain(val.toInt(), 0, 100));
   }
 }
 
-void mqttApply() {
-  if (mqtt.connected()) { mqttPub("status", "offline"); mqtt.disconnect(); }
-  mqttLastTry = 0;
-}
+// Wolane z petli glownej (zmiana ustawien MQTT na stronie): rozlaczenie i szybka ponowna proba wykona zadanie MQTT.
+void mqttApply() { mqttApplyReq = true; }
 
-void mqttLoop() {
-  if (!cfg.mqttEn || !cfg.mqttHost[0]) return;
-  if (!ethHasIp() && !wifiHasIp()) return;
+static void mqttStep() {
+  if (mqttApplyReq) {
+    mqttApplyReq = false;
+    if (mqtt.connected()) { mqttPub("status", "offline"); mqtt.disconnect(); }
+    mqttUp = false; mqttFails = 0; mqttRetryMs = RETRY_MIN_MS; mqttNextTryAt = millis();
+  }
+  if (!cfg.mqttEn || !cfg.mqttHost[0] || (!ethHasIp() && !wifiHasIp())) {
+    if (mqtt.connected()) mqtt.disconnect();
+    mqttUp = false;
+    return;
+  }
   if (!mqtt.connected()) {
-    if (mqttLastTry && millis() - mqttLastTry < 15000) return;
-    mqttLastTry = millis();
-    mqtt.setServer(cfg.mqttHost, cfg.mqttPort);
+    if (mqttUp) { mqttUp = false; mqPost(MQ_LOG, 0, 0, String("Rozłączono z ") + cfg.mqttHost); }
+    if ((int32_t)(millis() - mqttNextTryAt) < 0) return;
+    char host[sizeof(cfg.mqttHost)], user[sizeof(cfg.mqttUser)], pass[sizeof(cfg.mqttPass)];
+    strlcpy(host, cfg.mqttHost, sizeof(host)); strlcpy(user, cfg.mqttUser, sizeof(user)); strlcpy(pass, cfg.mqttPass, sizeof(pass));
+    mqtt.setServer(host, cfg.mqttPort);
     mqtt.setBufferSize(1024);
     mqtt.setCallback(mqttCallback);
-    mqttNet.setTimeout(2);
+    mqttNet.setTimeout(3);
     String lwt = topic("status");
-    bool ok = mqtt.connect(devId().c_str(), cfg.mqttUser[0] ? cfg.mqttUser : nullptr, cfg.mqttUser[0] ? cfg.mqttPass : nullptr,
-                           lwt.c_str(), 1, true, "offline");
-    if (!ok) return;
-    logEvent("MQTT", String("Połączono z ") + cfg.mqttHost);
+    bool ok = mqtt.connect(devId().c_str(), user[0] ? user : nullptr, user[0] ? pass : nullptr, lwt.c_str(), 1, true, "offline");
+    if (!ok) {
+      mqttFails = mqttFails + 1;
+      mqttNextTryAt = millis() + mqttRetryMs;
+      mqttRetryMs = min(mqttRetryMs * 2, RETRY_MAX_MS);
+      return;
+    }
+    mqttUp = true; mqttFails = 0; mqttRetryMs = RETRY_MIN_MS;
+    mqPost(MQ_LOG, 0, 0, String("Połączono z ") + host);
     mqttPub("status", "online");
     if (cfg.mqttCmdEn) mqtt.subscribe(topic("cmd/#").c_str());
     if (cfg.mqttHa) haDiscovery();
@@ -146,5 +188,28 @@ void mqttLoop() {
     mqttPubNow = false;
     mqttLastPub = millis();
     mqttPublishAll();
+  }
+}
+
+static void mqttTask(void *) {
+  for (;;) {
+    mqttStep();
+    vTaskDelay(pdMS_TO_TICKS(mqttUp ? 20 : 200));
+  }
+}
+
+void mqttBegin() {
+  if (mqttQ) return;
+  mqttQ = xQueueCreate(8, sizeof(MqMsg));
+  xTaskCreatePinnedToCore(mqttTask, "mqtt", 8192, nullptr, 1, nullptr, 0);
+}
+
+// Petla glowna: wykonanie polecen z MQTT i zapis zdarzen (wyjscia i karta SD obslugiwane tylko tutaj).
+void mqttLoop() {
+  MqMsg m;
+  while (mqttQ && xQueueReceive(mqttQ, &m, 0) == pdTRUE) {
+    if (m.kind == MQ_ACK) alarmAck(3);
+    else if (m.kind == MQ_OUT) { if (cfg.out[m.out].func == OF_MANUAL) cfg.out[m.out].manual = m.val; }
+    else logEvent("MQTT", m.text);
   }
 }

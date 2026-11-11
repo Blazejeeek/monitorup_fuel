@@ -1,4 +1,4 @@
-# Monitor App – Modbus TCP
+# MonitorUp – Modbus TCP
 
 | Parametr | Wartość |
 |---|---|
@@ -17,7 +17,7 @@ Pełna mapa (plik CSV do zaimportowania) jest do pobrania ze strony: Ustawienia 
 
 | Adres | Nazwa | Typ / jednostka |
 |---|---|---|
-| 0 | wersja programu | 20 = 0.2.0 |
+| 0 | wersja programu | 40 = 0.4.0 |
 | 1 | status (b0 SD, b1 ADS, b2 RTC, b3 czas, b4 ETH, b5 WiFi, b6 MQTT, b7 alarm, b8 skwitowany, b9 test) | bity |
 | 2–3 | czas pracy | UINT32 s |
 | 4–9 | rok, miesiąc, dzień, godzina, minuta, sekunda | czas lokalny |
@@ -25,8 +25,8 @@ Pełna mapa (plik CSV do zaimportowania) jest do pobrania ze strony: Ustawienia 
 | 11 / 12 | wyjścia OUT1–8 / wejścia DI1–8 | bity |
 | 13 | wolne miejsce SD | MB |
 | 14 | temperatura DS3231 | °C ×10 |
-| **100–129** | **zbiornik 1 (ppoż.)** | |
-| **200–229** | **zbiornik 2 (paliwo)** – ten sam układ | |
+| **100–129** | **zbiornik 1 (paliwo, A4 – domyślnie włączony)** | |
+| **200–229** | **zbiornik 2 (A3 – domyślnie wyłączony)** – ten sam układ | |
 | +0 / +1 / +2 | poziom cm ×10 / % ×10 / mA ×100 | INT16 |
 | +3 | stan: 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY, 4 BŁĄD CZUJNIKA, 5 WYŁĄCZONY, 6 NAGŁY SPADEK | UINT16 |
 | +4 | flagi: b0 skwitowany, b1 pomiar ważny, b2 kalibracja | bity |

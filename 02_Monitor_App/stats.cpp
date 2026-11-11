@@ -1,4 +1,4 @@
-// Monitor App - statystyki zuzycia, tankowania, prognoza, alarm naglego spadku
+// MonitorUp - statystyki zuzycia, tankowania, prognoza, alarm naglego spadku
 #include "stats.h"
 #include <SD.h>
 // Zuzycie doby = poziom o 00:00 - poziom teraz + suma tankowan (odporne na szum pomiaru).

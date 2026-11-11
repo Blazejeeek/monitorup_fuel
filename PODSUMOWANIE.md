@@ -1,8 +1,8 @@
-# Monitor App – podsumowanie projektu
+# MonitorUp – podsumowanie projektu
 
-Stan na 11.11.2026 · firmware **v0.3.0** · sterownik **KinCony B8M (ESP32-S3)**
+Stan na 11.11.2026 · firmware **v0.4.0** · sterownik **KinCony B8M (ESP32-S3)**
 
-Monitor App to sterownik monitorujący poziom w zbiorniku paliwa (walec leżący) z przetwornika 4–20 mA. Pokazuje poziom w cm (opcjonalnie w litrach), uruchamia alarmy na wyjściach MOSFET, zapisuje logi na kartę SD, liczy zużycie i udostępnia dane przez stronę WWW, API, Modbus TCP i MQTT.
+MonitorUp (www.monitorup.pl) to sterownik monitorujący poziom w zbiorniku paliwa (walec leżący) z przetwornika 4–20 mA. Pokazuje poziom w cm (opcjonalnie w litrach), uruchamia alarmy na wyjściach MOSFET, zapisuje logi na kartę SD, liczy zużycie i udostępnia dane przez stronę WWW, API, Modbus TCP i MQTT.
 
 ---
 

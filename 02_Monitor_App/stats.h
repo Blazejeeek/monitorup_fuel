@@ -1,4 +1,4 @@
-// Monitor App - statystyki zuzycia, tankowania, prognoza, alarm naglego spadku
+// MonitorUp - statystyki zuzycia, tankowania, prognoza, alarm naglego spadku
 // Zuzycie doby = poziom o 00:00 - poziom teraz + suma tankowan (odporne na szum pomiaru).
 #pragma once
 #include <Arduino.h>

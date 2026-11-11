@@ -1,4 +1,4 @@
-// Monitor App - serwer WWW: logowanie, tokeny API, API JSON /api/v1, strony
+// MonitorUp - serwer WWW: logowanie, tokeny API, API JSON /api/v1, strony
 #pragma once
 #include <Arduino.h>
 

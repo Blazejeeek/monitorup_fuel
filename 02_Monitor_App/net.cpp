@@ -1,4 +1,4 @@
-// Monitor App - siec: Ethernet W5500, WiFi klient, Access Point, mDNS
+// MonitorUp - siec: Ethernet W5500, WiFi klient, Access Point, mDNS
 #include "net.h"
 #include <Arduino.h>
 #include <WiFi.h>

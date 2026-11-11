@@ -1,4 +1,4 @@
-// Monitor App - wyswietlacz OLED SSD1306 128x64 (U8g2)
+// MonitorUp - wyswietlacz OLED SSD1306 128x64 (U8g2)
 #pragma once
 #include <Arduino.h>
 

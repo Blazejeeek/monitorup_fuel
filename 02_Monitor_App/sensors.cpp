@@ -1,4 +1,4 @@
-// Monitor App - pomiar przetwornikow: probki co 100 ms, srednia z okna 2 s (odrzucone skrajne), stany alarmowe
+// MonitorUp - pomiar przetwornikow: probki co 100 ms, srednia z okna 2 s (odrzucone skrajne), stany alarmowe
 #include "sensors.h"
 #include <Arduino.h>
 #include "hw.h"

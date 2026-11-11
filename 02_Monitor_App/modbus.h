@@ -1,4 +1,4 @@
-// Monitor App - serwer Modbus TCP (mapa rejestrow: MODBUS.md)
+// MonitorUp - serwer Modbus TCP (mapa rejestrow: MODBUS.md)
 #pragma once
 #include <Arduino.h>
 

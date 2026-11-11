@@ -1,5 +1,5 @@
 /*
-  Monitor App - monitoring poziomu zbiornika ppoz. i zbiornika paliwa
+  MonitorUp - monitoring poziomu zbiornika ppoz. i zbiornika paliwa
   Plytka: KinCony B8M (ESP32-S3-WROOM-1U N16R8)
   Plan: PLAN.md, opis: README.md
 
@@ -84,7 +84,7 @@ void setup() {
   Serial.begin(115200);
   uint32_t t0 = millis();
   while (!Serial && millis() - t0 < 1500) delay(10);
-  Serial.println("\n=== Monitor App v" FW_VERSION " ===");
+  Serial.println("\n=== MonitorUp v" FW_VERSION " ===");
 
   pinMode(PIN_BTN_DOWNLOAD, INPUT_PULLUP);
   pinMode(SD_CD, INPUT_PULLUP);
@@ -111,6 +111,7 @@ void setup() {
   timeApply();
   mbApply();
   webBegin();
+  mqttBegin();
 
   esp_task_wdt_config_t wc = {.timeout_ms = WDT_TIMEOUT_MS, .idle_core_mask = 0, .trigger_panic = true};
   if (esp_task_wdt_reconfigure(&wc) != ESP_OK) esp_task_wdt_init(&wc);

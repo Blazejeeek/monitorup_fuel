@@ -1,4 +1,4 @@
-// Monitor App - ustawienia: NVS (Preferences) + kopia kalibracji i progow w EEPROM 24C02 (CRC)
+// MonitorUp - ustawienia: NVS (Preferences) + kopia kalibracji i progow w EEPROM 24C02 (CRC)
 #pragma once
 #include <Arduino.h>
 #include <Preferences.h>

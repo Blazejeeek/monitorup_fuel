@@ -1,4 +1,4 @@
-// Monitor App - pomiar przetwornikow: probki co 100 ms, srednia z okna 2 s, litry, stany alarmowe
+// MonitorUp - pomiar przetwornikow: probki co 100 ms, srednia z okna 2 s, litry, stany alarmowe
 #pragma once
 #include <Arduino.h>
 #include "config.h"

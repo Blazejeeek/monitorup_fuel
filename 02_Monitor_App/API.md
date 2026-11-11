@@ -1,4 +1,4 @@
-# Monitor App – API HTTP (`/api/v1`)
+# MonitorUp – API HTTP (`/api/v1`)
 
 Wszystkie odpowiedzi w JSON (UTF-8). Błędy: `{"error": "opis"}` z kodem 400 / 401 / 403 / 404 / 429 / 503.
 
@@ -47,7 +47,7 @@ Kody stanu zbiornika (`state`): 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY
 
 `GET /api/v1/config`, `GET /api/v1/wifi/scan[?start=1]`, `POST /api/v1/calibrate {"tank":0,"point":"min","cm":0}`,
 `POST /api/v1/time {"epoch":…}`, `POST /api/v1/time/sync`, `GET/POST /api/v1/tokens`, `POST /api/v1/tokens/revoke {"id":0[,"renew":true]}`,
-`GET /api/v1/backup[?secrets=1]`, `POST /api/v1/restore`, `POST /api/v1/ota` (multipart, plik .bin), `POST /api/v1/reboot`,
+`GET /api/v1/backup` (bez haseł), `POST /api/v1/backup` `{"pass":"…"}` (z hasłami, zaszyfrowana AES-256-GCM; wgranie wymaga pola `_pass`), `POST /api/v1/restore`, `POST /api/v1/ota` (multipart, plik .bin), `POST /api/v1/reboot`,
 `POST /api/v1/factory {"keepCal":true}`, `POST /api/v1/logs/clear`, `POST /api/v1/password`.
 
 Połączenie HTTP nie jest szyfrowane. Do dostępu spoza sieci lokalnej używaj VPN.

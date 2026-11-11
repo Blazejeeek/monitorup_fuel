@@ -1,4 +1,4 @@
-// Monitor App - ustawienia <-> JSON (strona Ustawienia, kopia ustawien, import)
+// MonitorUp - ustawienia <-> JSON (strona Ustawienia, kopia ustawien, import)
 #pragma once
 #include <Arduino.h>
 #include <ArduinoJson.h>

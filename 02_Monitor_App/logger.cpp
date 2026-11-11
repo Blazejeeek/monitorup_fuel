@@ -1,4 +1,4 @@
-// Monitor App - karta SD: dzienne logi CSV, dziennik zdarzen, rotacja, historia minutowa w PSRAM
+// MonitorUp - karta SD: dzienne logi CSV, dziennik zdarzen, rotacja, historia minutowa w PSRAM
 #include "logger.h"
 #include <Arduino.h>
 #include <SPI.h>
@@ -258,15 +258,15 @@ String sdTest(JsonObject r) {
   r["cardMB"] = (uint32_t)(SD.cardSize() >> 20);
   r["totalMB"] = (uint32_t)(SD.totalBytes() >> 20);
   r["usedMB"] = (uint32_t)(SD.usedBytes() >> 20);
-  String payload = "Monitor App test " + String(millis());
+  String payload = "MonitorUp test " + String(millis());
   t0 = millis();
-  File f = SD.open("/monitorapp_test.txt", FILE_WRITE);
+  File f = SD.open("/monitorup_test.txt", FILE_WRITE);
   bool wr = f && f.print(payload) == payload.length();
   if (f) f.close();
-  f = SD.open("/monitorapp_test.txt", FILE_READ);
+  f = SD.open("/monitorup_test.txt", FILE_READ);
   String rd = f ? f.readString() : "";
   if (f) f.close();
-  SD.remove("/monitorapp_test.txt");
+  SD.remove("/monitorup_test.txt");
   r["rwMs"] = millis() - t0;
   r["write"] = wr;
   r["read"] = rd == payload;

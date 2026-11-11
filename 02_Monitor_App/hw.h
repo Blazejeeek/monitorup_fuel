@@ -1,10 +1,10 @@
-// Monitor App - warstwa sprzetowa KinCony B8M: piny, muteks I2C, PCF8575, ADS1115, 24C02, DS3231
+// MonitorUp - warstwa sprzetowa KinCony B8M: piny, muteks I2C, PCF8575, ADS1115, 24C02, DS3231
 #pragma once
 #include <Arduino.h>
 #include <Wire.h>
 #include <freertos/semphr.h>
 
-#define FW_VERSION "0.3.0"
+#define FW_VERSION "0.4.0"
 
 // ---------------- Piny (wg dokumentacji KinCony B8M) ----------------
 #define I2C_SDA 8

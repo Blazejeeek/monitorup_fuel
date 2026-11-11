@@ -1,4 +1,4 @@
-// Monitor App - ustawienia: NVS (Preferences) + kopia kalibracji i progow w EEPROM 24C02 (CRC)
+// MonitorUp - ustawienia: NVS (Preferences) + kopia kalibracji i progow w EEPROM 24C02 (CRC)
 #include "config.h"
 #include <Arduino.h>
 #include <Preferences.h>
@@ -42,7 +42,7 @@ void tankDefaults(uint8_t i) {
   t.channel = i == 0 ? 3 : 2;     // zbiornik paliwa = A4, opcjonalny drugi = A3
   t.type = 0;
   t.smooth = 0;
-  t.shuntOhm = 250.0f;            // do weryfikacji przy kalibracji (wartosc bocznika B8M nieznana)
+  t.shuntOhm = 150.0f;            // do weryfikacji przy kalibracji (wartosc bocznika B8M nieznana)
   t.minX = 4.0f;  t.minCm = 0.0f;
   t.maxX = 20.0f; t.maxCm = 300.0f;
   t.offsetCm = 0.0f;
@@ -60,7 +60,7 @@ void netDefaults() {
   uint8_t mac[6];
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
   cfg.apMode = 0;
-  snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorApp-%02X%02X", mac[4], mac[5]);
+  snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorUp-%02X%02X", mac[4], mac[5]);
   strlcpy(cfg.apPass, "monitor123", sizeof(cfg.apPass));
   cfg.apChannel = 6;
   cfg.wifiEn = 0;
@@ -116,7 +116,7 @@ void cfgDefaultsV2() {
   cfg.logRetentionDays = 365;
   cfg.mqttEn = 0; cfg.mqttHost[0] = 0; cfg.mqttPort = 1883;
   cfg.mqttUser[0] = 0; cfg.mqttPass[0] = 0;
-  strlcpy(cfg.mqttPrefix, "monitorapp/monitor", sizeof(cfg.mqttPrefix));
+  strlcpy(cfg.mqttPrefix, "monitorup/monitor", sizeof(cfg.mqttPrefix));
   cfg.mqttIntervalS = 10; cfg.mqttHa = 1; cfg.mqttCmdEn = 1;
   cfg.mbEn = 1; cfg.mbPort = 502; cfg.mbUnit = 1; cfg.mbWriteEn = 0;
   memset(cfg.mbAllowIp, 0, sizeof(cfg.mbAllowIp));
@@ -148,7 +148,7 @@ void cfgDefaults() {
   cfg.magic = CFG_MAGIC;
   cfg.version = CFG_VERSION;
   accountDefaults();
-  strlcpy(cfg.devName, "Monitor App", sizeof(cfg.devName));
+  strlcpy(cfg.devName, "MonitorUp", sizeof(cfg.devName));
   netDefaults();
   for (uint8_t i = 0; i < TANK_COUNT; i++) tankDefaults(i);
   cfg.bootTestEn = 1;

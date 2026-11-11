@@ -1,4 +1,4 @@
-// Monitor App - karta SD: dzienne logi CSV, dziennik zdarzen, rotacja, historia minutowa 24 h w PSRAM
+// MonitorUp - karta SD: dzienne logi CSV, dziennik zdarzen, rotacja, historia minutowa 24 h w PSRAM
 #pragma once
 #include <Arduino.h>
 #include <vector>

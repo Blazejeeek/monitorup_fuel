@@ -1,4 +1,4 @@
-// Monitor App - logika alarmu, kasowanie (DI1 / WWW / Modbus / MQTT), wyjscia MOSFET z programowym PWM
+// MonitorUp - logika alarmu, kasowanie (DI1 / WWW / Modbus / MQTT), wyjscia MOSFET z programowym PWM
 #include "outputs.h"
 #include <Arduino.h>
 #include "hw.h"
