@@ -222,6 +222,7 @@ static void hStatus() {
   if (!auth(A_READ)) return;
   JsonDocument d;
   d["fw"] = FW_VERSION;
+  d["hw"] = HW_NAME " / HW " HW_VERSION;
   d["name"] = cfg.devName;
   d["t"] = (int64_t)time(nullptr);
   d["timeOk"] = timeOk();

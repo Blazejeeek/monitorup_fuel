@@ -1,6 +1,6 @@
 # 02_Monitor_App – firmware MonitorUp (KinCony B8M)
 
-Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.2** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
+Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.md). Wersja **0.4.3** – wszystkie etapy planu (1–9) oraz zmiany z 11.11.2026 (lista na końcu).
 
 ## Dostęp
 
@@ -70,25 +70,4 @@ Partycje: `partitions.csv` (2 × 3 MB OTA + 9,9 MB LittleFS). Rdzeń esp32 3.3.x
 - Gdy broker MQTT jest niedostępny, zadanie MQTT ponawia połączenie co 15 s, potem coraz rzadziej (do 5 min); stan i czas następnej próby widać w Ustawieniach → MQTT.
 - Urządzenie pracuje w sieci lokalnej (dostęp dla BMS przez Modbus TCP, MQTT, API). HTTP, Modbus i MQTT nie są szyfrowane – nie wystawiaj urządzenia do internetu.
 
-## Zmiany w 0.4.0 (11.11.2026)
-
-- nazwa MonitorUp (www.monitorup.pl): logo OLED, strona, SSID AP, nazwa w MQTT/HA, nazwy plików; zapisane ustawienia urządzeń bez zmian
-- rezystor pomiarowy domyślnie 150 Ω
-- MQTT we własnym zadaniu z narastającą przerwą ponawiania (15 s → 5 min)
-- kopia ustawień z hasłami tylko zaszyfrowana hasłem kopii; starsze kopie (także `_monitorapp`) nadal można wgrać
-- nagłówki bezpieczeństwa strony (X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
-- rejestr Modbus 0 = 40
-
-## Zmiany w 0.4.1 (11.11.2026)
-
-- nazwa MonitorUp.pl wszędzie (strona, OLED, nazwa urządzenia, SSID AP); dawne nazwy domyślne zamieniane przy starcie, prefiks MQTT bez zmian
-- domyślne wyjścia: OUT1 poziom MINIMALNY, OUT2 MAKSYMALNY, OUT3 KRYTYCZNY, OUT4 usterka zbiorcza (czujnik, ADS1115, karta SD), OUT5 buzzer (milknie po skasowaniu); nowe funkcje wyjść do wyboru w Ustawieniach → Wyjścia
-- Modbus TCP domyślnie wyłączony
-- pulpit bez „wystarczy na” (prognoza nadal w MQTT i Modbus)
-- informacje o sieci, karcie SD i systemie jedna pod drugą
-- OLED: napis „BŁĄD CZUJNIKA” mniejszy, nie zachodzi na grafikę zbiornika
-
-## Zmiany w 0.4.2 (11.11.2026)
-
-- Ustawienia → Wyjścia → „Usterka zbiorcza – co sygnalizuje”: wybór przyczyn (błąd czujnika, ADS1115, karta SD, czas nieustawiony, brak sieci, brak połączenia MQTT, PCF8575) z podglądem stanu na żywo; domyślnie czujnik, ADS1115 i karta SD
-- API: `alarm.faultMask` w ustawieniach, `fault` (aktywne przyczyny) w `/api/v1/status`
+Funkcje i historia wszystkich wersji: [../FUNKCJE.md](../FUNKCJE.md).

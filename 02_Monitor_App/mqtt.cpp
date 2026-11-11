@@ -78,6 +78,7 @@ static void haEntity(const char *comp, const String &obj, const String &name, co
   dev["mf"] = "MonitorUp.pl";
   dev["mdl"] = "KinCony B8M";
   dev["sw"] = FW_VERSION;
+  dev["hw"] = HW_VERSION;
   String out; serializeJson(d, out);
   mqtt.publish((String("homeassistant/") + comp + "/" + uid + "/config").c_str(), out.c_str(), true);
 }

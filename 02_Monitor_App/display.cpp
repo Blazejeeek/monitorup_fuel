@@ -49,16 +49,18 @@ void drawTankIcon(int x, int y, int w, int h, float level, uint8_t phase) {
   }
 }
 
-// Ekran startowy: duze logo MONITOR UP.PL + adres strony; bottom = dolny pasek (np. test wyjsc)
+// Ekran startowy: nazwa MonitorUp.pl w jednej linii, wersje SW i HW + adres strony; bottom = dolny pasek (np. test wyjsc)
 void oledBoot(const char *bottom, uint8_t phase) {
   if (!oledOk) return;
   u8g2.clearBuffer();
   drawTankIcon(2, 3, 26, 38, 0.6f, phase);
-  u8g2.setFont(u8g2_font_helvB14_tf);
-  u8g2.drawStr(34, 19, "MONITOR");
-  u8g2.drawStr(34, 39, "UP.PL");
+  // nazwa w jednej linii: najwieksza czcionka, ktora miesci sie obok ikony (x 34..127)
+  static const uint8_t *const fonts[] = {u8g2_font_helvB14_tf, u8g2_font_helvB12_tf, u8g2_font_helvB10_tf, u8g2_font_helvB08_tf};
+  for (const uint8_t *f : fonts) { u8g2.setFont(f); if (u8g2.getStrWidth("MonitorUp.pl") <= 93) break; }
+  u8g2.drawStr(34, 20, "MonitorUp.pl");
   u8g2.setFont(u8g2_font_helvR08_tf);
-  u8g2.drawStr(86, 39, "v" FW_VERSION);
+  u8g2.drawStr(34, 31, "SW " FW_VERSION);
+  u8g2.drawStr(34, 41, "HW " HW_VERSION " (B8M)");
   u8g2.drawHLine(0, 44, 128);
   u8g2.setFont(u8g2_font_helvR08_tf);
   int w = u8g2.getStrWidth(WWW_ADDR);
@@ -165,10 +167,11 @@ void oledNet() {
   String l2 = "WiFi: " + String(!cfg.wifiEn ? "wylaczone" : wifiHasIp() ? (WiFi.localIP().toString() + " " + String(WiFi.RSSI()) + "dBm").c_str() : "laczenie...");
   String l3 = "AP: " + String(apOn ? cfg.apSsid : "wylaczony");
   String l4 = apOn ? "AP IP: " + WiFi.softAPIP().toString() : String("");
-  u8g2.drawStr(0, 20, l1.c_str());
-  u8g2.drawStr(0, 29, l2.c_str());
-  u8g2.drawStr(0, 38, l3.c_str());
-  u8g2.drawStr(0, 47, l4.c_str());
+  u8g2.drawStr(0, 18, l1.c_str());
+  u8g2.drawStr(0, 26, l2.c_str());
+  u8g2.drawStr(0, 34, l3.c_str());
+  u8g2.drawStr(0, 42, l4.c_str());
+  u8g2.drawStr(0, 50, "SW " FW_VERSION "  HW " HW_VERSION " B8M");
   drawFooter();
 }
 

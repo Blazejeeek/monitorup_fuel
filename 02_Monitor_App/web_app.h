@@ -388,7 +388,7 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
  <p class="muted" style="font-size:12px">Kopia nie zawiera loginu, hasła ani tokenów API.</p></div>
  <div class="card"><h2>Restart i ustawienia fabryczne</h2><div class="btns"><button class="btn sec" id="srb">Uruchom ponownie</button></div>
  ${F.chk('fkc','Zachowaj kalibrację, progi i ustawienia zbiorników',true)}<div class="btns"><button class="btn red" id="sfr">Przywróć ustawienia fabryczne</button></div></div></div>`;
- window.onStatus=s=>{const e=$('sinf');if(e)e.innerHTML=`Wersja: <b>${s.fw}</b><br>Wolna pamięć: <b>${Math.round(s.heap/1024)} kB</b><br>PSRAM: <b>${Math.round(s.psram/1024)} kB</b><br>
+ window.onStatus=s=>{const e=$('sinf');if(e)e.innerHTML=`Oprogramowanie: <b>${s.fw}</b><br>Płytka: <b>${esc(s.hw||'')}</b><br>Wolna pamięć: <b>${Math.round(s.heap/1024)} kB</b><br>PSRAM: <b>${Math.round(s.psram/1024)} kB</b><br>
   Ostatni restart: <b>${RR[s.reset]||s.reset}</b><br>Temp. płytki (DS3231): <b>${fc(s.rtcTemp,1)} °C</b><br>ADS1115: <b>${s.ads?'OK':'BŁĄD'}</b><br>PCF8575: <b>${s.pcf?'OK':'BŁĄD'}</b><br>SD: <b>${s.sd.ok?'OK':'brak'}</b>`};if(S)window.onStatus(S);
  $('sns').onclick=()=>save({device:{name:V('sn'),oledDimMin:+V('sod')}});
  $('oup').onclick=()=>{const f=$('ofile').files[0];if(!f){toast('Wybierz plik .bin',1);return}if(!confirm('Wgrać nowy program '+f.name+'?'))return;
