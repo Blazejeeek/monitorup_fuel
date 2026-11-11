@@ -1,0 +1,4 @@
+build/
+*.bin
+.claude/
+kopia_ustawien*.json
