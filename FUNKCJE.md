@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.4.6** (rejestr Modbus 0 = 46) |
+| Oprogramowanie (SW) | **0.4.7** (rejestr Modbus 0 = 47) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.4.6)
+## Funkcje (stan na 0.4.7)
 
 **Pomiar**
 - Przetwornik 4–20 mA na A4 (zbiornik paliwa, walec leżący); drugi kanał A3 do włączenia w ustawieniach. Wejście i typ (4–20 mA / 0–5 V) wybieralne.
@@ -50,6 +50,11 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.4.7 – 11.11.2026
+- Usunięte komunikaty watchdoga „task not found” przy starcie (reset watchdoga tylko w zadaniach, które są pod nim zapisane).
+- Log szeregowy: informacja o dopisaniu wiersza podsumowania doby, miesiąca i roku oraz „Podsumowania: aktualne”.
+- Wgrane na płytkę testową (COM8): start bez błędów, podsumowania aktualne (brak plików z wcześniejszych dni).
 
 ### 0.4.6 – 11.11.2026
 - Przy błędzie czujnika migają kontrolki WY1–WY3 (1 Hz); przełącznik „Przy błędzie czujnika migają kontrolki WY1–WY3” w Ustawieniach → Wyjścia (domyślnie włączony). API: `alarm.faultBlink`.
@@ -92,5 +97,4 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Wszystkie etapy 1–9 planu: pomiar, kalibracja, litry, progi, wyjścia z PWM, OLED, sieć, czas, logi SD, statystyki, Modbus TCP, MQTT/HA, API z tokenami, OTA, kopia ustawień, watchdog. Domyślnie jeden zbiornik (paliwo, A4).
 
 ## Znane sprawy otwarte
-- Przy starcie 2× komunikat watchdoga „task not found” (nieszkodliwy, do poprawy).
 - W terenie: kalibracja przetwornika, działanie buzzera lampki przy obniżonej jasności, dopuszczalny prąd wyjść MOSFET.

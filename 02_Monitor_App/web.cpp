@@ -473,7 +473,7 @@ static void hLogs() {
       auto fld = [&](int k2) { if (k2 < 0 || k2 >= (int)v.size() || !v[k2].length()) return String("null"); String x = v[k2]; x.replace(',', '.'); return x; };
       buf += (first ? "[" : ",[") + String((uint32_t)mktime(&tm)) + "," + fld(lc.cm[0]) + "," + fld(lc.cm[1]) + "," + fld(lc.l[0]) + "," + fld(lc.l[1]) + "]";
       first = false;
-      if (buf.length() > 1200) { server.sendContent(buf); buf = ""; esp_task_wdt_reset(); }
+      if (buf.length() > 1200) { server.sendContent(buf); buf = ""; wdtFeed(); }
     }
     f.close();
   }
@@ -497,7 +497,7 @@ static void hLogsCsv() {
     String hdr = f.readStringUntil('\n'); hdr.trim();
     if (hdr != lastHdr) { server.sendContent(hdr + "\r\n"); lastHdr = hdr; }   // naglowek tylko przy zmianie kolumn
     size_t n;
-    while ((n = f.read(buf, sizeof(buf))) > 0) { server.sendContent((const char *)buf, n); esp_task_wdt_reset(); }
+    while ((n = f.read(buf, sizeof(buf))) > 0) { server.sendContent((const char *)buf, n); wdtFeed(); }
     f.close();
   }
   server.sendContent("");
@@ -607,7 +607,7 @@ static void rmTree(const String &p) {
   std::vector<String> items;
   for (File f = d.openNextFile(); f; f = d.openNextFile()) items.push_back(p + "/" + f.name());
   d.close();
-  for (auto &i : items) { rmTree(i); esp_task_wdt_reset(); }
+  for (auto &i : items) { rmTree(i); wdtFeed(); }
   SD.rmdir(p);
 }
 
@@ -785,7 +785,7 @@ static uint32_t otaLastData = 0;
 static void hOtaUpload() {
   HTTPUpload &u = server.upload();
   // watchdog kasowany tylko przy realnym postepie; brak danych 15 s = przerwanie (klient zerwal polaczenie)
-  if (u.status == UPLOAD_FILE_START || (u.status == UPLOAD_FILE_WRITE && u.currentSize > 0)) { otaLastData = millis(); esp_task_wdt_reset(); }
+  if (u.status == UPLOAD_FILE_START || (u.status == UPLOAD_FILE_WRITE && u.currentSize > 0)) { otaLastData = millis(); wdtFeed(); }
   if (millis() - otaLastData > 15000) {
     if (otaAllowed) { Update.abort(); otaAllowed = false; otaErr = "Przerwano – brak danych"; }
     server.client().stop();

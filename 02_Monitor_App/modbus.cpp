@@ -12,7 +12,7 @@
 #include "logger.h"
 #include <SD.h>
 
-#define FW_NUM 46            // wersja programu w rejestrze 0 (30 = 0.3.0)
+#define FW_NUM 47            // wersja programu w rejestrze 0 (30 = 0.3.0)
 #define MB_MAX_CLIENTS 4
 
 static WiFiServer *mbServer = nullptr;

@@ -1,5 +1,6 @@
 // MonitorUp - szyfrowanie kopii ustawien z haslami: AES-256-GCM, klucz z PBKDF2-SHA256 (mbedTLS)
 #include "crypt.h"
+#include "hw.h"
 #include <mbedtls/gcm.h>
 #include <mbedtls/pkcs5.h>
 #include <mbedtls/md.h>
@@ -28,9 +29,9 @@ static int unb64(const char *s, uint8_t *out, size_t cap) {
 }
 
 static bool deriveKey(const String &pass, const uint8_t *salt, size_t saltLen, uint32_t iter, uint8_t key[32]) {
-  esp_task_wdt_reset();
+  wdtFeed();
   int r = mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA256, (const uint8_t *)pass.c_str(), pass.length(), salt, saltLen, iter, 32, key);
-  esp_task_wdt_reset();
+  wdtFeed();
   return r == 0;
 }
 

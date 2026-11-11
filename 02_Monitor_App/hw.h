@@ -4,9 +4,13 @@
 #include <Wire.h>
 #include <freertos/semphr.h>
 
-#define FW_VERSION "0.4.6"
+#define FW_VERSION "0.4.7"
 #define HW_NAME    "KinCony B8M"   // plytka (PCB)
 #define HW_VERSION "1.0"           // wersja sprzetu MonitorUp na tej plytce
+
+#include <esp_task_wdt.h>
+// Reset watchdoga tylko, gdy biezace zadanie jest zapisane (w setup() przed esp_task_wdt_add() bylby blad „task not found”)
+inline void wdtFeed() { if (esp_task_wdt_status(NULL) == ESP_OK) esp_task_wdt_reset(); }
 
 // ---------------- Piny (wg dokumentacji KinCony B8M) ----------------
 #define I2C_SDA 8

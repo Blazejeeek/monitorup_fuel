@@ -1,3 +1,4 @@
+#include "hw.h"
 // MonitorUp - podsumowania hierarchiczne do wykresow wieloletnich (opis w summary.h)
 #include "summary.h"
 #include <SD.h>
@@ -88,7 +89,7 @@ static std::vector<SumRow> readRows(const String &fn) {
     }
     r.full = (int)v.size() > 1 + TANK_COUNT * 9 && v[1 + TANK_COUNT * 9] == "1";
     out.push_back(r);
-    esp_task_wdt_reset();
+    wdtFeed();
   }
   f.close();
   return out;
@@ -147,7 +148,7 @@ static bool dayFromFile(const String &path, SumRow &r) {
         }
       }
     }
-    if ((rows & 63) == 0) esp_task_wdt_reset();
+    if ((rows & 63) == 0) wdtFeed();
   }
   f.close();
   for (uint8_t i = 0; i < TANK_COUNT; i++) {
@@ -188,7 +189,7 @@ static void listDays(const String &today) {
       for (File f = md.openNextFile(); f; f = md.openNextFile()) {
         String n = f.name();
         if (n.length() == 14 && n.endsWith(".csv") && n.substring(0, 10) < today) todoDays.push_back(n.substring(0, 10));
-        esp_task_wdt_reset();
+        wdtFeed();
       }
       md.close();
     }
@@ -212,7 +213,7 @@ void summaryLoop() {
         String mf = monthFile(y, m);
         if (hasKey(mf, d)) continue;
         SumRow r; r.key = d;
-        if (dayFromFile("/logs/" + d.substring(0, 4) + "/" + d.substring(5, 7) + "/" + d + ".csv", r)) writeRow(mf, r);
+        if (dayFromFile("/logs/" + d.substring(0, 4) + "/" + d.substring(5, 7) + "/" + d + ".csv", r)) { writeRow(mf, r); Serial.printf("Podsumowanie doby %s -> %s\n", d.c_str(), mf.c_str()); }
         return;
       }
       phase = 2;
@@ -229,6 +230,7 @@ void summaryLoop() {
         auto rows = readRows(mf);
         uint8_t dim = (m == 2) ? ((y % 4 == 0 && (y % 100 || y % 400 == 0)) ? 29 : 28) : (m == 4 || m == 6 || m == 9 || m == 11) ? 30 : 31;
         writeRow(yearFile(y), aggRows(key, rows, rows.size() >= dim));
+        Serial.printf("Podsumowanie miesiaca %s -> %s\n", key, yearFile(y).c_str());
         return;
       }
       phase = 3;
@@ -241,9 +243,11 @@ void summaryLoop() {
         if (hasKey(YEARS_FILE, key)) continue;
         auto rows = readRows(yearFile(y));
         writeRow(YEARS_FILE, aggRows(key, rows, rows.size() >= 12));
+        Serial.printf("Podsumowanie roku %s -> %s\n", key, YEARS_FILE);
         return;
       }
       phase = 4;
+      Serial.println("Podsumowania: aktualne");
       break;
     }
     default: break;

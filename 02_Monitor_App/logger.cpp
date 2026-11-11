@@ -216,7 +216,7 @@ void logRotate() {
         String n = f.name();
         if (n.length() >= 10 && n.substring(0, 10) < String(limS)) del.push_back(mp + "/" + n);
         else if (oldest == "" || mp + "/" + n < oldest) oldest = mp + "/" + n;
-        esp_task_wdt_reset();
+        wdtFeed();
       }
       md.close();
       for (auto &p : del) { SD.remove(p); removed++; }
@@ -302,7 +302,7 @@ void histPrefill() {
         float val = parsePL(v[c.cm[i]]);
         for (uint16_t s2 = 0; s2 < step && m + s2 < nowMin; s2++) histPut(i, m + s2, val);
       }
-      esp_task_wdt_reset();
+      wdtFeed();
     }
     f.close();
   }
