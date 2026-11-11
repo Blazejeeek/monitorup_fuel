@@ -6,6 +6,8 @@
 #include "sensors.h"
 #include "logger.h"
 #include "stats.h"
+#include "net.h"
+#include "mqtt.h"
 
 bool alarmAcked = false;
 bool alarmActive = false;        // KRYTYCZNY / ZA DUZY / NAGLY SPADEK
@@ -22,6 +24,18 @@ uint8_t tankEffState(uint8_t i) {
   if (s.state == ST_FAULT || s.state == ST_OFF) return s.state;
   if (st[i].drop) return ST_DROP;
   return s.state;
+}
+
+uint8_t faultBits() {
+  uint8_t f = 0;
+  for (uint8_t i = 0; i < TANK_COUNT; i++) if (cfg.tank[i].enabled && tankGet(i).state == ST_FAULT) f |= FAULT_SENSOR;
+  if (!adsOk) f |= FAULT_ADS;
+  if (!sdMounted) f |= FAULT_SD;
+  if (!timeValid()) f |= FAULT_TIME;
+  if (!ethHasIp() && !wifiHasIp()) f |= FAULT_NET;
+  if (cfg.mqttEn && !mqttConnected()) f |= FAULT_MQTT;
+  if (!pcfOk) f |= FAULT_PCF;
+  return f;
 }
 
 bool isAlarmState(uint8_t s) { return s == ST_CRIT || s == ST_HIGH || s == ST_DROP; }
@@ -151,12 +165,7 @@ void alarmLoop() {
         }
         break;
       }
-      case OF_FAULT: {                                                  // usterka zbiorcza: czujnik, ADS1115, karta SD
-        bool f = !adsOk || !sdMounted;
-        for (uint8_t i = 0; i < TANK_COUNT; i++) if (cfg.tank[i].enabled && tankGet(i).state == ST_FAULT) f = true;
-        if (f) v = pre;
-        break;
-      }
+      case OF_FAULT: if (faultBits() & cfg.faultMask) v = pre; break;   // usterka zbiorcza wg Ustawienia → Wyjścia
       default: break;
     }
     if (v && (o.blink || forceBlink)) {

@@ -283,7 +283,8 @@ SET.alarmy=el=>{el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!t.en?'':`<
  $('asv2').onclick=()=>save({tanks:C.tanks.map((t,i)=>!t.en?{}:({thrCrit:N('ac'+i),thrMin:N('am'+i),thrHigh:N('ah'+i),hyst:N('ahy'+i),delay:+V('ad'+i)})),
   alarm:{ackDi1:B('adi'),reminderMin:+V('arm'),lampOnMin:+V('alm')}})};
 
-const FUNCS=[[0,'wyłączone'],[1,'ręczne'],[2,'buzzer / syrena (milknie po skasowaniu)'],[3,'lampka'],[4,'alarm zbiorczy'],[5,'stan zbiornika 1'],[6,'stan zbiornika 2'],[7,'ostrzeżenie (MINIMALNY)'],[8,'poziom MINIMALNY'],[9,'poziom MAKSYMALNY (za duży)'],[10,'poziom KRYTYCZNY'],[11,'usterka zbiorcza (czujnik, ADS, karta SD)']];
+const FUNCS=[[0,'wyłączone'],[1,'ręczne'],[2,'buzzer / syrena (milknie po skasowaniu)'],[3,'lampka'],[4,'alarm zbiorczy'],[5,'stan zbiornika 1'],[6,'stan zbiornika 2'],[7,'ostrzeżenie (MINIMALNY)'],[8,'poziom MINIMALNY'],[9,'poziom MAKSYMALNY (za duży)'],[10,'poziom KRYTYCZNY'],[11,'usterka zbiorcza (wg ustawień niżej)']];
+const FAULTS=[[1,'błąd czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
 SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Funkcje wyjść</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Jasność przed skasowaniem [%]</th><th>Po skasowaniu [%]</th><th>Przerywane</th><th>Wł./wył. [ms]</th><th>Ręczne [%]</th><th>Teraz</th></tr>`+
  a.out.map((o,k)=>`<tr><td>OUT${k+1}</td><td><select id="of${k}">${FUNCS.map(([v,t])=>`<option value="${v}" ${v==o.func?'selected':''}>${t}</option>`).join('')}</select></td>
  <td><input id="op${k}" type="number" min="0" max="100" step="10" value="${o.pre}"></td><td><input id="oq${k}" type="number" min="0" max="100" step="10" value="${o.post}"></td>
@@ -292,11 +293,15 @@ SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Funkcje wyj
  <p class="muted" style="font-size:12px">PWM programowy ok. 100 Hz w krokach 10 %. Lampka z buzzerem: ustaw „po skasowaniu” np. 40 %, żeby lampka świeciła słabiej po skasowaniu alarmu. Działanie buzzera przy obniżonej jasności zależy od lampki – sprawdź na swoim egzemplarzu. Syrena: „po skasowaniu” 0 %. Alarm zbiorczy: 100 % (trzyma do powrotu do normy).</p>
  ${F.sel('olg','Lampka: dodatkowo sprzętowy PWM na wolnym GPIO (przez zewnętrzny moduł MOSFET)',a.lampGpio,[[0,'nie'],[13,'GPIO13'],[14,'GPIO14'],[21,'GPIO21']])}
  <div class="btns"><button class="btn" id="osv">Zapisz</button><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
+ <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza – co sygnalizuje</h2><p class="muted" style="font-size:13px">Wyjście z funkcją „usterka zbiorcza” włącza się, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
+ ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}
+ <div class="btns"><button class="btn" id="fsv">Zapisz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Test wyjść przy starcie</h2>${F.chk('bte','Test przy włączeniu zasilania',a.bootTest)}
  <label>Wyjścia w teście</label><div class="outs">${[0,1,2,3,4,5,6,7].map(k=>`<label class="o" style="cursor:pointer"><input type="checkbox" id="bm${k}" ${a.bootMask>>k&1?'checked':''} style="width:auto"> OUT${k+1}</label>`).join('')}</div>
  <div class="g2">${F.num('bms','Czas na wyjście [ms]',a.bootMs,100)}<div>${F.chk('bss','Pomijaj po restarcie programowym (watchdog, aktualizacja)',a.bootSkipSw)}</div></div>
  <div class="btns"><button class="btn" id="bsv">Zapisz</button></div></div>`;
- window.onStatus=s=>{for(let k=0;k<8;k++){const e=$('ol'+k);if(e)e.textContent=s.outLvl[k]?s.outLvl[k]+' %':'wył.'}};if(S)window.onStatus(S);
+ window.onStatus=s=>{for(let k=0;k<8;k++){const e=$('ol'+k);if(e)e.textContent=s.outLvl[k]?s.outLvl[k]+' %':'wył.'}FAULTS.forEach(([b])=>{const d=$('fd'+b);if(d)d.className='dot '+((s.fault&b)?'r':'g')})};
+ $('fsv').onclick=()=>save({alarm:{faultMask:FAULTS.reduce((m,[b])=>m|(B('fm'+b)?b:0),0)}});if(S)window.onStatus(S);
  const outs=()=>a.out.map((o,k)=>({func:+V('of'+k),pre:+V('op'+k),post:+V('oq'+k),blink:B('ob'+k),onMs:+V('on'+k),offMs:+V('oo'+k),manual:+V('om'+k)}));
  $('osv').onclick=()=>save({alarm:{out:outs(),lampGpio:+V('olg')}},'Zapisano ustawienia wyjść');
  $('otst').onclick=async()=>{await post('/api/v1/outputs',{test:true});toast('Test wyjść uruchomiony')};

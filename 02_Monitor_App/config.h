@@ -55,6 +55,10 @@ struct TankExtra {
 };
 
 // Funkcje wyjsc
+// Usterka zbiorcza: przyczyny (bity w cfg.faultMask i w faultBits())
+enum FaultBit : uint8_t { FAULT_SENSOR = 1, FAULT_ADS = 2, FAULT_SD = 4, FAULT_TIME = 8, FAULT_NET = 16, FAULT_MQTT = 32, FAULT_PCF = 64 };
+#define FAULT_DEFAULT (FAULT_SENSOR | FAULT_ADS | FAULT_SD)
+
 enum OutFunc : uint8_t { OF_OFF = 0, OF_MANUAL, OF_SIREN, OF_LAMP, OF_COMMON, OF_TANK1, OF_TANK2, OF_WARN,
                          OF_MIN, OF_MAX, OF_CRIT, OF_FAULT };   // nowe funkcje dopisywane na koncu (zgodnosc ustawien)
 struct OutCfg {
@@ -146,6 +150,8 @@ struct Config {
   uint8_t  apiLocalRead;
   // OLED
   uint16_t oledDimMin;
+  // Usterka zbiorcza (wyjscie OF_FAULT): co ja wlacza, bity FAULT_* (pole dopisane w 0.4.2)
+  uint8_t  faultMask;
 };
 
 extern Config cfg;

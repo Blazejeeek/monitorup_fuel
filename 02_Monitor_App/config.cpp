@@ -85,6 +85,7 @@ void outDefaults() {
   cfg.out[2].func = OF_CRIT;  cfg.out[2].pwmPost = 100;            // OUT3 poziom KRYTYCZNY
   cfg.out[3].func = OF_FAULT; cfg.out[3].pwmPost = 100;            // OUT4 usterka zbiorcza (przekaznik)
   cfg.out[4].func = OF_SIREN;                                      // OUT5 buzzer – milknie po skasowaniu
+  cfg.faultMask = FAULT_DEFAULT;
 }
 
 void tankExtraDefaults(uint8_t i) {

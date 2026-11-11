@@ -241,6 +241,7 @@ static void hStatus() {
   if (sdMounted) { sd["totalMB"] = (uint32_t)(SD.totalBytes() >> 20); sd["usedMB"] = (uint32_t)(SD.usedBytes() >> 20); }
   d["ads"] = adsOk;
   d["pcf"] = pcfOk;
+  d["fault"] = faultBits();
   d["mqtt"] = mqttConnected();
   d["mqttMsg"] = mqttStatusText();
   d["mb"] = mbClientCount();

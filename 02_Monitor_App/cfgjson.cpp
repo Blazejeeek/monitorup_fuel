@@ -83,6 +83,7 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
   al["lampGpio"] = cfg.lampHwGpio;
   al["bootTest"] = (bool)cfg.bootTestEn; al["bootMask"] = cfg.bootTestMask; al["bootMs"] = cfg.bootTestMs;
   al["bootSkipSw"] = (bool)cfg.bootTestSkipSw;
+  al["faultMask"] = cfg.faultMask;
   JsonArray oa = al["out"].to<JsonArray>();
   for (auto &o : cfg.out) {
     JsonObject j = oa.add<JsonObject>();
@@ -194,6 +195,7 @@ String cfgFromJson(JsonObjectConst r) {
     cfg.lampHwGpio = numOr(a["lampGpio"], cfg.lampHwGpio);
     cfg.bootTestEn = boolOr(a["bootTest"], cfg.bootTestEn); cfg.bootTestMask = numOr(a["bootMask"], cfg.bootTestMask); cfg.bootTestMs = numOr(a["bootMs"], cfg.bootTestMs);
     cfg.bootTestSkipSw = boolOr(a["bootSkipSw"], cfg.bootTestSkipSw);
+    cfg.faultMask = numOr(a["faultMask"], cfg.faultMask) & 0x7F;
     if (cfg.lampHwGpio && cfg.lampHwGpio != 13 && cfg.lampHwGpio != 14 && cfg.lampHwGpio != 21) return fail("GPIO lampki: 13, 14 lub 21");
     if (cfg.bootTestMs < 100 || cfg.bootTestMs > 5000) return fail("Czas testu wyjścia: 100–5000 ms");
     if (a["out"].is<JsonArrayConst>()) {

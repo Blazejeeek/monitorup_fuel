@@ -4,7 +4,7 @@
 #include <Wire.h>
 #include <freertos/semphr.h>
 
-#define FW_VERSION "0.4.1"
+#define FW_VERSION "0.4.2"
 
 // ---------------- Piny (wg dokumentacji KinCony B8M) ----------------
 #define I2C_SDA 8
