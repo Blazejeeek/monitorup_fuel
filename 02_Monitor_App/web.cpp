@@ -15,6 +15,7 @@
 #include "net.h"
 #include "display.h"
 #include "hw.h"
+#include "calib.h"
 #include <SD.h>
 #include <ETH.h>
 #include <WiFi.h>
@@ -223,6 +224,7 @@ static void hStatus() {
   if (!auth(A_READ)) return;
   JsonDocument d;
   d["fw"] = FW_VERSION;
+  d["buzzMuted"] = buzzerSilenced();
   d["hw"] = HW_NAME " / HW " HW_VERSION;
   d["name"] = cfg.devName;
   d["t"] = (int64_t)time(nullptr);
@@ -260,6 +262,7 @@ static void hStatus() {
     t["cm"] = r1(s.cm); t["pct"] = r1(s.pct);
     t["mA"] = roundf(s.mA * 100) / 100; t["v"] = roundf(s.volt * 1000) / 1000; t["raw"] = s.raw;
     t["state"] = tankEffState(i); t["lvlState"] = s.state;
+    if (i == 0) { t["cal"] = calTab.n; t["density"] = cfg.densityKgM3; }
     t["height"] = c.heightCm; t["thrCrit"] = c.thrCrit; t["thrMin"] = c.thrMin; t["thrHigh"] = c.thrHigh;
     t["volEn"] = (bool)x.volEn;
     if (x.volEn) { jnum(t["vol"], s.valid ? s.vol : NAN, 0); jnum(t["volTotal"], s.volTotal > 0 ? s.volTotal : tankTotalL(i), 0); }
@@ -382,10 +385,12 @@ static void hCalibrate() {
   float cm = d["cm"] | 0.0f;
   TankState s = tankGet(i);
   TankCal &c = cfg.tank[i];
-  float x = c.type == 0 ? s.mA : s.volt;
+  if (!s.valid && !(s.mA > 3.0f && s.mA < 22.0f)) { sendErr(400, "Brak prawidłowego odczytu czujnika"); return; }
+  float x = s.mA;
+  float water = (cm - c.offsetCm) * cfg.densityKgM3 / 1000.0f;   // 0.4.8: punkty zapisywane jako slup wody
   float oldMin = c.minX, oldMax = c.maxX, oldMinCm = c.minCm, oldMaxCm = c.maxCm;
-  if (!strcmp(pt, "min")) { c.minX = x; c.minCm = cm; }
-  else if (!strcmp(pt, "max")) { c.maxX = x; c.maxCm = cm; }
+  if (!strcmp(pt, "min")) { c.minX = x; c.minCm = water; }
+  else if (!strcmp(pt, "max")) { c.maxX = x; c.maxCm = water; }
   else { sendErr(400, "Punkt: min lub max"); return; }
   if (fabsf(c.maxX - c.minX) < 0.05f) {
     c.minX = oldMin; c.maxX = oldMax; c.minCm = oldMinCm; c.maxCm = oldMaxCm;
@@ -393,8 +398,8 @@ static void hCalibrate() {
   }
   cfgSave();
   sensorsReset();
-  logEvent("KALIBRACJA", String(cfg.tankName[i]) + ": punkt " + pt + " = " + String(x, 3) + (c.type == 0 ? " mA" : " V") + " → " + String(cm, 1) + " cm");
-  JsonDocument r; r["ok"] = true; r["x"] = x;
+  logEvent("KALIBRACJA", String(cfg.tankName[i]) + ": punkt " + pt + " = " + String(x, 3) + " mA → " + String(cm, 1) + " cm cieczy (" + String(water, 1) + " cm H2O)");
+  JsonDocument r; r["ok"] = true; r["x"] = x; r["water"] = water;
   sendJson(200, r);
 }
 
@@ -764,6 +769,32 @@ static void hRestore() {
 
 static void hReboot() { if (!auth(A_ADMIN)) return; logEvent("SYSTEM", "Restart z panelu"); sendOk(); scheduleReboot(); }
 
+// ---- Tabela kalibracji pradu A4 (0.4.8) ----
+static void hCalTableGet() {
+  if (!auth(A_READ)) return;
+  JsonDocument d;
+  calToJson(d.to<JsonObject>());
+  sendJson(200, d);
+}
+static void hCalTablePost() {
+  if (!auth(A_ADMIN)) return;
+  JsonDocument d;
+  if (!parseBody(d)) return;
+  String err = calFromJson(d.as<JsonObjectConst>());
+  if (err.length() && calTab.n == 0) { sendErr(400, err.c_str()); return; }
+  sensorsReset();
+  logEvent("KALIBRACJA", String("Wczytano tabelę kalibracji prądu A4: ") + calTab.n + " pkt" + (calTab.date[0] ? String(", z ") + calTab.date : String("")) + " (" + who() + ")");
+  JsonDocument r; r["ok"] = true; r["n"] = calTab.n;
+  if (err.length()) r["warn"] = err;
+  sendJson(200, r);
+}
+static void hCalTableClear() {
+  if (!auth(A_ADMIN)) return;
+  calClear();
+  sensorsReset();
+  logEvent("KALIBRACJA", "Usunięto tabelę kalibracji prądu A4 (" + who() + ")");
+  sendOk();
+}
 static void hFactory() {
   if (!auth(A_ADMIN)) return;
   JsonDocument d;
@@ -771,8 +802,11 @@ static void hFactory() {
   bool keepCal = d["keepCal"] | true;
   static TankCal tc[TANK_COUNT]; static TankExtra tx[TANK_COUNT]; static char nm[TANK_COUNT][24];
   memcpy(tc, cfg.tank, sizeof(tc)); memcpy(tx, cfg.tx, sizeof(tx)); memcpy(nm, cfg.tankName, sizeof(nm));
+  const float dens = cfg.densityKgM3;
   cfgDefaults();
-  if (keepCal) { memcpy(cfg.tank, tc, sizeof(tc)); memcpy(cfg.tx, tx, sizeof(tx)); memcpy(cfg.tankName, nm, sizeof(nm)); }
+  if (keepCal) { memcpy(cfg.tank, tc, sizeof(tc)); memcpy(cfg.tx, tx, sizeof(tx)); memcpy(cfg.tankName, nm, sizeof(nm)); cfg.densityKgM3 = dens; }
+  else calClear();
+  cfgEnforceFixed();
   cfgSave();
   logEvent("SYSTEM", String("Przywrócono ustawienia fabryczne") + (keepCal ? " (kalibracja zachowana)" : ""));
   sendOk();
@@ -863,6 +897,9 @@ void webBegin() {
   server.on("/api/v1/config", HTTP_POST, hConfigPost);
   server.on("/api/v1/wifi/scan", HTTP_GET, hWifiScan);
   server.on("/api/v1/calibrate", HTTP_POST, hCalibrate);
+  server.on("/api/v1/calib/ma", HTTP_GET, hCalTableGet);
+  server.on("/api/v1/calib/ma", HTTP_POST, hCalTablePost);
+  server.on("/api/v1/calib/ma/clear", HTTP_POST, hCalTableClear);
   server.on("/api/v1/time", HTTP_POST, hTime);
   server.on("/api/v1/time/sync", HTTP_POST, hNtpSync);
   server.on("/api/v1/alarm/ack", HTTP_POST, hAck);

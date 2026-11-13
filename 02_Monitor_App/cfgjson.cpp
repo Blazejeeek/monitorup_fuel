@@ -65,7 +65,7 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
     JsonObject t = ta.add<JsonObject>();
     t["name"] = cfg.tankName[i];
     t["en"] = (bool)c.enabled; t["ch"] = c.channel; t["type"] = c.type; t["smooth"] = c.smooth;
-    t["shunt"] = c.shuntOhm;
+    if (i == 0) t["density"] = cfg.densityKgM3;   // 0.4.8; kanal A4, 4-20 mA i 150 ohm na stale
     t["minX"] = c.minX; t["minCm"] = c.minCm; t["maxX"] = c.maxX; t["maxCm"] = c.maxCm;
     t["offset"] = c.offsetCm; t["height"] = c.heightCm;
     t["thrCrit"] = c.thrCrit; t["thrMin"] = c.thrMin; t["thrHigh"] = c.thrHigh;
@@ -158,8 +158,12 @@ String cfgFromJson(JsonObjectConst r) {
       TankCal &c = cfg.tank[i];
       TankExtra &x = cfg.tx[i];
       cpyStr(cfg.tankName[i], t["name"]);
-      c.enabled = boolOr(t["en"], c.enabled); c.channel = numOr(t["ch"], c.channel); c.type = numOr(t["type"], c.type); c.smooth = numOr(t["smooth"], c.smooth);
-      c.shuntOhm = numOr(t["shunt"], c.shuntOhm);
+      c.smooth = numOr(t["smooth"], c.smooth);       // 0.4.8: wlaczenie, wejscie, typ i rezystor na stale (cfgEnforceFixed)
+      if (i == 0) {
+        float dn = numOr(t["density"], cfg.densityKgM3);
+        if (!(dn >= 300.0f && dn <= 2500.0f)) return fail("Gęstość cieczy: 300–2500 kg/m³ (woda 1000, olej napędowy ok. 840)");
+        cfg.densityKgM3 = dn;
+      }
       c.minX = numOr(t["minX"], c.minX); c.minCm = numOr(t["minCm"], c.minCm); c.maxX = numOr(t["maxX"], c.maxX); c.maxCm = numOr(t["maxCm"], c.maxCm);
       c.offsetCm = numOr(t["offset"], c.offsetCm); c.heightCm = numOr(t["height"], c.heightCm);
       c.thrCrit = numOr(t["thrCrit"], c.thrCrit); c.thrMin = numOr(t["thrMin"], c.thrMin); c.thrHigh = numOr(t["thrHigh"], c.thrHigh);
@@ -178,11 +182,13 @@ String cfgFromJson(JsonObjectConst r) {
       x.nightEn = boolOr(t["nightEn"], x.nightEn); x.nightFrom = numOr(t["nightFrom"], x.nightFrom); x.nightTo = numOr(t["nightTo"], x.nightTo); x.nightCm = numOr(t["nightCm"], x.nightCm);
 
       String n = String(cfg.tankName[i]) + ": ";
-      if (c.channel > 3 || c.type > 1) return fail(n + "nieprawidłowe wejście");
+      if (i > 0) { i++; continue; }                  // 0.4.8: tylko jeden zbiornik (A4)
       if (fabsf(c.maxX - c.minX) < 0.01f) return fail(n + "punkty MIN i MAX muszą się różnić");
       if (c.heightCm <= 0) return fail(n + "podaj wysokość zbiornika");
       if (!(c.thrCrit < c.thrMin && c.thrMin < c.thrHigh)) return fail(n + "progi muszą spełniać: krytyczny < minimalny < za duży");
-      if (c.thrHigh > c.heightCm * 1.05f) return fail(n + "próg ZA DUŻY większy niż wysokość zbiornika");
+      if (c.thrHigh > c.heightCm * 1.05f)
+        return fail(n + "wysokość zbiornika " + String(c.heightCm, 0) + " cm jest mniejsza niż próg ZA DUŻY " + String(c.thrHigh, 0) +
+                    " cm – najpierw obniż próg w zakładce Alarmy (albo zapisz oba naraz)");
       if (c.hyst < 0 || c.hyst > 50) return fail(n + "histereza 0–50 cm");
       if (c.smooth > 100) c.smooth = 100;
       if (x.volEn && x.shape == SH_TABLE && x.tblN < 2) return fail(n + "tabela litrów wymaga min. 2 punktów");
@@ -254,5 +260,6 @@ String cfgFromJson(JsonObjectConst r) {
     if (!cfg.mbPort) return fail("Modbus: podaj port");
   }
   if (r["api"].is<JsonObjectConst>()) cfg.apiLocalRead = boolOr(r["api"]["localRead"], cfg.apiLocalRead);
+  cfgEnforceFixed();                                 // 0.4.8: staly uklad wejsc/wyjsc niezaleznie od przeslanych pol
   return "";
 }

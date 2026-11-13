@@ -43,11 +43,18 @@ bool isWarnState(uint8_t s) { return s == ST_MIN || s == ST_FAULT; }
 
 const char *ackSrcName(uint8_t s) { static const char *n[] = {"DI1", "WWW", "Modbus", "MQTT", "API"}; return s < 5 ? n[s] : "?"; }
 
+// 0.4.8: buzer (WY4) wyciszany wejsciem DI1 / strona / Modbus / MQTT - przy alarmie poziomu i przy bledzie czujnika
+static bool buzzSilenced = false;
+
 void alarmAck(uint8_t src) {
-  if (cfg.ackAuto || !alarmActive || alarmAcked) return;   // tryb automatyczny: bez kasowania
-  alarmAcked = true;
+  const bool sensorF = faultBits() & FAULT_SENSOR;
+  if (!alarmActive && !sensorF) return;
+  bool changed = false;
+  if (alarmActive && !alarmAcked) { alarmAcked = true; changed = true; }   // kasuje tez zatrzasniety NAGLY SPADEK
+  if (!buzzSilenced) { buzzSilenced = true; changed = true; }
+  if (!changed) return;
   ackTime = millis();
-  logEvent("ALARM", String("Skasowano alarm (") + ackSrcName(src) + ")");
+  logEvent("ALARM", String("Wyciszono buzer / skasowano alarm (") + ackSrcName(src) + ")");
 }
 
 // ---------------- Programowy PWM (PCF8575, ok. 100 Hz, 10 poziomow) ----------------
@@ -123,65 +130,46 @@ void alarmLoop() {
       lastEff[i] = e;
     }
   }
-  if (bits & ~alarmBits) { alarmAcked = false; if (!alarmBits) alarmSince = time(nullptr); }   // nowy warunek
+  const uint8_t fb = faultBits();
+  const bool sensorFault = fb & FAULT_SENSOR;
+  static bool sensorFaultPrev = false;
+  if (bits & ~alarmBits) { alarmAcked = false; buzzSilenced = false; if (!alarmBits) alarmSince = time(nullptr); }   // nowy warunek
   if (!bits && alarmBits) { alarmAcked = false; logEvent("ALARM", "Koniec alarmu – stan normalny"); }
+  if (sensorFault && !sensorFaultPrev) buzzSilenced = false;                    // nowy blad czujnika - buzer od nowa
+  sensorFaultPrev = sensorFault;
   alarmBits = bits;
   alarmActive = bits != 0;
   warnActive = warn;
-  if (alarmAcked && cfg.reminderMin && millis() - ackTime > (uint32_t)cfg.reminderMin * 60000UL) {
-    alarmAcked = false;
+  if (!alarmActive && !sensorFault) buzzSilenced = false;
+  if ((alarmAcked || buzzSilenced) && cfg.reminderMin && millis() - ackTime > (uint32_t)cfg.reminderMin * 60000UL) {
+    alarmAcked = false; buzzSilenced = false;
     logEvent("ALARM", "Przypomnienie – alarm nadal trwa");
   }
-  if (cfg.ackAuto) alarmAcked = false;                  // tryb automatyczny: alarm trwa do powrotu do normy
   statsDropClear(alarmAcked);
 
   if (outTestRun) { outputsTestStep(); return; }
 
-  bool blinkPh;
-  const bool sensorFault = cfg.faultBlink && (faultBits() & FAULT_SENSOR);
-  uint8_t lampLvl = 0;
-  for (uint8_t k = 0; k < 8; k++) {
-    const OutCfg &o = cfg.out[k];
-    uint8_t v = 0;
-    bool forceBlink = false;
-    uint8_t pre = o.pwmPre, post = o.pwmPost;
-    switch (o.func) {
-      case OF_MANUAL: v = o.manual; break;
-      case OF_SIREN:  if (alarmActive) v = alarmAcked ? post : pre; break;
-      case OF_LAMP:
-        if (alarmActive) v = alarmAcked ? post : pre;
-        else if (warnActive && cfg.lampOnMin) { v = post ? post : 20; forceBlink = true; }
-        break;
-      case OF_COMMON: if (alarmActive) v = alarmAcked ? post : pre; else if (warnActive) v = pre; break;
-      case OF_TANK1: case OF_TANK2: {
-        uint8_t e = tankEffState(o.func - OF_TANK1);
-        if (isAlarmState(e)) v = alarmAcked ? post : pre; else if (isWarnState(e)) v = pre;
-        break;
-      }
-      case OF_WARN: if (warnActive) v = pre; break;
-      case OF_MIN: case OF_MAX: case OF_CRIT: {
-        const uint8_t want = o.func == OF_MIN ? ST_MIN : o.func == OF_MAX ? ST_HIGH : ST_CRIT;
-        for (uint8_t i = 0; i < TANK_COUNT; i++) {
-          if (!cfg.tank[i].enabled || tankEffState(i) != want) continue;
-          v = (o.func == OF_MIN) ? pre : (alarmAcked ? post : pre);   // MIN = ostrzezenie (bez kasowania)
-        }
-        break;
-      }
-      case OF_FAULT: if (faultBits() & cfg.faultMask) v = pre; break;   // usterka zbiorcza wg Ustawienia → Wyjścia
-      default: break;
-    }
-    if (v && (o.blink || forceBlink)) {
-      uint32_t onT = forceBlink ? 1000 : o.onMs, offT = forceBlink ? 1000 : o.offMs;
-      blinkPh = (millis() % (onT + offT)) < onT;
-      if (!blinkPh) v = 0;
-    }
-    if (sensorFault && k < 3) {                       // blad czujnika: WY1-WY3 migaja 1 Hz
-      v = (millis() % 1000) < 500 ? (o.pwmPre ? o.pwmPre : 100) : 0;
-    }
-    outLevel[k] = v;
-    if (o.func == OF_LAMP && v > lampLvl) lampLvl = v;
+  // ---- Wyjscia na stale (0.4.8) ----
+  // WY1 zielona: poziom OK, system bez uwag | WY2 pomaranczowa: MINIMALNY | WY3 czerwona: KRYTYCZNY / ZA DUZY / NAGLY SPADEK
+  // WY4 buzer: alarm WY3 lub blad czujnika, do wyciszenia (DI1) | WY5 przekaznik usterki zbiorczej: zasilony = brak usterki
+  // Blad czujnika: WY1-WY3 migaja 1 Hz + buzer. WY6-WY8 nieuzywane.
+  const uint8_t e = tankEffState(0);
+  const bool fault = fb & cfg.faultMask;
+  const bool ph = (millis() % 1000) < 500;
+  uint8_t L[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  if (sensorFault) {
+    L[0] = L[1] = L[2] = ph ? 100 : 0;
+  } else {
+    L[0] = (e == ST_NORMAL && !fault) ? 100 : 0;
+    L[1] = (e == ST_MIN) ? 100 : 0;
+    L[2] = isAlarmState(e) ? 100 : 0;
   }
-  lampHwApply(lampLvl);
+  L[3] = ((alarmActive || sensorFault) && !buzzSilenced) ? 100 : 0;
+  L[4] = fault ? 0 : 100;                         // brak zasilania / usterka = przekaznik puszczony (styki zwarte)
+  for (uint8_t k = 0; k < 8; k++) outLevel[k] = L[k];
+  lampHwApply(0);
 }
+
+bool buzzerSilenced() { return buzzSilenced; }
 
 // Logo przy starcie + test wyjsc OUT1..OUT6 (blokujace, przed startem PWM)

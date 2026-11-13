@@ -280,74 +280,85 @@ const SHAPES=[[0,'walec leżący'],[1,'walec stojący'],[2,'prostopadłościan']
 function volCalc(t,cm){const a=t.dimA,b=t.dimB;cm=Math.max(0,cm);if(t.shape==0){const r=a/2,h=Math.min(cm,a);return (r*r*Math.acos((r-h)/r)-(r-h)*Math.sqrt(Math.max(0,2*r*h-h*h)))*b/1000}
  if(t.shape==1)return Math.PI*(a/2)**2*cm/1000;if(t.shape==2)return a*b*cm/1000;const tb=t.table||[];if(tb.length<2)return 0;if(cm<=tb[0][0])return tb[0][1];
  for(let k=1;k<tb.length;k++)if(cm<=tb[k][0])return tb[k-1][1]+(cm-tb[k-1][0])*(tb[k][1]-tb[k-1][1])/(tb[k][0]-tb[k-1][0]);return tb[tb.length-1][1]}
-SET.przetworniki=el=>{const vis=C.tanks.map((t,i)=>i==0||t.en);el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!vis[i]?'':`<div class="card"><h2>${i==0?'Przetwornik zbiornika':'Drugi zbiornik'}</h2>
- ${F.txt('tn'+i,'Nazwa',t.name)}${F.chk('ten'+i,'Pomiar włączony',t.en)}
- <div class="g2">${F.sel('tch'+i,'Wejście',t.ch,[[0,'A1 (0–5 V)'],[1,'A2 (0–5 V)'],[2,'A3 (4–20 mA)'],[3,'A4 (4–20 mA)']])}${F.sel('tty'+i,'Typ sygnału',t.type,[[0,'4–20 mA'],[1,'0–5 V']])}</div>
- <div class="g2">${F.num('tsh'+i,'Rezystor pomiarowy [Ω] (przelicza V → mA)',t.shunt)}${F.num('tsm'+i,'Dodatkowe wygładzanie [%]',t.smooth,1)}</div>
- <div class="live" id="tl${i}"></div>
- <h2 style="margin-top:14px;font-size:15px">Kalibracja</h2>
- <div class="g2">${F.num('tminx'+i,'Punkt MIN – odczyt [mA lub V]',t.minX)}${F.num('tminc'+i,'Punkt MIN – poziom [cm]',t.minCm)}
- ${F.num('tmaxx'+i,'Punkt MAX – odczyt [mA lub V]',t.maxX)}${F.num('tmaxc'+i,'Punkt MAX – poziom [cm]',t.maxCm)}</div>
- <div class="btns"><button class="btn sec sm" onclick="calib(${i},'min')">Zapisz bieżący odczyt jako MIN</button><button class="btn sec sm" onclick="calib(${i},'max')">Zapisz bieżący odczyt jako MAX</button></div>
- <p class="muted" style="font-size:12px">Przy pustym (lub zmierzonym miarką) zbiorniku wpisz poziom w polu „poziom [cm]” punktu i kliknij przycisk. Drugi punkt wykonaj przy innym, znanym poziomie.</p>
- <div class="g2">${F.num('tof'+i,'Przesunięcie montażowe sondy [cm]',t.offset)}${F.num('th'+i,'Wysokość zbiornika (100 %) [cm]',t.height)}</div>
- <h2 style="margin-top:14px;font-size:15px">Litry</h2>${F.chk('tve'+i,'Przeliczaj na litry',t.volEn)}
- <div id="tvb${i}">${F.sel('tsp'+i,'Kształt zbiornika',t.shape,SHAPES)}<div class="g2" id="tdim${i}"></div>
- <div id="ttb${i}"><label>Tabela: w każdej linii „cm;litry” (min. 2 punkty)</label><textarea id="ttt${i}" rows="5" style="width:100%;background:#0d1626;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px">${(t.table||[]).map(p=>p[0]+';'+p[1]).join('\n')}</textarea></div>
- <div class="live" id="tcap${i}"></div></div>
- <div class="btns"><button class="btn" onclick="saveTank(${i})">Zapisz</button></div></div>`).join('')+(vis[1]?'':`<div class="card"><h2>Drugi zbiornik</h2><p class="muted">Urządzenie pracuje z jednym zbiornikiem. Drugi przetwornik (np. na A4) można dodać w razie potrzeby.</p><div class="btns"><button class="btn sec" onclick="addTank2()">Dodaj drugi zbiornik</button></div></div>`)+'</div>';
- C.tanks.forEach((t,i)=>{if(!vis[i])return;const dims=()=>{const s=+V('tsp'+i);const d=$('tdim'+i);const cur={a:$('tda'+i)?N('tda'+i):t.dimA,b:$('tdb'+i)?N('tdb'+i):t.dimB};
-  d.innerHTML=s==0?F.num('tda'+i,'Średnica wewnętrzna [cm]',cur.a)+F.num('tdb'+i,'Długość [cm]',cur.b):s==1?F.num('tda'+i,'Średnica wewnętrzna [cm]',cur.a):s==2?F.num('tda'+i,'Długość [cm]',cur.a)+F.num('tdb'+i,'Szerokość [cm]',cur.b):'';
-  $('ttb'+i).style.display=s==3?'':'none';$('tvb'+i).style.display=B('tve'+i)?'':'none';d.querySelectorAll('input').forEach(x=>x.oninput=cap);cap()};
-  const cap=()=>{const o=tankForm(i);$('tcap'+i).innerHTML=`Pojemność całkowita: <b>${fc(volCalc(o,o.shape==0?o.dimA:o.height),0)} l</b>`};
-  $('tsp'+i).onchange=dims;$('tve'+i).onchange=dims;$('ttt'+i).oninput=cap;$('th'+i).oninput=cap;dims()});
- window.onStatus=s=>s.tanks.forEach((t,i)=>{const e=$('tl'+i);if(e)e.innerHTML=`Na żywo: surowy <b>${t.raw}</b> · napięcie <b>${fc(t.v,3)} V</b> · prąd <b>${fc(t.mA,2)} mA</b> · poziom <b>${t.valid?fc(t.cm,1)+' cm':ST[t.state]}</b>`});
+SET.przetworniki=el=>{const t=C.tanks[0],i=0;el.innerHTML=`<div class="grid"><div class="card"><h2>Przetwornik zbiornika</h2>
+ ${F.txt('tn0','Nazwa',t.name)}
+ <p class="muted" style="font-size:12px">Wejście A4, sygnał 4–20 mA (rezystor pomiarowy 150 Ω na stałe).</p>
+ <div class="g2">${F.num('tdn0','Gęstość cieczy [kg/m³] – woda 1000, olej napędowy ok. 840, benzyna ok. 740',t.density??1000)}${F.num('tsm0','Dodatkowe wygładzanie [%]',t.smooth,1)}</div>
+ <div class="live" id="tl0"></div>
+ <h2 style="margin-top:14px;font-size:15px">Zakres czujnika (słup wody)</h2>
+ <div class="g2">${F.num('tminx0','Punkt MIN – prąd [mA]',t.minX)}${F.num('tminc0','Punkt MIN – słup wody [cm H₂O]',t.minCm)}
+ ${F.num('tmaxx0','Punkt MAX – prąd [mA]',t.maxX)}${F.num('tmaxc0','Punkt MAX – słup wody [cm H₂O]',t.maxCm)}</div>
+ <p class="muted" style="font-size:12px">Wpisz zakres z tabliczki czujnika, np. 4 mA = 0 cm H₂O, 20 mA = 200 cm H₂O. Poziom cieczy = słup wody × 1000 / gęstość + przesunięcie sondy.</p>
+ <h2 style="margin-top:14px;font-size:15px">Kalibracja z bieżącego odczytu</h2>
+ <div class="g2">${F.num('tlvl0','Poziom cieczy teraz (zmierzony miarką) [cm]','')}<div></div></div>
+ <div class="btns"><button class="btn sec sm" onclick="calib(0,'min')">Ustaw jako punkt MIN</button><button class="btn sec sm" onclick="calib(0,'max')">Ustaw jako punkt MAX</button></div>
+ <p class="muted" style="font-size:12px">Przy niskim poziomie zmierz poziom miarką, wpisz go i kliknij „MIN”; drugi punkt przy wysokim poziomie („MAX”). Gęstość ustaw przed kalibracją – punkty są zapisywane jako słup wody.</p>
+ <div class="g2">${F.num('tof0','Przesunięcie montażowe sondy [cm]',t.offset)}${F.num('th0','Wysokość zbiornika (100 %) [cm]',t.height)}</div>
+ <h2 style="margin-top:14px;font-size:15px">Litry</h2>${F.chk('tve0','Przeliczaj na litry',t.volEn)}
+ <div id="tvb0">${F.sel('tsp0','Kształt zbiornika',t.shape,SHAPES)}<div class="g2" id="tdim0"></div>
+ <div id="ttb0"><label>Tabela: w każdej linii „cm;litry” (min. 2 punkty)</label><textarea id="ttt0" rows="5" style="width:100%;background:#0d1626;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px">${(t.table||[]).map(p=>p[0]+';'+p[1]).join('\n')}</textarea></div>
+ <div class="live" id="tcap0"></div></div>
+ <div class="btns"><button class="btn" onclick="saveTank(0)">Zapisz</button></div></div>
+ <div class="card"><h2>Kalibracja prądu (tabela)</h2><div class="live" id="calst">Wczytywanie…</div>
+ <p class="muted" style="font-size:12px">Plik JSON z pomiaru wejścia A4 wzorcowym miernikiem (typ „monitorup-kalibracja-mA”, do ${24} punktów). Tabela poprawia odczyt prądu w całym zakresie; zakres czujnika i gęstość działają na poprawionym prądzie. Zapisywana osobno od ustawień (pamięć + kopia w EEPROM) – aktualizacja oprogramowania jej nie kasuje.</p>
+ <input type="file" id="calf" accept=".json,application/json" style="display:none">
+ <div class="btns"><button class="btn sec" id="calimp">Wczytaj plik kalibracji</button><button class="btn sec" id="calexp">Pobierz bieżącą</button><button class="btn sec" id="calclr">Usuń tabelę</button></div></div></div>`;
+ const dims=()=>{const s=+V('tsp0');const d=$('tdim0');const cur={a:$('tda0')?N('tda0'):t.dimA,b:$('tdb0')?N('tdb0'):t.dimB};
+  d.innerHTML=s==0?F.num('tda0','Średnica wewnętrzna [cm]',cur.a)+F.num('tdb0','Długość [cm]',cur.b):s==1?F.num('tda0','Średnica wewnętrzna [cm]',cur.a):s==2?F.num('tda0','Długość [cm]',cur.a)+F.num('tdb0','Szerokość [cm]',cur.b):'';
+  $('ttb0').style.display=s==3?'':'none';$('tvb0').style.display=B('tve0')?'':'none';d.querySelectorAll('input').forEach(x=>x.oninput=cap);cap()};
+ const cap=()=>{const o=tankForm(0);$('tcap0').innerHTML=`Pojemność całkowita: <b>${fc(volCalc(o,o.shape==0?o.dimA:o.height),0)} l</b>`};
+ $('tsp0').onchange=dims;$('tve0').onchange=dims;$('ttt0').oninput=cap;$('th0').oninput=cap;dims();
+ const calShow=async()=>{try{const c=await (await api('/api/v1/calib/ma')).json();const n=(c.punkty||[]).length;
+  $('calst').innerHTML=n?`Tabela: <b>${n} punktów</b>${c.data?' · pomiar <b>'+esc(c.data)+'</b>':''}${c.wzorzec?' · wzorzec <b>'+esc(c.wzorzec)+'</b>':''} · źródło <b>${esc(c.zrodlo||'')}</b><br>Zakres: ${fc(c.punkty[0][1],2)}–${fc(c.punkty[n-1][1],2)} mA`:'Brak tabeli – prąd liczony ze wzoru: napięcie / 150 Ω.'}catch(e){$('calst').textContent='Nie udało się odczytać tabeli'}};
+ calShow();
+ $('calimp').onclick=()=>$('calf').click();
+ $('calf').onchange=async()=>{const f=$('calf').files[0];if(!f)return;let j;try{j=JSON.parse(await f.text())}catch(e){toast('To nie jest poprawny plik JSON',1);return}
+  const n=(j.punkty||[]).length;if(!confirm(`Wczytać tabelę kalibracji (${n} punktów${j.data?', pomiar '+j.data:''})? Zastąpi obecną.`))return;
+  try{const r=await post('/api/v1/calib/ma',j);toast(r.warn?'Wczytano ('+r.warn+')':'Wczytano tabelę kalibracji: '+r.n+' punktów',!!r.warn);calShow()}catch(e){}$('calf').value=''};
+ $('calexp').onclick=async()=>{const c=await (await api('/api/v1/calib/ma')).json();if(!(c.punkty||[]).length){toast('Brak tabeli do pobrania',1);return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(c,null,1)],{type:'application/json'}));a.download='kalibracja-A4-'+(S&&S.net&&S.net.ap?S.net.ap.ssid:'MonitorUp')+'.json';a.click()};
+ $('calclr').onclick=async()=>{if(!confirm('Usunąć tabelę kalibracji prądu? Prąd będzie liczony ze wzoru napięcie / 150 Ω.'))return;await post('/api/v1/calib/ma/clear',{});toast('Usunięto tabelę kalibracji');calShow()};
+ window.onStatus=s=>{const a=s.tanks[0],e=$('tl0');if(e)e.innerHTML=`Na żywo: napięcie <b>${fc(a.v,3)} V</b> · prąd <b>${fc(a.mA,2)} mA</b>${a.cal?' (z tabeli kalibracji)':''} · poziom <b>${a.valid?fc(a.cm,1)+' cm':ST[a.state]}</b>`};
  if(S)window.onStatus(S)};
 function tankForm(i){const s=+V('tsp'+i);const tb=V('ttt'+i).split('\n').map(l=>l.split(/[;\t]/).map(x=>parseFloat(x.replace(',','.')))).filter(p=>p.length>=2&&!isNaN(p[0])&&!isNaN(p[1])).sort((a,b)=>a[0]-b[0]);
- return {name:V('tn'+i),en:B('ten'+i),ch:+V('tch'+i),type:+V('tty'+i),shunt:N('tsh'+i),smooth:+V('tsm'+i),minX:N('tminx'+i),minCm:N('tminc'+i),maxX:N('tmaxx'+i),maxCm:N('tmaxc'+i),
+ return {name:V('tn'+i),density:N('tdn'+i),smooth:+V('tsm'+i),minX:N('tminx'+i),minCm:N('tminc'+i),maxX:N('tmaxx'+i),maxCm:N('tmaxc'+i),
  offset:N('tof'+i),height:N('th'+i),volEn:B('tve'+i),shape:s,dimA:$('tda'+i)?N('tda'+i):C.tanks[i].dimA,dimB:$('tdb'+i)?N('tdb'+i):C.tanks[i].dimB,table:tb}}
-window.addTank2=async()=>{if(!confirm('Włączyć drugi zbiornik?'))return;await save({tanks:[{},{en:true}]},'Dodano drugi zbiornik');settingsShow('przetworniki')};
 window.saveTank=i=>{const t=C.tanks.map(()=>({}));t[i]=tankForm(i);save({tanks:t},'Zapisano ustawienia przetwornika')};
-window.calib=async(i,p)=>{const cm=N(p=='min'?'tminc'+i:'tmaxc'+i);if(isNaN(cm)){toast('Wpisz poziom [cm] dla punktu',1);return}
- if(!confirm(`Zapisać bieżący odczyt jako punkt ${p.toUpperCase()} = ${cm} cm?`))return;const j=await post('/api/v1/calibrate',{tank:i,point:p,cm});
- toast(`Zapisano punkt ${p.toUpperCase()}: ${fc(j.x,3)} → ${cm} cm`);await cfgLoad();settingsShow('przetworniki')};
+window.calib=async(i,p)=>{const cm=N('tlvl'+i);if(isNaN(cm)){toast('Wpisz zmierzony poziom cieczy [cm]',1);return}
+ if(!confirm(`Zapisać bieżący odczyt jako punkt ${p.toUpperCase()} = ${cm} cm cieczy (gęstość ${fc(C.tanks[0].density??1000,0)} kg/m³)?`))return;const j=await post('/api/v1/calibrate',{tank:i,point:p,cm});
+ toast(`Zapisano punkt ${p.toUpperCase()}: ${fc(j.x,3)} mA → ${fc(j.water,1)} cm H₂O`);await cfgLoad();settingsShow('przetworniki')};
 
-SET.alarmy=el=>{el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!t.en?'':`<div class="card"><h2>${esc(t.name)}</h2>
- <div class="g3">${F.num('ac'+i,'KRYTYCZNY ≤ [cm]',t.thrCrit)}${F.num('am'+i,'MINIMALNY ≤ [cm]',t.thrMin)}${F.num('ah'+i,'ZA DUŻY ≥ [cm]',t.thrHigh)}</div>
- <div class="g2">${F.num('ahy'+i,'Histereza [cm]',t.hyst)}${F.num('ad'+i,'Opóźnienie alarmu [s]',t.delay,1)}</div>
- <p class="muted" style="font-size:12px">Kolejność: krytyczny &lt; minimalny &lt; za duży. Wysokość zbiornika: ${fc(t.height,0)} cm.</p></div>`).join('')+
- `<div class="card"><h2>Kasowanie i przypomnienia</h2>${F.sel('aam','Kasowanie alarmu',C.alarm.ackAuto?1:0,[[0,'ręczne – alarm trwa do skasowania (przycisk DI1, strona, Modbus, MQTT, API)'],[1,'automatyczne – bez kasowania, alarm gaśnie po powrocie poziomu do normy']])}${F.chk('adi','Kasowanie alarmu wejściem DI1 (przycisk)',C.alarm.ackDi1)}
- ${F.num('arm','Przypomnienie: ponowna syrena po [min] (0 = wyłączone)',C.alarm.reminderMin,1)}
- ${F.sel('alm','Lampka przy stanie MINIMALNYM / błędzie czujnika',C.alarm.lampOnMin,[[0,'wyłączona'],[1,'słabe mruganie']])}</div></div>
+SET.alarmy=el=>{const t=C.tanks[0];el.innerHTML=`<div class="grid"><div class="card"><h2>${esc(t.name)}</h2>
+ <div class="g3">${F.num('ac0','KRYTYCZNY ≤ [cm]',t.thrCrit)}${F.num('am0','MINIMALNY ≤ [cm]',t.thrMin)}${F.num('ah0','ZA DUŻY ≥ [cm]',t.thrHigh)}</div>
+ <div class="g2">${F.num('ahy0','Histereza [cm]',t.hyst)}${F.num('ad0','Opóźnienie alarmu [s]',t.delay,1)}</div>
+ <div class="g2">${F.num('aht0','Wysokość zbiornika (100 %) [cm]',t.height)}<div></div></div>
+ <p class="muted" style="font-size:12px">Kolejność: krytyczny &lt; minimalny &lt; za duży ≤ wysokość zbiornika. Wysokość i progi zapisują się razem.</p></div>
+ <div class="card"><h2>Buzer i kasowanie</h2>
+ <p class="muted" style="font-size:13px">Buzer (WY4) włącza się przy stanie KRYTYCZNYM, ZA DUŻYM, NAGŁYM SPADKU i przy błędzie czujnika. Wyciszenie: przycisk na wejściu <b>IN1</b> (także strona, Modbus, MQTT). Kontrolki świecą do powrotu poziomu do normy; nagły spadek trzyma się do wyciszenia.</p>
+ ${F.num('arm','Przypomnienie: ponowny buzer po [min] od wyciszenia (0 = wyłączone)',C.alarm.reminderMin,1)}</div></div>
  <div class="btns"><button class="btn" id="asv2">Zapisz</button></div>`;
- $('asv2').onclick=()=>save({tanks:C.tanks.map((t,i)=>!t.en?{}:({thrCrit:N('ac'+i),thrMin:N('am'+i),thrHigh:N('ah'+i),hyst:N('ahy'+i),delay:+V('ad'+i)})),
-  alarm:{ackAuto:+V('aam')==1,ackDi1:B('adi'),reminderMin:+V('arm'),lampOnMin:+V('alm')}})};
+ $('asv2').onclick=()=>save({tanks:[{thrCrit:N('ac0'),thrMin:N('am0'),thrHigh:N('ah0'),hyst:N('ahy0'),delay:+V('ad0'),height:N('aht0')},{}],alarm:{reminderMin:+V('arm')}})};
 
-const FUNCS=[[0,'wyłączone'],[1,'ręczne'],[2,'buzzer / syrena (milknie po skasowaniu)'],[3,'lampka'],[4,'alarm zbiorczy'],[5,'stan zbiornika 1'],[6,'stan zbiornika 2'],[7,'ostrzeżenie (MINIMALNY)'],[8,'poziom MINIMALNY'],[9,'poziom MAKSYMALNY (za duży)'],[10,'poziom KRYTYCZNY'],[11,'usterka zbiorcza (wg ustawień niżej)']];
 const FAULTS=[[1,'błąd czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
-SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Funkcje wyjść</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Jasność przed skasowaniem [%]</th><th>Po skasowaniu [%]</th><th>Przerywane</th><th>Wł./wył. [ms]</th><th>Ręczne [%]</th><th>Teraz</th></tr>`+
- a.out.map((o,k)=>`<tr><td>OUT${k+1}</td><td><select id="of${k}">${FUNCS.map(([v,t])=>`<option value="${v}" ${v==o.func?'selected':''}>${t}</option>`).join('')}</select></td>
- <td><input id="op${k}" type="number" min="0" max="100" step="10" value="${o.pre}"></td><td><input id="oq${k}" type="number" min="0" max="100" step="10" value="${o.post}"></td>
- <td><input type="checkbox" id="ob${k}" ${o.blink?'checked':''} style="width:auto"></td><td style="white-space:nowrap"><input id="on${k}" type="number" value="${o.onMs}" style="width:70px"> / <input id="oo${k}" type="number" value="${o.offMs}" style="width:70px"></td>
- <td><input id="om${k}" type="range" min="0" max="100" step="10" value="${o.manual}" onchange="manOut(${k})"></td><td id="ol${k}">—</td></tr>`).join('')+`</table></div>
- <p class="muted" style="font-size:12px">PWM programowy ok. 100 Hz w krokach 10 %. Lampka z buzzerem: ustaw „po skasowaniu” np. 40 %, żeby lampka świeciła słabiej po skasowaniu alarmu. Działanie buzzera przy obniżonej jasności zależy od lampki – sprawdź na swoim egzemplarzu. Syrena: „po skasowaniu” 0 %. Alarm zbiorczy: 100 % (trzyma do powrotu do normy).</p>
- ${F.sel('olg','Lampka: dodatkowo sprzętowy PWM na wolnym GPIO (przez zewnętrzny moduł MOSFET)',a.lampGpio,[[0,'nie'],[13,'GPIO13'],[14,'GPIO14'],[21,'GPIO21']])}
- <div class="btns"><button class="btn" id="osv">Zapisz</button><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
- <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza – co sygnalizuje</h2><p class="muted" style="font-size:13px">Wyjście z funkcją „usterka zbiorcza” włącza się, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
+const OUTFIX=[['WY1','Kontrolka zielona','poziom OK, system działa bez uwag'],['WY2','Kontrolka pomarańczowa','poziom MINIMALNY'],['WY3','Kontrolka czerwona','KRYTYCZNY, ZA DUŻY, NAGŁY SPADEK'],
+ ['WY4','Buzer','alarm z WY3 lub błąd czujnika – do wyciszenia przyciskiem IN1'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
+ ['WY6–WY8','—','nieużywane']];
+SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Wyjścia (przypisanie stałe)</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Kiedy włączone</th><th>Teraz</th></tr>`+
+ OUTFIX.map(([o,f,w],k)=>`<tr><td>${o}</td><td>${f}</td><td class="muted">${w}</td><td id="ol${k}">—</td></tr>`).join('')+`</table></div>
+ <p class="muted" style="font-size:12px">Błąd czujnika: WY1–WY3 migają razem (1 Hz) i włącza się buzer. Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
+ <div class="btns"><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
+ <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza (WY5) – co ją wywołuje</h2><p class="muted" style="font-size:13px">Przekaźnik WY5 puszcza, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
  ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}
- <div style="margin-top:10px">${F.chk('ffb','Przy błędzie czujnika migają kontrolki WY1–WY3 (1 Hz, niezależnie od funkcji wyjść)',a.faultBlink??true)}</div>
  <div class="btns"><button class="btn" id="fsv">Zapisz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Test wyjść przy starcie</h2>${F.chk('bte','Test przy włączeniu zasilania',a.bootTest)}
- <label>Wyjścia w teście</label><div class="outs">${[0,1,2,3,4,5,6,7].map(k=>`<label class="o" style="cursor:pointer"><input type="checkbox" id="bm${k}" ${a.bootMask>>k&1?'checked':''} style="width:auto"> OUT${k+1}</label>`).join('')}</div>
+ <label>Wyjścia w teście</label><div class="outs">${[0,1,2,3,4].map(k=>`<label class="o" style="cursor:pointer"><input type="checkbox" id="bm${k}" ${a.bootMask>>k&1?'checked':''} style="width:auto"> WY${k+1}</label>`).join('')}</div>
  <div class="g2">${F.num('bms','Czas na wyjście [ms]',a.bootMs,100)}<div>${F.chk('bss','Pomijaj po restarcie programowym (watchdog, aktualizacja)',a.bootSkipSw)}</div></div>
  <div class="btns"><button class="btn" id="bsv">Zapisz</button></div></div>`;
- window.onStatus=s=>{for(let k=0;k<8;k++){const e=$('ol'+k);if(e)e.textContent=s.outLvl[k]?s.outLvl[k]+' %':'wył.'}FAULTS.forEach(([b])=>{const d=$('fd'+b);if(d)d.className='dot '+((s.fault&b)?'r':'g')})};
- $('fsv').onclick=()=>save({alarm:{faultMask:FAULTS.reduce((m,[b])=>m|(B('fm'+b)?b:0),0),faultBlink:B('ffb')}});if(S)window.onStatus(S);
- const outs=()=>a.out.map((o,k)=>({func:+V('of'+k),pre:+V('op'+k),post:+V('oq'+k),blink:B('ob'+k),onMs:+V('on'+k),offMs:+V('oo'+k),manual:+V('om'+k)}));
- $('osv').onclick=()=>save({alarm:{out:outs(),lampGpio:+V('olg')}},'Zapisano ustawienia wyjść');
+ window.onStatus=s=>{for(let k=0;k<5;k++){const e=$('ol'+k);if(e)e.textContent=s.outLvl[k]?'wł.':'wył.'}const e5=$('ol5');if(e5)e5.textContent='—';
+  const b=$('ol3');if(b&&s.buzzMuted)b.textContent='wyciszony';FAULTS.forEach(([b])=>{const d=$('fd'+b);if(d)d.className='dot '+((s.fault&b)?'r':'g')})};
+ $('fsv').onclick=()=>save({alarm:{faultMask:FAULTS.reduce((m,[b])=>m|(B('fm'+b)?b:0),0)}});if(S)window.onStatus(S);
  $('otst').onclick=async()=>{await post('/api/v1/outputs',{test:true});toast('Test wyjść uruchomiony')};
- $('bsv').onclick=()=>{let m=0;for(let k=0;k<8;k++)if(B('bm'+k))m|=1<<k;save({alarm:{bootTest:B('bte'),bootMask:m,bootMs:+V('bms'),bootSkipSw:B('bss')}})}};
-window.manOut=async k=>{if(+V('of'+k)!=1||C.alarm.out[k].func!=1){toast('Najpierw ustaw i zapisz funkcję „ręczne”',1);return}await post('/api/v1/outputs',{n:k+1,value:+V('om'+k)})};
+ $('bsv').onclick=()=>{let m=0;for(let k=0;k<5;k++)if(B('bm'+k))m|=1<<k;save({alarm:{bootTest:B('bte'),bootMask:m,bootMs:+V('bms'),bootSkipSw:B('bss')}})}};
 
 SET.statystyki=el=>{el.innerHTML='<div class="grid">'+C.tanks.map((t,i)=>!t.en?'':`<div class="card"><h2>${esc(t.name)}</h2>
  ${F.num('sr'+i,'Tankowanie: wzrost o ≥ [cm] w 15 min',t.refill)}

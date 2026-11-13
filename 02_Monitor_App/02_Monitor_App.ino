@@ -11,6 +11,7 @@
 #include <esp_system.h>
 #include <esp_task_wdt.h>
 #include "hw.h"
+#include "calib.h"
 #include "config.h"
 #include "cfgjson.h"
 #include "sensors.h"
@@ -95,6 +96,8 @@ void setup() {
   Serial.printf("PCF8575: %s\n", pcfOk ? "OK" : "BLAD");
 
   cfgLoad();
+  calLoad();                                   // 0.4.8: tabela kalibracji pradu A4 (NVS / kopia EEPROM)
+  Serial.printf("Kalibracja pradu: %s (%u pkt)\n", calSource.c_str(), calTab.n);
   Serial.printf("Ustawienia: %s\n", cfgSource.c_str());
   timeFromRtc();
 

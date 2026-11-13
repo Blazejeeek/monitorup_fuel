@@ -88,6 +88,7 @@ void outDefaults() {
   cfg.faultMask = FAULT_DEFAULT;
   cfg.ackAuto = 0;
   cfg.faultBlink = 1;
+  cfg.densityKgM3 = 1000.0f;
 }
 
 void tankExtraDefaults(uint8_t i) {
@@ -193,6 +194,21 @@ bool eeBackupLoad(TankCal *out) {
   return true;
 }
 
+// ---------------- Staly uklad (0.4.8) ----------------
+// Jeden zbiornik na wejsciu A4, sygnal 4-20 mA (rezystor 150 ohm na stale - calib.h), drugi zbiornik wylaczony.
+// Wyjscia maja stale funkcje (outputs.cpp), kasowanie/wyciszenie: DI1 + strona, tryb reczny.
+void cfgEnforceFixed() {
+  cfg.tank[0].enabled = 1;
+  cfg.tank[0].channel = 3;
+  cfg.tank[0].type = 0;
+  cfg.tank[0].shuntOhm = 150.0f;
+  for (uint8_t i = 1; i < TANK_COUNT; i++) cfg.tank[i].enabled = 0;
+  cfg.ackDi1En = 1;
+  cfg.ackAuto = 0;
+  cfg.faultBlink = 1;
+  if (!(cfg.densityKgM3 >= 300.0f && cfg.densityKgM3 <= 2500.0f)) cfg.densityKgM3 = 1000.0f;
+}
+
 // ---------------- NVS ----------------
 String cfgSource;   // skad wczytano ustawienia (do logu/strony)
 
@@ -226,6 +242,7 @@ void cfgLoad() {
     }
     if (brand) { cfgSource += " (nazwa MonitorUp.pl)"; cfgSave(); }
     for (auto &x : cfg.tx) x.statsEn = 1;   // 0.4.4: bez przelacznika statystyk
+    cfgEnforceFixed();
     if (len != sizeof(cfg) || cfg.version != CFG_VERSION) {
       cfgSource += " (aktualizacja ustawien do wersji " + String(CFG_VERSION) + ")";
       cfg.version = CFG_VERSION;
@@ -240,5 +257,6 @@ void cfgLoad() {
     memcpy(cfg.tank, t, sizeof(t));
     cfgSource = "domyslne + kalibracja z EEPROM";
   } else cfgSource = "domyslne";
+  cfgEnforceFixed();
   cfgSave();
 }

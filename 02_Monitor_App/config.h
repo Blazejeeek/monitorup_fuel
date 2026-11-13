@@ -156,6 +156,8 @@ struct Config {
   uint8_t  ackAuto;
   // Przy bledzie czujnika migaja kontrolki WY1-WY3 (1 Hz) niezaleznie od funkcji wyjsc (0.4.6)
   uint8_t  faultBlink;
+  // Gestosc mierzonej cieczy [kg/m3] (0.4.8): punkty MIN/MAX to slup wody, poziom cieczy = slup wody * 1000 / gestosc
+  float    densityKgM3;
 };
 
 extern Config cfg;
@@ -173,3 +175,4 @@ bool eeBackupSave();
 bool eeBackupLoad(TankCal *out);
 void cfgSave();
 void cfgLoad();
+void cfgEnforceFixed();          // 0.4.8: jeden zbiornik na A4, 4-20 mA, wyjscia i DI1 na stale

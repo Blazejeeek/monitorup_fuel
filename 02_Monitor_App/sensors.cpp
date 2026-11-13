@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "hw.h"
 #include "config.h"
+#include "calib.h"
 
 const char *stateName(uint8_t s) {
   switch (s) {
@@ -113,7 +114,7 @@ static void computeTank(uint8_t i) {
     } else emaInit[i] = false;
 
     s.volt = raw * ADS_FS_V / 32768.0f;
-    s.mA = c.shuntOhm > 1 ? s.volt * 1000.0f / c.shuntOhm : 0;
+    s.mA = calRawToMa(raw);                       // 0.4.8: tabela kalibracji albo napiecie / 150 ohm
     float x = c.type == 0 ? s.mA : s.volt;
     bool fault = c.type == 0 ? (s.mA < 3.6f || s.mA > 21.0f) : (s.volt < -0.1f || s.volt > 5.3f);
     float span = c.maxX - c.minX;
@@ -122,7 +123,9 @@ static void computeTank(uint8_t i) {
     if (fault) {
       s.valid = false; s.state = ST_FAULT; stateInit[i] = false;
     } else {
-      float cm = c.minCm + (x - c.minX) * (c.maxCm - c.minCm) / span + c.offsetCm;
+      // punkty MIN/MAX = slup wody [cm H2O]; poziom cieczy = slup wody * 1000 / gestosc (0.4.8)
+      float water = c.minCm + (x - c.minX) * (c.maxCm - c.minCm) / span;
+      float cm = water * 1000.0f / cfg.densityKgM3 + c.offsetCm;
       if (cm < 0) cm = 0;
       s.cm = cm;
       s.pct = c.heightCm > 0 ? constrain(cm / c.heightCm * 100.0f, 0.0f, 100.0f) : 0;
