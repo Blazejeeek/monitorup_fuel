@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.5.0** (rejestr Modbus 0 = 50) |
+| Oprogramowanie (SW) | **0.5.1** (rejestr Modbus 0 = 51) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.5.0)
+## Funkcje (stan na 0.5.1)
 
 **Pomiar**
 - Jeden zbiornik: przetwornik 4–20 mA na A4, rezystor pomiarowy 150 Ω na stałe (bez wyboru wejścia, typu i rezystora).
@@ -52,6 +52,11 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.5.1 – 16.11.2026
+- Wykrywanie tankowania: po zakończeniu tankowania okno 15 min liczy się od jego końca (wcześniej poziom sprzed zakończenia mógł od razu rozpocząć kolejne „tankowanie” i na kolejne 15 min wstrzymać alarm nagłego spadku).
+- Instrukcja testów `TESTY.md` i skrypty stanowiska `stanowisko/` (zadajnik + weryfikacja przez API, pomiar rytmu migania).
+- Wgrane przez API; test zadajnikiem: poprawny, minimalny, krytyczny (czerwona ciągle), przepełnienie (1,00×/s), nagły spadek (1,99×/s), wyciszenie – OK. Usterki czujnika zadajnik pasywny nie wywoła (4,05–20,05 mA) – do sprawdzenia ręcznie.
 
 ### 0.5.0 – 16.11.2026
 - Czerwona kontrolka sygnalizuje rodzaj alarmu: ciągle = krytyczny, 1×/s = przepełnienie, 2×/s = nagły spadek, 3×/s = usterka czujnika (wcześniej przy usterce migały WY1–WY3).

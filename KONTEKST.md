@@ -49,11 +49,12 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 16.11.2026 (0.5.0)
-- SW **0.5.0** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
+## Stan na 16.11.2026 (0.5.1)
+- SW **0.5.1** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
 - Układ stały: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia WY1 POPRAWNY, WY2 MINIMALNY, WY3 KRYTYCZNY, WY4 buzer, WY5 przekaźnik usterki.
 - WY3 miga wg rodzaju alarmu (`blinkMask`/`blinkPeriodMs` w zadaniu PWM, outputs.cpp): ciągle KRYT, 1000 ms ZA DUŻY, 500 ms SPADEK, 333 ms błąd czujnika.
 - Alarmy: `cfg.alarmMode` (0 własne, 1 ppoż. woda, 2 ppoż. paliwo) + `cfg.thrPct[3]`; progi cm liczone z % w `cfgAlarmToCm()` (config.cpp, wołane w cfgEnforceFixed i przy zapisie). `ALARM_PRESET` = progi stałe – do potwierdzenia przez użytkownika.
 - Kalibracja jednym punktem: `POST /api/v1/calibrate {"point":"level","cm":…}` zmienia `offsetCm`.
 - Nakładka A4: `grafika/nakladka_gen.py` → SVG/PDF/PNG (otwory 22,3 mm, rozstaw do dopasowania do obudowy).
-- Do sprawdzenia na żywo: rytmy migania WY3, pliki podsumowań po północy.
+- Testy: `TESTY.md` + `stanowisko/` (sym.py, blink.py, dropen.py, droptest.sh). 16.11 przeszły testy 1–5 i 8; rytmy WY3 zmierzone przez API (pole `out` = faktyczny stan wyjść): 1,00 i 1,99 Hz.
+- Do sprawdzenia ręcznie: usterka czujnika (odłączenie A4) – miganie 3×/s, WY5; pliki podsumowań po północy.

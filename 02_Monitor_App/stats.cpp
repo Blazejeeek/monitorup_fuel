@@ -179,7 +179,10 @@ void statsMinute(uint32_t m) {        // m = zamknieta minuta (epoch/60)
     if (isnan(cur) || !cfg.tank[i].enabled) continue;
 
     // tankowanie: wzrost >= refillCm wzgledem minimum z 15 min
-    float mn15 = histMinMax(i, m - 15, m, false);
+    // 0.5.1: okno nie siega przed koniec poprzedniego tankowania - inaczej poziom sprzed tankowania od razu zaczynal nastepne
+    // (tankowanie bez konca blokowalo alarm naglego spadku)
+    const uint32_t from15 = (s.refEndMin && s.refEndMin > m - 15) ? s.refEndMin : m - 15;
+    float mn15 = histMinMax(i, from15, m, false);
     if (!s.refilling && x.statsEn && !isnan(mn15) && cur - mn15 >= x.refillCm) {
       s.refilling = true; s.refBase = mn15; s.refPeak = cur; s.refPeakMin = m;
     }
@@ -187,6 +190,7 @@ void statsMinute(uint32_t m) {        // m = zamknieta minuta (epoch/60)
       if (cur > s.refPeak + 0.2f) { s.refPeak = cur; s.refPeakMin = m; }
       if (m - s.refPeakMin >= 15) {                         // 15 min bez dalszego wzrostu = koniec
         s.refilling = false;
+        s.refEndMin = m;
         float dc = s.refPeak - s.refBase;
         float dl = x.volEn ? volOf(i, s.refPeak) - volOf(i, s.refBase) : NAN;
         s.refCm += dc; if (x.volEn) s.refL += dl;

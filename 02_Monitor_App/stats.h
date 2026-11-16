@@ -29,6 +29,7 @@ struct TankStats {
   float    dropAmount;
   uint32_t dropT, dropLastMin;
   uint32_t suspendUntil;        // epoch: wstrzymanie alarmu naglego spadku
+  uint32_t refEndMin;           // minuta zakonczenia ostatniego tankowania (0.5.1: okno wykrywania tankowania od tej chwili)
 };
 
 extern TankStats st[TANK_COUNT];
