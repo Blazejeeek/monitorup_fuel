@@ -78,9 +78,27 @@ for k, (col, kind, what, todo) in enumerate(rows):
 # przycisk wyciszenia
 bx, by = BTN
 svg += [hole(bx, by, ACC),
-        text(84, by + 2.5, "KASOWANIE ALARMU", 5.4, ACC, "bold", "start", .4),
-        f"<g transform='translate(160 {by-4}) scale(1.1)' fill='none' stroke='{ACC}' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'>"
-        "<path d='M0 2h2.5l3-2.5v8l-3-2.5H0z' fill='#38bdf8' fill-opacity='.25'/><path d='M8 0.5l4 4M12 0.5l-4 4'/></g>"]
+        text(bx, by + 24, "KASOWANIE", 4.6, ACC, "bold", ls=.4),
+        text(bx, by + 29.5, "ALARMU", 4.6, ACC, "bold", ls=.4)]
+
+# zbiornik ze strefami w kolorach kontrolek (od dołu: krytyczny, minimalny, norma, przepełnienie)
+TKX, TKY, TKW, TKH = 104, 207, 30, 64
+zones = [(0.00, 0.12, RED, "POZIOM KRYTYCZNY"), (0.12, 0.30, AMB, "POZIOM MINIMALNY"),
+         (0.30, 0.90, GRN, "NORMA"), (0.90, 1.00, RED, "PRZEPEŁNIENIE")]
+svg.append(f"<clipPath id='tk'><rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='5'/></clipPath>")
+svg.append(f"<rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='5' fill='#060b16'/>")
+svg.append("<g clip-path='url(#tk)'>")
+for lo, hi, col, lab in zones:
+    y1, y2 = TKY + TKH * (1 - hi), TKY + TKH * (1 - lo)
+    svg.append(f"<rect x='{TKX}' y='{y1:.2f}' width='{TKW}' height='{y2 - y1:.2f}' fill='{col}' opacity='.75'/>")
+    if lo > 0:
+        svg.append(f"<line x1='{TKX}' y1='{y2:.2f}' x2='{TKX + TKW}' y2='{y2:.2f}' stroke='#0b1324' stroke-width='.6'/>")
+svg.append("</g>")
+svg.append(f"<rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='5' fill='none' stroke='{MUTED}' stroke-width='.6'/>")
+for lo, hi, col, lab in zones:
+    ym = TKY + TKH * (1 - (lo + hi) / 2)
+    svg.append(f"<line x1='{TKX + TKW + 1.5}' y1='{ym:.2f}' x2='{TKX + TKW + 5}' y2='{ym:.2f}' stroke='{col}' stroke-width='.5'/>")
+    svg.append(text(TKX + TKW + 7, ym + 1.3, lab, 3.6, col, "bold", "start", .3))
 # stopka
 yf = 281
 svg += [f"<line x1='22' y1='{yf-2}' x2='188' y2='{yf-2}' stroke='{LINE}' stroke-width='.4'/>",

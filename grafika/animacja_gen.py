@@ -19,7 +19,10 @@ STATES = [("Stan normalny", "praca bez zakłóceń", GRN[0], (1, 0, 0)),
           ("Przepełnienie", "wstrzymać napełnianie", RED[0], (0, 0, 2)),
           ("Nagły spadek poziomu", "sprawdzić szczelność", RED[0], (0, 0, 4))]
 FPS, LOOP = 20, 2.0
-W, H, PW, PH = 960, 640, 300, 270
+W, H, PW, PH = 960, 790, 300, 345
+# poziom w zbiorniku dla stanu (0–1); None = nieznany (awaria czujnika), 'spadek' = animowany spadek
+LEVEL = [0.60, 0.22, None, 0.07, 0.96, 'spadek']
+ZONES = [(0.00, 0.12, RED[0]), (0.12, 0.30, AMB[0]), (0.30, 0.90, GRN[0]), (0.90, 1.00, RED[0])]
 
 
 def on(mode, t):
@@ -45,12 +48,28 @@ for i in range(int(FPS * LOOP)):
                 d.ellipse((cx - 40, cy - 40, cx + 40, cy + 40), fill=dim)
             d.ellipse((cx - 30, cy - 30, cx + 30, cy + 30), fill=col if lit else "#070c18", outline=col, width=3)
             d.text((cx, cy + 50), lab, font=f_l, fill=col, anchor="mm")
-        d.text((x0 + PW / 2, y0 + 175), title, font=f_b, fill=tcol, anchor="mm")
-        d.text((x0 + PW / 2, y0 + 205), todo, font=f_s, fill=TXT, anchor="mm")
+        # zbiornik: strefy jako pasek z boku, wypełnienie w kolorze stanu
+        tx, ty, tw, th = x0 + PW / 2 - 30, y0 + 148, 60, 90
+        d.rounded_rectangle((tx, ty, tx + tw, ty + th), 8, fill="#070c18", outline=MUTED, width=2)
+        for lo, hi, zc in ZONES:
+            d.rectangle((tx + tw + 6, ty + th * (1 - hi), tx + tw + 12, ty + th * (1 - lo)), fill=zc)
+        lv = LEVEL[k]
+        if lv == "spadek":
+            lv = 0.62 - 0.30 * ((t % LOOP) / LOOP)
+        if lv is None:
+            d.text((tx + tw / 2, ty + th / 2), "?", font=f_t, fill=MUTED, anchor="mm")
+        else:
+            d.rounded_rectangle((tx + 3, ty + 3 + (th - 6) * (1 - lv), tx + tw - 3, ty + th - 3), 6, fill=tcol)
+            if LEVEL[k] == "spadek":
+                ax = tx - 16
+                d.line((ax, ty + 25, ax, ty + 65), fill=tcol, width=3)
+                d.polygon([(ax - 7, ty + 58), (ax + 7, ty + 58), (ax, ty + 70)], fill=tcol)
+        d.text((x0 + PW / 2, y0 + 262), title, font=f_b, fill=tcol, anchor="mm")
+        d.text((x0 + PW / 2, y0 + 290), todo, font=f_s, fill=TXT, anchor="mm")
         how = {(1, 0, 0): "NORMA – światło ciągłe", (0, 1, 0): "OSTRZEŻENIE – światło ciągłe",
                (0, 2, 0): "OSTRZEŻENIE – przerywane", (0, 0, 1): "ALARM – światło ciągłe",
                (0, 0, 2): "ALARM – przerywane", (0, 0, 4): "ALARM – przerywane szybkie"}[modes]
-        d.text((x0 + PW / 2, y0 + 240), how, font=f_s, fill=MUTED, anchor="mm")
+        d.text((x0 + PW / 2, y0 + 322), how, font=f_s, fill=MUTED, anchor="mm")
     frames.append(im)
 
 frames[0].save(OUT / "animacja_stanow.gif", save_all=True, append_images=frames[1:],
