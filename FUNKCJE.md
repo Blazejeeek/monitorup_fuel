@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.5.1** (rejestr Modbus 0 = 51) |
+| Oprogramowanie (SW) | **0.5.2** (rejestr Modbus 0 = 52) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.5.1)
+## Funkcje (stan na 0.5.2)
 
 **Pomiar**
 - Jeden zbiornik: przetwornik 4–20 mA na A4, rezystor pomiarowy 150 Ω na stałe (bez wyboru wejścia, typu i rezystora).
@@ -25,7 +25,7 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 **Alarmy i wyjścia**
 - Tryb alarmu do wyboru: **zbiornik ppoż. wody** (KRYTYCZNY ≤ 90 %, MINIMALNY ≤ 95 %, ZA DUŻY ≥ 98 %), **zbiornik ppoż. paliwa** (80 / 90 / 95 %) albo **własne** progi w % wysokości zbiornika; histereza [cm], opóźnienie.
 - Alarm nagłego spadku (wyciek / kradzież): spadek o Y cm w T min, okno nocne z czulszym progiem.
-- Wyjścia na stałe: WY1 POPRAWNY (kontrolka zielona), WY2 MINIMALNY (pomarańczowa), WY3 KRYTYCZNY (czerwona), WY4 buzer (alarm WY3 lub błąd czujnika, wyciszenie wejściem IN1, stroną, Modbus, MQTT), WY5 przekaźnik usterki zbiorczej (zasilony = brak usterki).
+- Wyjścia na stałe: WY1 POPRAWNY (kontrolka zielona), WY2 MINIMALNY (pomarańczowa), WY3 KRYTYCZNY (czerwona), WY4 buzer (alarm WY3 lub błąd czujnika, gra w rytmie czerwonej kontrolki, wyciszenie wejściem IN1, stroną, Modbus, MQTT), WY5 przekaźnik usterki zbiorczej (zasilony = brak usterki).
 - Usterka zbiorcza – wybór przyczyn w Ustawieniach → Wyjścia, z podglądem na żywo: błąd czujnika, ADS1115, karta SD (domyślnie), a także czas nieustawiony, brak sieci, brak połączenia MQTT, PCF8575.
 - Czerwona kontrolka (WY3): świeci ciągle – poziom krytyczny; miga 1× na sekundę – ZA DUŻY (przepełnienie); 2× na sekundę – NAGŁY SPADEK; 3× na sekundę – usterka czujnika (zielona i pomarańczowa zgaszone, buzer).
 - PWM programowy 100 Hz (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalny sprzętowy PWM lampki (GPIO13/14/21).
@@ -52,6 +52,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.5.2 – 16.11.2026
+- Buzer (WY4) gra w rytmie czerwonej kontrolki: ciągle (krytyczny), 1×/s (przepełnienie), 2×/s (nagły spadek), 3×/s (usterka czujnika); równe piknięcia, bez serii podobnych do sygnału ewakuacji.
+- Wejście IN1: po starcie przyjmowany jest jego bieżący stan – stale aktywne IN1 nie wycisza już buzera przy każdym uruchomieniu.
+- Strona i nakładka A4: opis „buzer gra w rytmie czerwonej kontrolki”.
+- Wgrane przez API; zmierzone przez API: kontrolka i buzer razem – ciągle / 1,00 / 2,00 / 3,05 × na sekundę; usterka czujnika (odłączenie A4): zielona i pomarańczowa zgaszone, WY5 puszcza.
 
 ### 0.5.1 – 16.11.2026
 - Wykrywanie tankowania: po zakończeniu tankowania okno 15 min liczy się od jego końca (wcześniej poziom sprzed zakończenia mógł od razu rozpocząć kolejne „tankowanie” i na kolejne 15 min wstrzymać alarm nagłego spadku).

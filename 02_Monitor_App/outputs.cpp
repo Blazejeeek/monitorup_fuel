@@ -111,7 +111,10 @@ static void outputsTestStep() {
 void alarmLoop() {
   // DI1: kasowanie na zboczu (filtr 2 odczyty)
   static uint8_t diPrev = 0, diStable = 0;
+  static bool diInit = false;
   uint8_t d1 = diState & 1;
+  // 0.5.2: po starcie przyjmij biezacy stan wejscia - stale aktywne IN1 (zwarte / uszkodzone) nie wycisza buzera przy kazdym uruchomieniu
+  if (!diInit) { diPrev = diStable = d1; diInit = true; }
   if (d1 == diPrev) {
     if (d1 && !(diStable & 1) && cfg.ackDi1En) alarmAck(0);
     diStable = d1;
@@ -158,6 +161,7 @@ void alarmLoop() {
   // WY4 buzer: alarm WY3 lub blad czujnika, do wyciszenia (DI1) | WY5 przekaznik usterki zbiorczej: zasilony = brak usterki
   // WY3 czerwona (0.5.0): swieci ciagle = KRYTYCZNY, miga 1x/s = ZA DUZY (przepelnienie), 2x/s = NAGLY SPADEK,
   // 3x/s = BLAD CZUJNIKA (wtedy WY1 i WY2 zgaszone, buzer). WY6-WY8 nieuzywane.
+  // 0.5.2: buzer (WY4) gra w rytmie czerwonej kontrolki (KRYTYCZNY = dzwiek ciagly), rowne pikniecia - bez serii jak sygnal ewakuacji.
   const uint8_t e = tankEffState(0);
   const bool fault = fb & cfg.faultMask;
   uint8_t L[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -174,7 +178,7 @@ void alarmLoop() {
   L[3] = ((alarmActive || sensorFault) && !buzzSilenced) ? 100 : 0;
   L[4] = fault ? 0 : 100;                         // brak zasilania / usterka = przekaznik puszczony (styki zwarte)
   if (period) blinkPeriodMs = period;
-  blinkMask = period ? 0x04 : 0;
+  blinkMask = period ? (0x04 | 0x08) : 0;          // WY3 + WY4 (buzer wyciszony = L[3] = 0, maska bez znaczenia)
   for (uint8_t k = 0; k < 8; k++) outLevel[k] = L[k];
   lampHwApply(0);
 }

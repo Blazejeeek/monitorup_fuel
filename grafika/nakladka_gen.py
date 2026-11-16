@@ -62,7 +62,7 @@ for cx, (col, lab, desc) in zip(LAMPS_X, lamps):
 # legenda migania czerwonej kontrolki: rysunek 1 sekundy (pasek = kontrolka świeci)
 yl = 164
 svg += [f"<rect x='22' y='{yl}' width='166' height='38' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>",
-        text(28, yl + 7.5, "CZERWONA KONTROLKA – CO OZNACZA", 3.5, RED, "bold", "start", .4)]
+        text(28, yl + 7.5, "CZERWONA KONTROLKA I BUZER – CO OZNACZA", 3.5, RED, "bold", "start", .4)]
 rows = [(0, "świeci ciągle", "poziom krytyczny – uzupełnij zbiornik"),
         (1, "miga 1× na sekundę", "przepełnienie zbiornika"),
         (2, "miga 2× na sekundę", "nagły spadek – możliwy wyciek lub kradzież"),
@@ -84,9 +84,9 @@ bx, by = BTN
 svg += [hole(bx, by, ACC),
         text(bx, by + 23, "WYCISZ", 4.6, ACC, "bold", ls=.4),
         text(80, by - 7, "WYCISZENIE BUZERA", 5.6, TXT, "bold", "start", .3),
-        text(80, by - 1, "Naciśnij przycisk, aby wyciszyć sygnał dźwiękowy", 3.6, MUTED, anchor="start"),
-        text(80, by + 4, "i skasować alarm. Kontrolka świeci do czasu", 3.6, MUTED, anchor="start"),
-        text(80, by + 9, "powrotu poziomu do normy.", 3.6, MUTED, anchor="start"),
+        text(80, by - 1, "Buzer gra w rytmie czerwonej kontrolki. Naciśnij", 3.6, MUTED, anchor="start"),
+        text(80, by + 4, "przycisk, aby go wyciszyć i skasować alarm.", 3.6, MUTED, anchor="start"),
+        text(80, by + 9, "Kontrolka świeci do powrotu poziomu do normy.", 3.6, MUTED, anchor="start"),
         f"<g transform='translate(80 {by+13})' fill='none' stroke='{ACC}' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'>"
         "<path d='M0 2h2.5l3-2.5v8l-3-2.5H0z' fill='#38bdf8' fill-opacity='.25'/><path d='M8 0.5l4 4M12 0.5l-4 4'/></g>"]
 # co robić

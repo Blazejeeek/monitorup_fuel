@@ -1,7 +1,7 @@
 # MonitorUp.pl – jak testować sterownik
 
 Instrukcja testu funkcji alarmowych sterownika (KinCony B8M, HW 1.0) zadajnikiem 4–20 mA i przez API.
-Dotyczy oprogramowania **0.5.0** i nowszych (wykrywanie tankowania poprawione w 0.5.1). Wyniki ostatniego testu są na końcu pliku.
+Dotyczy oprogramowania **0.5.2** i nowszych (od 0.5.2 buzer gra w rytmie czerwonej kontrolki). Wyniki ostatniego testu są na końcu pliku.
 
 ## 1. Stanowisko
 
@@ -29,7 +29,9 @@ Na płytce testowej: KRYTYCZNY ≤ 30 cm (6,4 mA), MINIMALNY ≤ 60 cm (8,8 mA),
 |---|---|
 | `python3 sym.py <mA> [s]` | ustawia prąd zadajnikiem, czeka `s` sekund (domyślnie 15), pokazuje stan sterownika z API, wyjścia i nowe zdarzenia |
 | `python3 sym.py ack [s]` | wycisza buzer i kasuje alarm przez API (jak przycisk IN1) |
-| `python3 blink.py [s]` | mierzy rytm czerwonej kontrolki (WY3) z pola `out` statusu – faktyczny stan wyjść, próbki co ok. 40 ms |
+| `python3 blink.py [s]` | mierzy rytm czerwonej kontrolki (WY3) i buzera (WY4) z pola `out` statusu – faktyczny stan wyjść, próbki co ok. 40 ms |
+| `python3 fault.py [max_s]` | test ręczny usterki czujnika: czeka na odłączenie A4, mierzy wszystkie wyjścia (WY1–WY5), czeka na ponowne podłączenie |
+| `bash buzzer_test.sh` | po podłączeniu A4: krytyczny, przepełnienie i nagły spadek z pomiarem kontrolki i buzera (ok. 25 min) |
 | `python3 dropen.py 0\|1` | wyłącza / włącza alarm nagłego spadku (wyłączenie gasi zatrzaśnięty alarm) |
 | `bash droptest.sh` | pełny test nagłego spadku (ok. 20 min): 14 mA → czeka na koniec „tankowania” → 12,8 mA → pomiar migania → wyciszenie |
 | `masim plytka` | krótki stan sterownika |
@@ -48,10 +50,10 @@ Kolejność ma znaczenie (patrz pułapki): najpierw 1–4 i 8 z **wyłączonym**
 |---|---|---|---|
 | 1 | Poziom poprawny | `sym.py 14 25` | stan 0, `out` 17: zielona, WY5 zasilony, buzer wyłączony |
 | 2 | Poziom minimalny | `sym.py 7.6 25` | stan 1, `out` 18: pomarańczowa, `alarm.warn` = true, bez buzera; zmiana stanu po 10 s (opóźnienie) |
-| 3 | Poziom krytyczny | `sym.py 5.2 25` + `blink.py` | stan 2, `out` 28: czerwona **świeci ciągle** + buzer |
-| 4 | Przepełnienie (ZA DUŻY) | `sym.py 19.8 25` + `blink.py` | stan 3: czerwona **miga 1× na sekundę** + buzer |
-| 5 | Nagły spadek | `dropen.py 1`, potem `droptest.sh` | stan 6: czerwona **miga 2× na sekundę** + buzer; zdarzenie „NAGŁY SPADEK o … cm” |
-| 6 | Usterka czujnika – przerwa w pętli | **ręcznie**: odłącz przewód od A4 | stan 4: czerwona **miga 3× na sekundę**, zielona i pomarańczowa zgaszone, buzer, WY5 puszcza (`out` 4/12 na zmianę) |
+| 3 | Poziom krytyczny | `sym.py 5.2 25` + `blink.py` | stan 2, `out` 28: czerwona **świeci ciągle**, buzer **gra ciągle** |
+| 4 | Przepełnienie (ZA DUŻY) | `sym.py 19.8 25` + `blink.py` | stan 3: czerwona i buzer **1× na sekundę**, razem |
+| 5 | Nagły spadek | `dropen.py 1`, potem `droptest.sh` | stan 6: czerwona i buzer **2× na sekundę**; zdarzenie „NAGŁY SPADEK o … cm” |
+| 6 | Usterka czujnika – przerwa w pętli | `fault.py` + **ręcznie**: odłącz przewód od A4 na ≥ 10 s | stan 4: czerwona i buzer **3× na sekundę**, zielona i pomarańczowa zgaszone, WY5 puszcza (`out` 0/12 na zmianę) |
 | 7 | Usterka czujnika – za duży prąd | **ręcznie**: zadajnik z wyjściem czynnym > 21 mA | jak w teście 6 |
 | 8 | Wyciszenie | `sym.py ack 3` (albo przycisk IN1) | bit 8 (buzer) znika z `out`, `alarm.acked` = true, kontrolka nadal świeci / miga |
 | – | Koniec | `sym.py 14 25`, `sym.py ack 3`, `dropen.py 1` | stan 0, alarm spadku włączony |
@@ -70,11 +72,28 @@ Dodatkowo, ręcznie przy płytce:
 | Spadek poziomu nie włącza NAGŁEGO SPADKU | Po każdym wzroście poziomu sterownik uznaje **tankowanie** (`stats.refilling` = true) i wstrzymuje alarm spadku do 15 min bez wzrostu; spadek jest sprawdzany co minutę | po wzroście czekać na `refilling` = false (robi to `droptest.sh`) |
 | Zadane 2 mA daje 3,9 mA, zadane 22 mA daje 20,06 mA | Zadajnik w trybie **XMT (pasywnym)** daje tylko 4,05–20,05 mA | usterkę czujnika (< 3,6 / > 21 mA) sprawdzać ręcznie – testy 6 i 7 |
 | Chwilowy „BŁĄD CZUJNIKA” przy zmianie prądu | Połączenie Pi z zadajnikiem chwilowo przerywa pętlę (ok. 2 s), potem stany pośrednie | po zmianie czekać ≥ 25 s; zdarzenia z tej chwili pomijać |
+| Buzer wyciszony zaraz po starcie (SW ≤ 0.5.1) | Stale aktywne wejście IN1 (`di` = 1) – stary program po starcie brał je za naciśnięcie | od 0.5.2 poprawione; stale aktywne IN1 blokuje jednak przycisk wyciszenia – sprawdzić okablowanie IN1 |
+| Po skasowaniu zatrzaśnięcia (`dropen.py 0/1`) od razu nowy NAGŁY SPADEK | spadek nadal jest w historii z ostatnich 10 min | `dropen.py 0`, odczekać 11 min, `dropen.py 1` |
 | HTTP 429 „Za dużo zapytań” | Limit 10 zapytań/s dla tokenu API | szybkie odczyty (`blink.py`) przez sesję z logowaniem |
 | Odczyt wyższy o ok. 0,07 mA | Błąd toru / zadajnika (znany) | tabela kalibracji prądu (Ustawienia → Przetworniki) |
 | Buzer gra po teście | alarm nieskasowany | `sym.py ack 3` |
 
-## 6. Wyniki – 16.11.2026, SW 0.5.0 (testy 1–4, 8) i 0.5.1 (test 5)
+## 6. Wyniki – 16.11.2026
+
+### SW 0.5.2 – buzer w rytmie kontrolki (13:05–13:27)
+
+| Alarm | Czerwona (WY3) | Buzer (WY4) | Wynik |
+|---|---|---|---|
+| Krytyczny (5,2 mA = 14,5 cm) | ciągle (156/156 próbek) | ciągle | ✅ |
+| Przepełnienie (19,8 mA = 197,6 cm) | 1,00×/s (51 %) | 1,00×/s, razem z kontrolką | ✅ |
+| Nagły spadek (125,2 → 110,4 cm) | 2,00×/s (54 %) | 2,00×/s | ✅ |
+| Usterka czujnika (A4 odłączone, 0,06 mA) | 3,05×/s (50 %) | 3,05×/s; zielona i pomarańczowa zgaszone, WY5 puszcza | ✅ |
+| Wyciszenie (API) | miga dalej | wyłączony | ✅ |
+| Start z aktywnym IN1 | – | nie wycisza się (0.5.1 wyciszał) | ✅ |
+
+Wykrywanie tankowania (0.5.1): tankowanie zakończone 13:24, przez kolejne 2 min bez nowego – ✅.
+
+### SW 0.5.0 (testy 1–4, 8) i 0.5.1 (test 5)
 
 | Nr | Zadane | Odczyt sterownika | Stan | Wyjścia / miganie | Wynik |
 |---|---|---|---|---|---|
@@ -83,7 +102,7 @@ Dodatkowo, ręcznie przy płytce:
 | 3 | 5,2 mA | 5,16 mA = 14,5 cm | KRYTYCZNY | `out` 28: czerwona ciągle (146/146 próbek) + buzer | ✅ |
 | 4 | 19,8 mA | 19,82 mA = 197,7 cm | ZA DUŻY | czerwona miga **1,00×/s** (49 % czasu) + buzer | ✅ |
 | 5 | 14 ↔ 12,8 mA (SW 0.5.1) | 125,2 → 110,4 cm | NAGŁY SPADEK o 13,8 cm (zdarzenie 12:50) | czerwona miga **1,99×/s** (48 % czasu) + buzer; po wyciszeniu buzer wyłączony, miganie trwa | ✅ |
-| 6 | 2,0 mA | 3,91 mA (zadajnik nie schodzi niżej) | – | – | ⏸ ręcznie (odłączenie A4) |
+| 6 | 2,0 mA → odłączenie A4 | 3,91 mA (zadajnik nie schodzi niżej); po odłączeniu 0,06 mA | BŁĄD CZUJNIKA | czerwona 3,00×/s, zielona i pomarańczowa zgaszone, WY5 puszcza (0.5.1: buzer ciągle) | ✅ ręcznie |
 | 7 | 22,0 mA | 20,06 mA (zadajnik nie daje więcej) | – | – | ⏸ ręcznie |
 | 8 | wyciszenie API | – | alarm skasowany | buzer wyłączony (`out` 28 → 20 / 16), czerwona dalej świeci / miga | ✅ |
 

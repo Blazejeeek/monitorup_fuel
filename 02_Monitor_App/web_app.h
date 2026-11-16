@@ -342,7 +342,7 @@ SET.alarmy=el=>{const t=C.tanks[0];const pc=t.pct||[10,20,95];el.innerHTML=`<div
  <p class="muted" style="font-size:12px">Progi w % wysokości zbiornika. Zbiorniki ppoż. mają progi stałe (zbiornik powinien być stale pełny); „Własne” – wpisz progi: krytyczny &lt; minimalny &lt; za duży ≤ 100 %.</p></div>
  <div class="card"><h2>Buzer i kasowanie</h2>
  <p class="muted" style="font-size:13px">Czerwona kontrolka (WY3): świeci ciągle – KRYTYCZNY, miga 1× na sekundę – ZA DUŻY (przepełnienie), 2× – NAGŁY SPADEK, 3× – usterka czujnika.</p>
- <p class="muted" style="font-size:13px">Buzer (WY4) włącza się przy stanie KRYTYCZNYM, ZA DUŻYM, NAGŁYM SPADKU i przy błędzie czujnika. Wyciszenie: przycisk na wejściu <b>IN1</b> (także strona, Modbus, MQTT). Kontrolki świecą do powrotu poziomu do normy; nagły spadek trzyma się do wyciszenia.</p>
+ <p class="muted" style="font-size:13px">Buzer (WY4) włącza się przy stanie KRYTYCZNYM, ZA DUŻYM, NAGŁYM SPADKU i przy błędzie czujnika – w rytmie czerwonej kontrolki (krytyczny: dźwięk ciągły). Wyciszenie: przycisk na wejściu <b>IN1</b> (także strona, Modbus, MQTT). Kontrolki świecą do powrotu poziomu do normy; nagły spadek trzyma się do wyciszenia.</p>
  ${F.num('arm','Przypomnienie: ponowny buzer po [min] od wyciszenia (0 = wyłączone)',C.alarm.reminderMin,1)}</div></div>
  <div class="btns"><button class="btn" id="asv2">Zapisz</button></div>`;
  const PR={1:(t.presets||[])[0],2:(t.presets||[])[1]};
@@ -356,11 +356,11 @@ SET.alarmy=el=>{const t=C.tanks[0];const pc=t.pct||[10,20,95];el.innerHTML=`<div
 const FAULTS=[[1,'błąd czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
 const OUTFIX=[['WY1','POPRAWNY – kontrolka zielona','poziom poprawny, system działa bez uwag'],['WY2','MINIMALNY – kontrolka pomarańczowa','poziom minimalny'],
  ['WY3','KRYTYCZNY – kontrolka czerwona','świeci ciągle: poziom krytyczny · miga 1× na sekundę: ZA DUŻY (przepełnienie) · 2× na sekundę: NAGŁY SPADEK · 3× na sekundę: usterka czujnika'],
- ['WY4','Buzer','alarm z WY3 lub błąd czujnika – do wyciszenia przyciskiem IN1'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
+ ['WY4','Buzer','gra w rytmie czerwonej kontrolki: ciągle (krytyczny), 1×, 2× lub 3× na sekundę – do wyciszenia przyciskiem IN1'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
  ['WY6–WY8','—','nieużywane']];
 SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Wyjścia (przypisanie stałe)</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Kiedy włączone</th><th>Teraz</th></tr>`+
  OUTFIX.map(([o,f,w],k)=>`<tr><td>${o}</td><td>${f}</td><td class="muted">${w}</td><td id="ol${k}">—</td></tr>`).join('')+`</table></div>
- <p class="muted" style="font-size:12px">Miganie czerwonej kontrolki (WY3): <b>ciągle</b> – krytyczny poziom · <b>1× na sekundę</b> – przepełnienie (ZA DUŻY) · <b>2× na sekundę</b> – nagły spadek (wyciek / kradzież) · <b>3× na sekundę</b> – usterka czujnika (zielona i pomarańczowa zgaszone, włącza się buzer). Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
+ <p class="muted" style="font-size:12px">Miganie czerwonej kontrolki (WY3): <b>ciągle</b> – krytyczny poziom · <b>1× na sekundę</b> – przepełnienie (ZA DUŻY) · <b>2× na sekundę</b> – nagły spadek (wyciek / kradzież) · <b>3× na sekundę</b> – usterka czujnika (zielona i pomarańczowa zgaszone). Buzer gra w tym samym rytmie co czerwona kontrolka. Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
  <div class="btns"><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza (WY5) – co ją wywołuje</h2><p class="muted" style="font-size:13px">Przekaźnik WY5 puszcza, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
  ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}
