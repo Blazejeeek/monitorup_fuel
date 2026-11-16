@@ -32,6 +32,7 @@ Na płytce testowej: KRYTYCZNY ≤ 30 cm (6,4 mA), MINIMALNY ≤ 60 cm (8,8 mA),
 | `python3 blink.py [s]` | mierzy rytm czerwonej kontrolki (WY3) i buzera (WY4) z pola `out` statusu – faktyczny stan wyjść, próbki co ok. 40 ms |
 | `python3 fault.py [max_s]` | test ręczny usterki czujnika: czeka na odłączenie A4, mierzy wszystkie wyjścia (WY1–WY5), czeka na ponowne podłączenie |
 | `python3 caltest.py` | kalibracja +10 cm, po 3 min −10 cm, obserwacja 4 min: nie może być TANKOWANIA ani NAGŁEGO SPADKU; na koniec przesunięcie jak przed testem |
+| `python3 modbus_test.py [--zapis] [--dynamika]` | test Modbus TCP: wszystkie odczyty porównane z API, wyjątki, Unit ID, 4 klientów + odrzucenie 5., zapis zablokowany; `--zapis` FC05/06/16 (włącza zapis na czas testu, przywraca); `--dynamika` stany z zadajnika i kasowanie alarmu cewką 100. Z innego komputera: `--host IP --bez-api` |
 | `bash buzzer_test.sh` | po podłączeniu A4: krytyczny, przepełnienie i nagły spadek z pomiarem kontrolki i buzera (ok. 25 min) |
 | `python3 dropen.py 0\|1` | wyłącza / włącza alarm nagłego spadku (wyłączenie gasi zatrzaśnięty alarm) |
 | `bash droptest.sh` | pełny test nagłego spadku (ok. 20 min): 14 mA → czeka na koniec „tankowania” → 12,8 mA → pomiar migania → wyciszenie |
@@ -82,6 +83,20 @@ Dodatkowo, ręcznie przy płytce:
 | Buzer gra po teście | alarm nieskasowany | `sym.py ack 3` |
 
 ## 6. Wyniki – 16.11.2026
+
+### Modbus TCP – SW 0.5.4 (15:07–15:20)
+
+| Część | Wynik |
+|---|---|
+| Odczyty FC04 (urządzenie, zbiornik 1 i 2), FC02, FC01, FC03 – zgodność z API | ✅ 37/37 (poziom 149,1 cm, 14,02 mA, progi, czas ±3 s) |
+| Wyjątki 01/02/03, Unit ID 0/1/255 (7 bez odpowiedzi) | ✅ |
+| 4 klientów jednocześnie, 5. odrzucony | ✅ |
+| Czas odpowiedzi przez Access Point | ✅ 5–15 ms |
+| Zapis wyłączony → wyjątek 01 (FC05, FC06) | ✅ |
+| `--zapis`: FC06/FC16, odrzucenie złych progów (03), zapis cm → tryb własny i %, cewka wyjścia stałego → 02, przywrócenie | ✅ 8/8 |
+| `--dynamika`: MINIMALNY / KRYTYCZNY w rejestrach 103 i FC02, bit alarmu, kasowanie cewką 100 | ✅ (w 1. przebiegu raz niezgodne bity alarmu tuż po zmianie prądu – nie powtórzyło się w zapisie co 0,5 s ani w ponownym teście; odczyt pojedynczy = blokowy) |
+
+Uwagi: zmiana ustawień Modbus na stronie / przez API restartuje serwer Modbus (klienci są rozłączani i muszą połączyć się ponownie). Temperatura DS3231 na płytce: 49,8 °C.
 
 ### SW 0.5.4 – podpisane aktualizacje (14:53)
 
