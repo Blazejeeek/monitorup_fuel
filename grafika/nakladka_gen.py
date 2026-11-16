@@ -41,8 +41,7 @@ svg = [f"<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' vi
        "<g clip-path='url(#c)'><path d='M0 30 Q8 25 16 30 T32 30 T48 30 T64 30 V64 H0Z' fill='url(#g)'/>"
        "<path d='M0 34 Q8 30 16 34 T32 34 T48 34 T64 34 V64 H0Z' fill='#0ea5e9' opacity='.55'/></g>"
        "<path d='M20 20h8M20 26h5' stroke='#38bdf8' stroke-width='2.5' stroke-linecap='round'/></g>",
-       f"<text x='60' y='37' {F} font-size='15' font-weight='bold' fill='{TXT}' letter-spacing='.3'>MonitorUp<tspan fill='{ACC}'>.pl</tspan></text>",
-       text(60, 46, "Poziom zbiornika", 4.6, MUTED, anchor="start"),
+       f"<text x='60' y='41' {F} font-size='15' font-weight='bold' fill='{TXT}' letter-spacing='.3'>MonitorUp<tspan fill='{ACC}'>.pl</tspan></text>",
        # nazwa zbiornika
        text(22, 82, "ZBIORNIK", 3.4, MUTED, "bold", "start", .6),
        f"<line x1='48' y1='82.5' x2='188' y2='82.5' stroke='{LINE}' stroke-width='.5'/>",
@@ -57,24 +56,22 @@ for cx, (col, lab, desc) in zip(LAMPS_X, lamps):
     for k, d in enumerate(desc):
         svg.append(text(cx, LAMPS_Y + 33.5 + k * 4.6, d, 3.5, MUTED))
 
-# legenda migania czerwonej kontrolki: rysunek 1 sekundy (pasek = kontrolka świeci)
-yl = 164
-yl = 158
-svg += [f"<rect x='40' y='{yl}' width='130' height='36' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
-rows = [(0, "", "poziom krytyczny"),
-        (1, "", "przepełnienie"),
-        (2, "", "nagły spadek"),
-        (3, "", "usterka czujnika")]
-TX, TW = 52, 22                       # oś czasu: x, szerokość (1 s)
-for k, (n, how, what) in enumerate(rows):
-    y = yl + 9.5 + k * 7
+# legenda czerwonej kontrolki: oś = 5 s (pasek = świeci, kropki = mignięcia)
+yl = 160
+svg += [f"<rect x='40' y='{yl}' width='130' height='30' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
+rows = [(0, "usterka czujnika"),
+        (2, "niski poziom"),
+        (3, "wysoki poziom")]
+TX, TW = 52, 26                       # oś czasu: x, szerokość (= 5 s)
+svg.append(text(TX + TW / 2, yl + 5, "5 s", 2.6, MUTED))
+for k, (n, what) in enumerate(rows):
+    y = yl + 12 + k * 7
     svg.append(f"<rect x='{TX}' y='{y-2.6}' width='{TW}' height='2.6' rx='1.3' fill='#1c2942'/>")
     if n == 0:
         svg.append(f"<rect x='{TX}' y='{y-2.6}' width='{TW}' height='2.6' rx='1.3' fill='{RED}'/>")
     else:
-        seg = TW / n
         for j in range(n):
-            svg.append(f"<rect x='{TX + j*seg:.2f}' y='{y-2.6}' width='{seg/2:.2f}' height='2.6' rx='1.2' fill='{RED}'/>")
+            svg.append(f"<rect x='{TX + 0.5 + j*4.2:.2f}' y='{y-2.6}' width='2.6' height='2.6' rx='1.3' fill='{RED}'/>")
     svg.append(text(TX + TW + 8, y, what, 4, TXT, anchor="start"))
 
 # przycisk wyciszenia
