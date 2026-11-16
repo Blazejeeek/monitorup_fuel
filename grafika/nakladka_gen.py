@@ -46,34 +46,34 @@ svg = [f"<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' vi
        text(22, 82, "ZBIORNIK", 3.4, MUTED, "bold", "start", .6),
        f"<line x1='48' y1='82.5' x2='188' y2='82.5' stroke='{LINE}' stroke-width='.5'/>",
 ]
-RED = "#ef4444"
-lamps = [("#22c55e", "NORMALNY", []),
-         ("#f59e0b", "NIEPRAWIDŁOWY", []),
-         (RED, "KRYTYCZNY", [])]
-for cx, (col, lab, desc) in zip(LAMPS_X, lamps):
+RED, GRN, AMB = "#ef4444", "#22c55e", "#f59e0b"
+# Propozycja „kolor mówi, co zrobić”: zielona = OK, pomarańczowa = uwaga/serwis, czerwona = działaj
+lamps = [(GRN, "OK"), (AMB, "UWAGA"), (RED, "ALARM")]
+for cx, (col, lab) in zip(LAMPS_X, lamps):
     svg.append(hole(cx, LAMPS_Y, col))
-    svg.append(text(cx, LAMPS_Y + 27, lab, 5.2, col, "bold", ls=.4))
-    for k, d in enumerate(desc):
-        svg.append(text(cx, LAMPS_Y + 33.5 + k * 4.6, d, 3.5, MUTED))
+    svg.append(text(cx, LAMPS_Y + 27, lab, 6, col, "bold", ls=.6))
 
-# legenda czerwonej kontrolki: oś = 5 s (pasek = świeci, kropki = mignięcia)
-yl = 160
-svg += [f"<rect x='40' y='{yl}' width='130' height='37' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
-rows = [(0, "usterka czujnika"),
-        (2, "niski poziom"),
-        (3, "wysoki poziom"),
-        (4, "nagły spadek")]
-TX, TW = 52, 26                       # oś czasu: x, szerokość (= 5 s)
-svg.append(text(TX + TW / 2, yl + 5, "5 s", 2.6, MUTED))
-for k, (n, what) in enumerate(rows):
-    y = yl + 12 + k * 7
-    svg.append(f"<rect x='{TX}' y='{y-2.6}' width='{TW}' height='2.6' rx='1.3' fill='#1c2942'/>")
-    if n == 0:
-        svg.append(f"<rect x='{TX}' y='{y-2.6}' width='{TW}' height='2.6' rx='1.3' fill='{RED}'/>")
+# legenda: pasek ciągły = świeci, długie kreski = miga, krótkie kropki = miga szybko
+yl = 152
+svg += [f"<rect x='26' y='{yl}' width='158' height='46' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
+rows = [(AMB, "s", "Niski poziom", "zaplanuj tankowanie"),
+        (AMB, "m", "Usterka", "wezwij serwis"),
+        (RED, "s", "Brak paliwa", "zatankuj"),
+        (RED, "m", "Przepełnienie", "przerwij tankowanie"),
+        (RED, "f", "Wyciek?", "sprawdź zbiornik")]
+TX, TW = 33, 14
+for k, (col, kind, what, todo) in enumerate(rows):
+    y = yl + 9 + k * 8
+    svg.append(f"<rect x='{TX}' y='{y-2.8}' width='{TW}' height='2.8' rx='1.4' fill='#1c2942'/>")
+    if kind == "s":
+        segs = [(0, TW)]
+    elif kind == "m":
+        segs = [(j * 5, 2.6) for j in range(3)]
     else:
-        for j in range(n):
-            svg.append(f"<rect x='{TX + 0.5 + j*4.2:.2f}' y='{y-2.6}' width='2.6' height='2.6' rx='1.3' fill='{RED}'/>")
-    svg.append(text(TX + TW + 8, y, what, 4, TXT, anchor="start"))
+        segs = [(j * 2.4, 1.3) for j in range(6)]
+    svg += [f"<rect x='{TX + a:.2f}' y='{y-2.8}' width='{b:.2f}' height='2.8' rx='1.3' fill='{col}'/>" for a, b in segs]
+    svg.append(text(TX + TW + 3, y, {"s": "świeci", "m": "miga", "f": "miga szybko"}[kind], 3.2, MUTED, anchor="start"))
+    svg.append(text(TX + TW + 26, y, f"<tspan font-weight='bold' fill='{col}'>{what}</tspan>  –  {todo}", 4.2, TXT, anchor="start"))
 
 # przycisk wyciszenia
 bx, by = BTN
