@@ -1,0 +1,64 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' viewBox='0 0 210 297'>
+<defs><linearGradient id='g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#38bdf8'/><stop offset='1' stop-color='#0369a1'/></linearGradient><clipPath id='c'><rect x='12' y='8' width='40' height='48' rx='7'/></clipPath><clipPath id='panel'><rect x='0' y='0' width='210' height='297'/></clipPath></defs>
+<rect x='0' y='0' width='210' height='297' fill='#0b1324'/>
+<g clip-path='url(#panel)'><rect x='0' y='0' width='210' height='64' fill='#111c31'/><path d='M0 62 Q 40 56 70 62 T 140 62 T 210 62 V66 H0Z' fill='url(#g)' opacity='.9'/></g>
+<g transform='translate(20 17) scale(.56)'><rect x='12' y='8' width='40' height='48' rx='7' fill='#0b1324' stroke='#38bdf8' stroke-width='3'/><g clip-path='url(#c)'><path d='M0 30 Q8 25 16 30 T32 30 T48 30 T64 30 V64 H0Z' fill='url(#g)'/><path d='M0 34 Q8 30 16 34 T32 34 T48 34 T64 34 V64 H0Z' fill='#0ea5e9' opacity='.55'/></g><path d='M20 20h8M20 26h5' stroke='#38bdf8' stroke-width='2.5' stroke-linecap='round'/></g>
+<text x='60' y='37' font-family='DejaVu Sans, sans-serif' font-size='15' font-weight='bold' fill='#e8eef8' letter-spacing='.3'>MonitorUp<tspan fill='#38bdf8'>.pl</tspan></text>
+<text x='60' y='46' font-family='DejaVu Sans, sans-serif' font-size='4.6' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>Monitoring poziomu zbiornika paliwa</text>
+<text x='22' y='82' font-family='DejaVu Sans, sans-serif' font-size='3.4' font-weight='bold' fill='#93a4bf' text-anchor='start' letter-spacing='0.6'>ZBIORNIK</text>
+<line x1='48' y1='82.5' x2='188' y2='82.5' stroke='#24324d' stroke-width='.5'/>
+<text x='22' y='96' font-family='DejaVu Sans, sans-serif' font-size='3.4' font-weight='bold' fill='#38bdf8' text-anchor='start' letter-spacing='0.6'>SYGNALIZACJA</text>
+<line x1='60' y1='95' x2='188' y2='95' stroke='#24324d' stroke-width='.4'/>
+<circle cx='50' cy='120' r='16.65' fill='none' stroke='#22c55e' stroke-width='2.2'/>
+<circle cx='50' cy='120' r='13.350000000000001' fill='#22c55e' opacity='.18'/>
+<circle cx='50' cy='120' r='11.15' fill='#060b16' stroke='#93a4bf' stroke-width='.3' stroke-dasharray='1.2 .8'/>
+<path d='M47 120h6M50 117v6' stroke='#93a4bf' stroke-width='.3'/>
+<text x='50' y='127' font-family='DejaVu Sans, sans-serif' font-size='2.2' fill='#5b6b86' text-anchor='middle'>⌀22,3</text>
+<text x='50' y='147' font-family='DejaVu Sans, sans-serif' font-size='5.2' font-weight='bold' fill='#22c55e' text-anchor='middle' letter-spacing='0.4'>POZIOM OK</text>
+<text x='50' y='153.5' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>system działa</text>
+<text x='50' y='158.1' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>bez uwag</text>
+<circle cx='105' cy='120' r='16.65' fill='none' stroke='#f59e0b' stroke-width='2.2'/>
+<circle cx='105' cy='120' r='13.350000000000001' fill='#f59e0b' opacity='.18'/>
+<circle cx='105' cy='120' r='11.15' fill='#060b16' stroke='#93a4bf' stroke-width='.3' stroke-dasharray='1.2 .8'/>
+<path d='M102 120h6M105 117v6' stroke='#93a4bf' stroke-width='.3'/>
+<text x='105' y='127' font-family='DejaVu Sans, sans-serif' font-size='2.2' fill='#5b6b86' text-anchor='middle'>⌀22,3</text>
+<text x='105' y='147' font-family='DejaVu Sans, sans-serif' font-size='5.2' font-weight='bold' fill='#f59e0b' text-anchor='middle' letter-spacing='0.4'>MINIMALNY</text>
+<text x='105' y='153.5' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>niski poziom –</text>
+<text x='105' y='158.1' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>zaplanuj tankowanie</text>
+<circle cx='160' cy='120' r='16.65' fill='none' stroke='#ef4444' stroke-width='2.2'/>
+<circle cx='160' cy='120' r='13.350000000000001' fill='#ef4444' opacity='.18'/>
+<circle cx='160' cy='120' r='11.15' fill='#060b16' stroke='#93a4bf' stroke-width='.3' stroke-dasharray='1.2 .8'/>
+<path d='M157 120h6M160 117v6' stroke='#93a4bf' stroke-width='.3'/>
+<text x='160' y='127' font-family='DejaVu Sans, sans-serif' font-size='2.2' fill='#5b6b86' text-anchor='middle'>⌀22,3</text>
+<text x='160' y='147' font-family='DejaVu Sans, sans-serif' font-size='5.2' font-weight='bold' fill='#ef4444' text-anchor='middle' letter-spacing='0.4'>ALARM</text>
+<text x='160' y='153.5' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>krytyczny poziom,</text>
+<text x='160' y='158.1' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>przepełnienie</text>
+<text x='160' y='162.7' font-family='DejaVu Sans, sans-serif' font-size='3.5' font-weight='normal' fill='#93a4bf' text-anchor='middle' letter-spacing='0'>lub nagły spadek</text>
+<rect x='22' y='168' width='166' height='9' rx='4.5' fill='#111c31' stroke='#24324d' stroke-width='.4'/>
+<circle cx='30' cy='172.5' r='1.6' fill='#22c55e'/><circle cx='34.5' cy='172.5' r='1.6' fill='#f59e0b'/><circle cx='39' cy='172.5' r='1.6' fill='#ef4444'/>
+<text x='44' y='173.8' font-family='DejaVu Sans, sans-serif' font-size='3.3' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>Wszystkie trzy migają 3× na sekundę = <tspan font-weight='bold' fill='#e8eef8'>usterka czujnika</tspan> – powiadom serwis</text>
+<circle cx='52' cy='202' r='16.65' fill='none' stroke='#38bdf8' stroke-width='2.2'/>
+<circle cx='52' cy='202' r='13.350000000000001' fill='#38bdf8' opacity='.18'/>
+<circle cx='52' cy='202' r='11.15' fill='#060b16' stroke='#93a4bf' stroke-width='.3' stroke-dasharray='1.2 .8'/>
+<path d='M49 202h6M52 199v6' stroke='#93a4bf' stroke-width='.3'/>
+<text x='52' y='209' font-family='DejaVu Sans, sans-serif' font-size='2.2' fill='#5b6b86' text-anchor='middle'>⌀22,3</text>
+<text x='52' y='225' font-family='DejaVu Sans, sans-serif' font-size='4.6' font-weight='bold' fill='#38bdf8' text-anchor='middle' letter-spacing='0.4'>WYCISZ</text>
+<text x='80' y='195' font-family='DejaVu Sans, sans-serif' font-size='5.6' font-weight='bold' fill='#e8eef8' text-anchor='start' letter-spacing='0.3'>WYCISZENIE BUZERA</text>
+<text x='80' y='201' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>Naciśnij przycisk, aby wyciszyć sygnał dźwiękowy</text>
+<text x='80' y='206' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>i skasować alarm. Kontrolka świeci do czasu</text>
+<text x='80' y='211' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>powrotu poziomu do normy.</text>
+<g transform='translate(80 215)' fill='none' stroke='#38bdf8' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'><path d='M0 2h2.5l3-2.5v8l-3-2.5H0z' fill='#38bdf8' fill-opacity='.25'/><path d='M8 0.5l4 4M12 0.5l-4 4'/></g>
+<rect x='22' y='230' width='166' height='32' rx='4' fill='#111c31' stroke='#24324d' stroke-width='.4'/>
+<text x='28' y='238' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#ef4444' text-anchor='start' letter-spacing='0.4'>GDY ŚWIECI CZERWONA KONTROLKA</text>
+<text x='28' y='245' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#e8eef8' text-anchor='start' letter-spacing='0'>1.  Wycisz buzer przyciskiem.</text>
+<text x='28' y='251' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#e8eef8' text-anchor='start' letter-spacing='0'>2.  Sprawdź poziom paliwa i szczelność zbiornika.</text>
+<text x='28' y='257' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#e8eef8' text-anchor='start' letter-spacing='0'>3.  Powiadom osobę odpowiedzialną lub serwis.</text>
+<line x1='22' y1='267' x2='188' y2='267' stroke='#24324d' stroke-width='.4'/>
+<text x='22' y='274' font-family='DejaVu Sans, sans-serif' font-size='3.4' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>Serwis, tel.:</text>
+<line x1='44' y1='274.5' x2='112' y2='274.5' stroke='#24324d' stroke-width='.4'/>
+<text x='22' y='281' font-family='DejaVu Sans, sans-serif' font-size='3.4' font-weight='normal' fill='#93a4bf' text-anchor='start' letter-spacing='0'>Adres urządzenia:</text>
+<line x1='55' y1='281.5' x2='112' y2='281.5' stroke='#24324d' stroke-width='.4'/>
+<text x='188' y='274' font-family='DejaVu Sans, sans-serif' font-size='4.4' font-weight='bold' fill='#38bdf8' text-anchor='end' letter-spacing='0'>www.monitorup.pl</text>
+<text x='188' y='281' font-family='DejaVu Sans, sans-serif' font-size='3.0' font-weight='normal' fill='#93a4bf' text-anchor='end' letter-spacing='0'>sterownik HW 1.0</text>
+<text x='105' y='294' font-family='DejaVu Sans, sans-serif' font-size='2.3' fill='#3a4a66' text-anchor='middle'>Nakładka MonitorUp.pl · druk w skali 100 % · A4 210×297 mm · otwory ⌀22,3 mm na kontrolki i przycisk 22 mm</text>
+</svg>

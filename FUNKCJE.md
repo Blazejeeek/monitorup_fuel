@@ -7,25 +7,27 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.4.7** (rejestr Modbus 0 = 47) |
+| Oprogramowanie (SW) | **0.4.9** (rejestr Modbus 0 = 49) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.4.7)
+## Funkcje (stan na 0.4.9)
 
 **Pomiar**
-- Przetwornik 4–20 mA na A4 (zbiornik paliwa, walec leżący); drugi kanał A3 do włączenia w ustawieniach. Wejście i typ (4–20 mA / 0–5 V) wybieralne.
+- Jeden zbiornik: przetwornik 4–20 mA na A4, rezystor pomiarowy 150 Ω na stałe (bez wyboru wejścia, typu i rezystora).
+- Gęstość cieczy (woda 1000, olej napędowy ok. 840 kg/m³): punkty MIN/MAX zakresu czujnika zapisywane jako słup wody.
+- Tabela kalibracji prądu A4 (do 24 punktów, plik JSON z pomiaru wzorcowym miernikiem, `/api/v1/calib/ma`) – zapisywana osobno (NVS + kopia w EEPROM), aktualizacja jej nie kasuje.
 - Próbki co 100 ms, wynik co 1 s ze średniej z 2 s z odrzuceniem skrajnych, opcjonalne wygładzanie. Błąd czujnika poniżej 3,6 mA lub powyżej 21 mA.
-- Kalibracja dwupunktowa, przesunięcie sondy, rezystor pomiarowy (domyślnie 150 Ω, ustawiany w Przetwornikach).
+- Kalibracja dwupunktowa z bieżącego odczytu (poziom zmierzony miarką), przesunięcie sondy.
 - Litry (opcja): walec leżący, walec stojący, prostopadłościan, tabela cm → litry.
 
 **Alarmy i wyjścia**
 - Progi w cm: KRYTYCZNY < MINIMALNY < ZA DUŻY (maksymalny), histereza, opóźnienie.
 - Alarm nagłego spadku (wyciek / kradzież): spadek o Y cm w T min, okno nocne z czulszym progiem.
-- Domyślne wyjścia: OUT1 poziom minimalny, OUT2 poziom maksymalny, OUT3 poziom krytyczny, OUT4 usterka zbiorcza (przekaźnik), OUT5 buzzer (milknie po skasowaniu). Funkcje wyjść do zmiany w Ustawieniach → Wyjścia.
+- Wyjścia na stałe: WY1 kontrolka zielona (poziom OK), WY2 pomarańczowa (MINIMALNY), WY3 czerwona (KRYTYCZNY / ZA DUŻY / NAGŁY SPADEK), WY4 buzer (alarm WY3 lub błąd czujnika, wyciszenie wejściem IN1, stroną, Modbus, MQTT), WY5 przekaźnik usterki zbiorczej (zasilony = brak usterki).
 - Usterka zbiorcza – wybór przyczyn w Ustawieniach → Wyjścia, z podglądem na żywo: błąd czujnika, ADS1115, karta SD (domyślnie), a także czas nieustawiony, brak sieci, brak połączenia MQTT, PCF8575.
-- Błąd czujnika: kontrolki WY1–WY3 migają 1 Hz, niezależnie od funkcji wyjść (przełącznik w Ustawieniach → Wyjścia, domyślnie włączony).
+- Błąd czujnika: kontrolki WY1–WY3 migają razem 3 razy na sekundę (równy rytm, liczony w zadaniu PWM co 10 ms) i włącza się buzer.
 - PWM programowy 100 Hz (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalny sprzętowy PWM lampki (GPIO13/14/21).
 - Kasowanie alarmu do wyboru: ręczne (DI1, strona, Modbus, MQTT, API; przypomnienie po X min) albo automatyczne – bez kasowania, alarm gaśnie po powrocie poziomu do normy.
 
@@ -50,6 +52,18 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.4.9 – 16.11.2026
+- Błąd czujnika: WY1–WY3 migają 3 razy na sekundę (było 1 Hz); miganie w zadaniu PWM, więc rytm jest równy.
+- Nagłówek strony: „MonitorUp.pl” jednym napisem (wcześniej odstęp przed „.pl”).
+- Wgrane na płytkę testową przez API (OTA z Pi masim): start OK, 18,05 mA, stan NORMALNY.
+
+### 0.4.8 – 13.11.2026
+- Tabela kalibracji prądu A4 (surowy odczyt → mA, do 24 punktów), import/eksport JSON, kopia w EEPROM.
+- Jeden zbiornik 4–20 mA na A4, rezystor 150 Ω na stałe; gęstość cieczy, punkty MIN/MAX jako słup wody.
+- Wyjścia na stałe (WY1 OK, WY2 MIN, WY3 KRYT/ZA DUŻY/SPADEK, WY4 buzer, WY5 przekaźnik usterki); IN1 wycisza buzer, także przy błędzie czujnika.
+- Czytelny komunikat, gdy wysokość zbiornika jest mniejsza niż próg ZA DUŻY; wysokość także w zakładce Alarmy.
+- Uwaga: rejestr Modbus 0 w tej wersji omyłkowo = 47 (poprawione w 0.4.9 = 49).
 
 ### 0.4.7 – 11.11.2026
 - Usunięte komunikaty watchdoga „task not found” przy starcie (reset watchdoga tylko w zadaniach, które są pod nim zapisane).
@@ -97,4 +111,5 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Wszystkie etapy 1–9 planu: pomiar, kalibracja, litry, progi, wyjścia z PWM, OLED, sieć, czas, logi SD, statystyki, Modbus TCP, MQTT/HA, API z tokenami, OTA, kopia ustawień, watchdog. Domyślnie jeden zbiornik (paliwo, A4).
 
 ## Znane sprawy otwarte
+- Do decyzji: kalibracja jednym punktem (korekta przesunięcia), typ zbiornika w Alarmach (paliwo ppoż. / woda ppoż. / własny), różne tempo migania dla stanów alarmu.
 - W terenie: kalibracja przetwornika, działanie buzzera lampki przy obniżonej jasności, dopuszczalny prąd wyjść MOSFET.

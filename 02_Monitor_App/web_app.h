@@ -5,7 +5,7 @@
 static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>MonitorUp.pl</title>
 <link rel="icon" href="/logo.svg"><link rel="stylesheet" href="/style.css"></head><body>
-<header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt="">MonitorUp<b>.pl</b></div>
+<header><div class="hwrap"><div class="brand"><img src="/logo.svg" alt=""><span>MonitorUp<b>.pl</b></span></div>
 <nav><a href="#pulpit" data-p="pulpit">Pulpit</a><a href="#logi" data-p="logi">Logi</a><a href="#ustawienia" data-p="ustawienia">Ustawienia</a>
 <a href="#" id="lo">Wyloguj</a></nav></div></header>
 <main>
@@ -345,7 +345,7 @@ const OUTFIX=[['WY1','Kontrolka zielona','poziom OK, system działa bez uwag'],[
  ['WY6–WY8','—','nieużywane']];
 SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Wyjścia (przypisanie stałe)</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Kiedy włączone</th><th>Teraz</th></tr>`+
  OUTFIX.map(([o,f,w],k)=>`<tr><td>${o}</td><td>${f}</td><td class="muted">${w}</td><td id="ol${k}">—</td></tr>`).join('')+`</table></div>
- <p class="muted" style="font-size:12px">Błąd czujnika: WY1–WY3 migają razem (1 Hz) i włącza się buzer. Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
+ <p class="muted" style="font-size:12px">Błąd czujnika: WY1–WY3 migają razem szybko (3 razy na sekundę) i włącza się buzer. Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
  <div class="btns"><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza (WY5) – co ją wywołuje</h2><p class="muted" style="font-size:13px">Przekaźnik WY5 puszcza, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
  ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}

@@ -16,7 +16,7 @@ input:focus{outline:2px solid var(--acc);border-color:transparent}
 label{display:block;color:var(--mut);font-size:13px;margin:12px 0 4px}
 .err{color:var(--crit);min-height:20px;margin-top:10px;font-size:14px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px}.brand img{width:34px;height:34px}
-.brand b{color:var(--acc)}
+.brand span{white-space:nowrap}.brand b{color:var(--acc)}
 /* logowanie */
 .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
 background:radial-gradient(1000px 500px at 50% -10%,#123056 0%,transparent 60%),var(--bg)}

@@ -49,8 +49,9 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 11.11.2026
-- SW **0.4.7** wgrane na płytkę testową (COM8, MAC 94:A9:90:2B:4A:CC): start bez błędów, karta SD i czas OK, przetwornik 3,97 mA.
-- Płytka testowa ma zapisane starsze ustawienia (wyjścia, Modbus włączony, logi 365 dni) – nowe domyślne po ustawieniach fabrycznych z zachowaniem kalibracji.
-- Do sprawdzenia na żywo: strona (widoki Logów, kasowanie automatyczne, opis API, usterka zbiorcza), miganie WY1–WY3 przy odłączonym przetworniku, tworzenie plików podsumowań po północy, kalibracja.
-- W terenie: buzzer lampki przy obniżonej jasności, prąd wyjść MOSFET.
+## Stan na 16.11.2026
+- SW **0.4.9** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`.
+- Układ stały od 0.4.8: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia na stałe (WY1–WY5); błąd czujnika = WY1–WY3 migają 3 Hz (`blinkMask` w zadaniu PWM, outputs.cpp) + buzer.
+- Nakładka A4 na drzwi obudowy: `grafika/nakladka_gen.py` → SVG/PDF/PNG (otwory 22,3 mm, rozstaw do dopasowania do obudowy).
+- Do decyzji użytkownika: kalibracja jednym punktem, typ zbiornika w Alarmach (paliwo ppoż. / woda ppoż. / własny – progi?), tempo migania dla innych stanów.
+- Do sprawdzenia na żywo: miganie 3 Hz przy odłączonym przetworniku, pliki podsumowań po północy.

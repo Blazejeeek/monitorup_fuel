@@ -15,6 +15,8 @@ bool warnActive = false;         // MINIMALNY / BLAD CZUJNIKA / prognoza
 static uint32_t alarmBits = 0;          // aktywne warunki alarmu (nowy bit = ponowne uruchomienie syreny)
 uint32_t alarmSince = 0, ackTime = 0;
 uint8_t outLevel[8];             // wyliczona jasnosc wyjsc 0-100 %
+static volatile uint8_t blinkMask = 0;  // wyjscia migajace 3 Hz (miganie w zadaniu PWM, krok 10 ms)
+#define BLINK_PERIOD_MS 333              // 3 migniecia na sekunde
 static uint8_t lastEff[TANK_COUNT] = {255, 255};
 volatile bool outTestRun = false;
 static bool outputsReady = false;
@@ -64,14 +66,15 @@ static void pwmTask(void *) {
     if (outTestRun || !outputsReady) { vTaskDelay(10); continue; }
     uint8_t mask = 0;
     bool frac = false;
+    const bool blinkOff = (millis() % BLINK_PERIOD_MS) >= BLINK_PERIOD_MS / 2;
     for (uint8_t k = 0; k < 8; k++) {
       uint8_t lv = (outLevel[k] + 5) / 10;               // 0..10
       if (lv > 0 && lv < 10) frac = true;
-      if (phase < lv) mask |= 1 << k;
+      if (phase < lv && !(blinkOff && (blinkMask & (1 << k)))) mask |= 1 << k;
     }
     if (mask != outState) setOutputs(mask);
     phase = (phase + 1) % 10;
-    vTaskDelay(frac ? 1 : 10);
+    vTaskDelay(frac ? 1 : (blinkMask ? 5 : 10));
   }
 }
 
@@ -152,13 +155,12 @@ void alarmLoop() {
   // ---- Wyjscia na stale (0.4.8) ----
   // WY1 zielona: poziom OK, system bez uwag | WY2 pomaranczowa: MINIMALNY | WY3 czerwona: KRYTYCZNY / ZA DUZY / NAGLY SPADEK
   // WY4 buzer: alarm WY3 lub blad czujnika, do wyciszenia (DI1) | WY5 przekaznik usterki zbiorczej: zasilony = brak usterki
-  // Blad czujnika: WY1-WY3 migaja 1 Hz + buzer. WY6-WY8 nieuzywane.
+  // Blad czujnika: WY1-WY3 migaja 3 Hz (3 razy na sekunde) + buzer. WY6-WY8 nieuzywane.
   const uint8_t e = tankEffState(0);
   const bool fault = fb & cfg.faultMask;
-  const bool ph = (millis() % 1000) < 500;
   uint8_t L[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   if (sensorFault) {
-    L[0] = L[1] = L[2] = ph ? 100 : 0;
+    L[0] = L[1] = L[2] = 100;
   } else {
     L[0] = (e == ST_NORMAL && !fault) ? 100 : 0;
     L[1] = (e == ST_MIN) ? 100 : 0;
@@ -166,6 +168,7 @@ void alarmLoop() {
   }
   L[3] = ((alarmActive || sensorFault) && !buzzSilenced) ? 100 : 0;
   L[4] = fault ? 0 : 100;                         // brak zasilania / usterka = przekaznik puszczony (styki zwarte)
+  blinkMask = sensorFault ? 0x07 : 0;
   for (uint8_t k = 0; k < 8; k++) outLevel[k] = L[k];
   lampHwApply(0);
 }
