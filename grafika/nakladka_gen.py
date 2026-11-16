@@ -58,10 +58,11 @@ for cx, (col, lab, desc) in zip(LAMPS_X, lamps):
 
 # legenda czerwonej kontrolki: oś = 5 s (pasek = świeci, kropki = mignięcia)
 yl = 160
-svg += [f"<rect x='40' y='{yl}' width='130' height='30' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
+svg += [f"<rect x='40' y='{yl}' width='130' height='37' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
 rows = [(0, "usterka czujnika"),
         (2, "niski poziom"),
-        (3, "wysoki poziom")]
+        (3, "wysoki poziom"),
+        (4, "nagły spadek")]
 TX, TW = 52, 26                       # oś czasu: x, szerokość (= 5 s)
 svg.append(text(TX + TW / 2, yl + 5, "5 s", 2.6, MUTED))
 for k, (n, what) in enumerate(rows):
