@@ -1,0 +1,32 @@
+<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' viewBox='0 0 210 297'>
+<rect width='210' height='297' fill='#fff'/>
+<text x='105' y='70' font-family='DejaVu Sans, sans-serif' font-size='9' font-weight='bold' fill='#111827' text-anchor='middle'>MonitorUp<tspan fill='#0284c7'>.pl</tspan></text>
+<text x='105' y='78' font-family='DejaVu Sans, sans-serif' font-size='4' font-weight='normal' fill='#6b7280' text-anchor='middle'>Poziom zbiornika</text>
+<circle cx='50' cy='120' r='14.65' fill='none' stroke='#16a34a' stroke-width='2.5'/><circle cx='50' cy='120' r='11.15' fill='none' stroke='#6b7280' stroke-width='.25' stroke-dasharray='1.2 .8'/><path d='M48 120h4M50 118v4' stroke='#6b7280' stroke-width='.25'/>
+<text x='50' y='142' font-family='DejaVu Sans, sans-serif' font-size='5' font-weight='bold' fill='#16a34a' text-anchor='middle'>POPRAWNY</text>
+<circle cx='105' cy='120' r='14.65' fill='none' stroke='#d97706' stroke-width='2.5'/><circle cx='105' cy='120' r='11.15' fill='none' stroke='#6b7280' stroke-width='.25' stroke-dasharray='1.2 .8'/><path d='M103 120h4M105 118v4' stroke='#6b7280' stroke-width='.25'/>
+<text x='105' y='142' font-family='DejaVu Sans, sans-serif' font-size='5' font-weight='bold' fill='#d97706' text-anchor='middle'>MINIMALNY</text>
+<circle cx='160' cy='120' r='14.65' fill='none' stroke='#dc2626' stroke-width='2.5'/><circle cx='160' cy='120' r='11.15' fill='none' stroke='#6b7280' stroke-width='.25' stroke-dasharray='1.2 .8'/><path d='M158 120h4M160 118v4' stroke='#6b7280' stroke-width='.25'/>
+<text x='160' y='142' font-family='DejaVu Sans, sans-serif' font-size='5' font-weight='bold' fill='#dc2626' text-anchor='middle'>KRYTYCZNY</text>
+<text x='40' y='160' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#dc2626' text-anchor='start'>CZERWONA KONTROLKA I BUZER</text>
+<rect x='40' y='166.4' width='20' height='2.6' rx='1.3' fill='#f3f4f6'/>
+<rect x='40.00' y='166.4' width='20.00' height='2.6' rx='1.2' fill='#dc2626'/>
+<text x='65' y='169' font-family='DejaVu Sans, sans-serif' font-size='3.8' font-weight='normal' fill='#111827' text-anchor='start'><tspan font-weight='bold'>ciągle</tspan>  poziom krytyczny</text>
+<rect x='40' y='173.4' width='20' height='2.6' rx='1.3' fill='#f3f4f6'/>
+<rect x='40.00' y='173.4' width='10.00' height='2.6' rx='1.2' fill='#dc2626'/>
+<text x='65' y='176' font-family='DejaVu Sans, sans-serif' font-size='3.8' font-weight='normal' fill='#111827' text-anchor='start'><tspan font-weight='bold'>1× / s</tspan>  przepełnienie</text>
+<rect x='40' y='180.4' width='20' height='2.6' rx='1.3' fill='#f3f4f6'/>
+<rect x='40.00' y='180.4' width='5.00' height='2.6' rx='1.2' fill='#dc2626'/>
+<rect x='50.00' y='180.4' width='5.00' height='2.6' rx='1.2' fill='#dc2626'/>
+<text x='65' y='183' font-family='DejaVu Sans, sans-serif' font-size='3.8' font-weight='normal' fill='#111827' text-anchor='start'><tspan font-weight='bold'>2× / s</tspan>  nagły spadek (wyciek?)</text>
+<rect x='40' y='187.4' width='20' height='2.6' rx='1.3' fill='#f3f4f6'/>
+<rect x='40.00' y='187.4' width='3.33' height='2.6' rx='1.2' fill='#dc2626'/>
+<rect x='46.67' y='187.4' width='3.33' height='2.6' rx='1.2' fill='#dc2626'/>
+<rect x='53.33' y='187.4' width='3.33' height='2.6' rx='1.2' fill='#dc2626'/>
+<text x='65' y='190' font-family='DejaVu Sans, sans-serif' font-size='3.8' font-weight='normal' fill='#111827' text-anchor='start'><tspan font-weight='bold'>3× / s</tspan>  usterka czujnika – serwis</text>
+<circle cx='52' cy='222' r='14.65' fill='none' stroke='#0284c7' stroke-width='2.5'/><circle cx='52' cy='222' r='11.15' fill='none' stroke='#6b7280' stroke-width='.25' stroke-dasharray='1.2 .8'/><path d='M50 222h4M52 220v4' stroke='#6b7280' stroke-width='.25'/>
+<text x='80' y='221' font-family='DejaVu Sans, sans-serif' font-size='6' font-weight='bold' fill='#0284c7' text-anchor='start'>WYCISZ</text>
+<text x='80' y='228' font-family='DejaVu Sans, sans-serif' font-size='3.8' font-weight='normal' fill='#6b7280' text-anchor='start'>buzer i kasowanie alarmu</text>
+<text x='22' y='282' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='normal' fill='#6b7280' text-anchor='start'>Serwis, tel.:</text>
+<line x1='46' y1='282.5' x2='120' y2='282.5' stroke='#d1d5db' stroke-width='.4'/>
+</svg>
