@@ -48,7 +48,7 @@ Kody stanu zbiornika (`state`): 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY
 
 `GET /api/v1/config`, `GET /api/v1/wifi/scan[?start=1]`, `POST /api/v1/calibrate {"tank":0,"point":"level","cm":120}` (od 0.5.0: zmierzony poziom koryguje przesunięcie sondy; `"point":"min"|"max"` – kalibracja dwupunktowa),
 `POST /api/v1/time {"epoch":…}`, `POST /api/v1/time/sync`, `GET/POST /api/v1/tokens`, `POST /api/v1/tokens/revoke {"id":0[,"renew":true]}`,
-`GET /api/v1/backup` (bez haseł), `POST /api/v1/backup` `{"pass":"…"}` (z hasłami, zaszyfrowana AES-256-GCM; wgranie wymaga pola `_pass`), `POST /api/v1/restore`, `POST /api/v1/ota` (multipart, plik .bin), `POST /api/v1/reboot`,
+`GET /api/v1/backup` (bez haseł), `POST /api/v1/backup` `{"pass":"…"}` (z hasłami, zaszyfrowana AES-256-GCM; wgranie wymaga pola `_pass`), `POST /api/v1/restore`, `POST /api/v1/ota` (multipart, plik .bin **podpisany** – od 0.5.4 plik bez podpisu MonitorUp.pl albo zmieniony: HTTP 400), `POST /api/v1/reboot`,
 `POST /api/v1/factory {"keepCal":true}`, `POST /api/v1/logs/clear`, `POST /api/v1/password`.
 
 Połączenie HTTP nie jest szyfrowane. Do dostępu spoza sieci lokalnej używaj VPN.

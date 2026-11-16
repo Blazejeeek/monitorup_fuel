@@ -12,8 +12,8 @@ Dotyczy oprogramowania **0.5.2** i nowszych (od 0.5.2 buzer gra w rytmie czerwon
 | Raspberry Pi | `ssh masim` (LAN biura) albo `ssh masim-vpn` (WireGuard); łączy się ze sterownikiem przez jego Access Point `MonitorUp.pl-XXXX` (192.168.4.1) |
 | Skrypty | katalog `stanowisko/` w repozytorium; na Pi w katalogu domowym (`scp stanowisko/*.py stanowisko/*.sh masim:`) |
 
-Płytka **nie może być podłączona do Pi przez USB** (pętla masy przekłamuje pomiar) – oprogramowanie wgrywa się przez API:
-`scp 02_Monitor_App/build/02_Monitor_App.ino.bin masim:fw/MonitorUp-X.Y.Z.ino.bin` i `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`.
+Płytka **nie może być podłączona do Pi przez USB** (pętla masy przekłamuje pomiar) – oprogramowanie wgrywa się przez API, **tylko plik podpisany** (od 0.5.4):
+`scp 02_Monitor_App/build/MonitorUp_vX.Y.Z.bin masim:fw/MonitorUp-X.Y.Z.ino.bin` i `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`.
 
 ## 2. Przeliczenie cm ↔ mA
 
@@ -82,6 +82,14 @@ Dodatkowo, ręcznie przy płytce:
 | Buzer gra po teście | alarm nieskasowany | `sym.py ack 3` |
 
 ## 6. Wyniki – 16.11.2026
+
+### SW 0.5.4 – podpisane aktualizacje (14:53)
+
+| Plik (`fw-flash ota`) | Wynik |
+|---|---|
+| bez podpisu (`02_Monitor_App.ino.bin`) | HTTP 400 „Plik bez podpisu MonitorUp.pl”, bez restartu ✅ |
+| podpisany, 1 bit zmieniony | HTTP 400 „Nieprawidłowy podpis pliku”, bez restartu ✅ |
+| podpisany `MonitorUp_v0.5.4.bin` | wgrany, start 0.5.4 ✅ |
 
 ### SW 0.5.3 – kalibracja i karta SD (13:59–14:07)
 

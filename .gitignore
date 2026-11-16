@@ -2,3 +2,5 @@ build/
 *.bin
 .claude/
 kopia_ustawien*.json
+ota_sign_key*.pem
+*_key.pem

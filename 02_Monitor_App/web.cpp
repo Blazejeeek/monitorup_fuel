@@ -11,6 +11,7 @@
 #include "logger.h"
 #include "timesync.h"
 #include "stats.h"
+#include "otasig.h"
 #include "outputs.h"
 #include "net.h"
 #include "display.h"
@@ -861,10 +862,14 @@ static void hOtaUpload() {
     if (!u.filename.endsWith(".bin")) { otaErr = "Wybierz plik .bin"; otaAllowed = false; return; }
     int cmd = server.arg("type") == "fs" ? U_SPIFFS : U_FLASH;
     if (!Update.begin(UPDATE_SIZE_UNKNOWN, cmd)) { otaErr = Update.errorString(); otaAllowed = false; return; }
+    otaSigBegin();                                                 // 0.5.4: tylko pliki podpisane kluczem MonitorUp.pl
     logEvent("OTA", "Start aktualizacji: " + u.filename);
   } else if (u.status == UPLOAD_FILE_WRITE && otaAllowed) {
+    otaSigFeed(u.buf, u.currentSize);
     if (Update.write(u.buf, u.currentSize) != u.currentSize) { otaErr = Update.errorString(); otaAllowed = false; Update.abort(); }
   } else if (u.status == UPLOAD_FILE_END && otaAllowed) {
+    String se = otaSigFinish();                                    // podpis sprawdzany PRZED przelaczeniem partycji startowej
+    if (se.length()) { Update.abort(); otaErr = se; otaAllowed = false; logEvent("OTA", "Odrzucono plik " + u.filename + ": " + se); return; }
     if (!Update.end(true)) { otaErr = Update.errorString(); otaAllowed = false; }
   } else if (u.status == UPLOAD_FILE_ABORTED) { Update.abort(); otaErr = "Przerwano"; otaAllowed = false; }
 }

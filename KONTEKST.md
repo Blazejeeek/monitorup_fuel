@@ -30,16 +30,17 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 ## Kompilacja i wgrywanie
 - Kompilacja (serwer agenta): `./build.sh 02_Monitor_App` – arduino-cli `~/.local/bin`, rdzeń esp32 **3.3.12**, biblioteki ArduinoJson 7.4.2, U8g2 2.35.30, PubSubClient 2.8 (program testowy: OneWire, DallasTemperature). Windows: `upload.ps1`.
 - Partycje: `partitions.csv` (2 × 3 MB OTA, LittleFS, coredump).
+- **Podpis aktualizacji (od 0.5.4):** sterownik przyjmuje przez stronę/API tylko pliki z podpisem ECDSA P-256 (`otasig.cpp`, klucz publiczny `ota_pub.h`, odcisk w pliku). Klucz prywatny: `~/.config/monitorup/ota_sign_key.pem` na serwerze agenta (poza repo, chmod 600) – **zgubienie = brak aktualizacji przez sieć** (zostaje USB). `build.sh` robi `build/MonitorUp_v<SW>.bin` (podpisany) – ten plik idzie na kartę i do OTA. Sprawdzenie: `python3 sign_fw.py --sprawdz plik.bin`.
 - Wgranie przez stanowisko zdalne (Windows DESKTOP-IQTQJI5 przez WireGuard, `ssh esp-lab`, płytka na COM8): sam program pod `0x10000` – ustawienia (NVS) zostają:
   `scp 02_Monitor_App/build/02_Monitor_App.ino.bin esp-lab:C:/esp/fw/monitorup/` i `esptool --chip esp32s3 --port COM8 -b 921600 write-flash -z 0x10000 02_Monitor_App.ino.bin`. Pełny zestaw (pierwsze wgranie): `0x0` bootloader, `0x8000` partycje, `0xe000` boot_app0, `0x10000` program. Nie wgrywaj `merged.bin` (16 MB) – kasuje ustawienia.
 - Log: `~/bin/esp-remote monitor --id COM8 -s 60` (po resecie pierwsze linie giną – natywne USB).
-- Bez kabla: strona urządzenia → Ustawienia → System → Aktualizacja, plik `MonitorUp_v<SW>.bin`.
+- Bez kabla: strona urządzenia → Ustawienia → System → Aktualizacja, plik `MonitorUp_v<SW>.bin` (podpisany).
 - Strona sterownika (192.168.0.12) nie jest osiągalna z sieci stanowiska, dopóki stanowisko nie dostanie adresu 192.168.0.x (polecenie w karcie #139).
 
 ## Wydanie wersji (po każdej zmianie)
 1. `FW_VERSION` w `hw.h`, `FW_NUM` w `modbus.cpp`, wpis w `FUNKCJE.md`, aktualizacja tego pliku, `README.md`/`MODBUS.md`/`API.md`, gdy dotyczy.
-2. Kompilacja bez ostrzeżeń, `node --check` dla JS, commit na `dev`, **tag `vX.Y.Z`**, `git push origin dev --tags`.
-3. Karta #139: załącznik `MonitorUp_vX.Y.Z.bin` (stare zostają), podmiana `MonitorUp_funkcje_i_wersje.md` (najpierw usuń stary załącznik `?type=file` i plik `Deck/…` przez WebDAV, inaczej Nextcloud dopisze „(2)”), komentarz z opisem wersji, aktualny opis karty (wersja, czy wgrana, lista ✋).
+2. Kompilacja bez ostrzeżeń (`build.sh` podpisuje `build/MonitorUp_vX.Y.Z.bin`), `node --check` dla JS, commit na `dev`, **tag `vX.Y.Z`**, `git push origin dev --tags`.
+3. Karta #139: załącznik `MonitorUp_vX.Y.Z.bin` – **podpisany** z `build/` (stare zostają), podmiana `MonitorUp_funkcje_i_wersje.md` (najpierw usuń stary załącznik `?type=file` i plik `Deck/…` przez WebDAV, inaczej Nextcloud dopisze „(2)”), komentarz z opisem wersji, aktualny opis karty (wersja, czy wgrana, lista ✋).
 
 ## Powrót do wcześniejszej wersji (git)
 - Lista wersji: `git tag -l` (każda wersja ma tag `vX.Y.Z`).
@@ -49,8 +50,8 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 16.11.2026 (0.5.3)
-- SW **0.5.3** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
+## Stan na 16.11.2026 (0.5.4)
+- SW **0.5.4** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
 - Układ stały: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia WY1 POPRAWNY, WY2 MINIMALNY, WY3 KRYTYCZNY, WY4 buzer, WY5 przekaźnik usterki.
 - WY3 i buzer WY4 migają razem wg rodzaju alarmu (`blinkMask`/`blinkPeriodMs` w zadaniu PWM, outputs.cpp): ciągle KRYT, 1000 ms ZA DUŻY, 500 ms SPADEK, 333 ms błąd czujnika.
 - IN1 na stanowisku stale aktywne (`di` = 1) – do wyjaśnienia z użytkownikiem; od 0.5.2 stan IN1 po starcie nie wycisza buzera.

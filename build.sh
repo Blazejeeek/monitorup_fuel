@@ -9,3 +9,10 @@ CLI="${ARDUINO_CLI:-$HOME/.local/bin/arduino-cli}"
 FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,USBMode=hwcdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
 "$CLI" compile --fqbn "$FQBN" --warnings default --output-dir "$SK/build" "$SK"
 ls -l "$SK/build/"*.bin
+# 0.5.4: podpisany plik aktualizacji (sterownik przyjmuje przez strone/API tylko podpisane)
+if [ "$SK" = "02_Monitor_App" ]; then
+  VER=$(sed -n 's/^#define FW_VERSION "\(.*\)"/\1/p' "$SK/hw.h")
+  KEY="${OTA_SIGN_KEY:-$HOME/.config/monitorup/ota_sign_key.pem}"
+  if [ -f "$KEY" ]; then python3 sign_fw.py "$SK/build/$SK.ino.bin" "$SK/build/MonitorUp_v$VER.bin" "$KEY"
+  else echo "UWAGA: brak klucza $KEY - plik niepodpisany, sterownik go nie przyjmie przez strone/API"; fi
+fi

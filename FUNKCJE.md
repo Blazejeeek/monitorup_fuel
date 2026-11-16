@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.5.3** (rejestr Modbus 0 = 53) |
+| Oprogramowanie (SW) | **0.5.4** (rejestr Modbus 0 = 54) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.5.3)
+## Funkcje (stan na 0.5.4)
 
 **Pomiar**
 - Jeden zbiornik: przetwornik 4–20 mA na A4, rezystor pomiarowy 150 Ω na stałe (bez wyboru wejścia, typu i rezystora).
@@ -48,10 +48,16 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Logi na karcie SD (dzienne CSV, dziennik zdarzeń, rotacja), historia 24 h w PSRAM, zużycie dzienne i tankowania (zawsze włączone; bez prognozy).
 - Karta SD: sprawdzana co 10 s i przy każdym zapisie, bez karty próba montowania co 30 s; wyjęcie lub uszkodzona partycja nie zatrzymują pomiaru i alarmów (opis w Ustawieniach → Logi, „Test karty SD”).
 - Kopia ustawień: bez haseł albo z hasłami zaszyfrowana hasłem kopii (AES-256-GCM, PBKDF2-SHA256); starsze kopie da się wgrać.
-- OTA przez stronę, ustawienia fabryczne (z zachowaniem kalibracji), reset hasła przyciskiem DOWNLOAD (10 s), watchdog 30 s.
+- OTA przez stronę i API **tylko dla plików podpisanych kluczem MonitorUp.pl** (ECDSA P-256; plik bez podpisu albo zmieniony jest odrzucany, dotychczasowa wersja zostaje), ustawienia fabryczne (z zachowaniem kalibracji), reset hasła przyciskiem DOWNLOAD (10 s), watchdog 30 s.
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.5.4 – 16.11.2026
+- Aktualizacja przez stronę / API przyjmuje tylko pliki podpisane kluczem MonitorUp.pl: podpis ECDSA P-256 nad SHA-256 obrazu doklejony na końcu pliku (`MUPSIG01`), sprawdzany przed przełączeniem partycji startowej. Odrzucenie zapisywane w dzienniku (OTA).
+- `build.sh` tworzy podpisany `MonitorUp_v<wersja>.bin` (`sign_fw.py`, klucz prywatny tylko na serwerze budowania); sprawdzenie: `sign_fw.py --sprawdz plik.bin`.
+- Wgranie przez USB i odczyt programu przez USB nie są blokowane (zabezpieczenia eFuse świadomie nie włączone).
+- Test przez API: plik bez podpisu i plik zmieniony (1 bit) odrzucone bez restartu, plik podpisany wgrany.
 
 ### 0.5.3 – 16.11.2026
 - Karta SD: po usunięciu logów ze strony (albo zniknięciu pliku) zapis pomiarów zakłada plik i katalogi od nowa – wcześniej co 5 min „Błąd zapisu karty SD” i brak pomiarów do północy.
