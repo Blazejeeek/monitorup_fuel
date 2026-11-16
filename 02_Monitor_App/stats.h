@@ -43,3 +43,4 @@ void statsBegin();
 void statsMinute(uint32_t m);
 void statsDropClear(bool acked);
 void statsSuspend(uint8_t i, uint16_t minutes);
+void statsLevelReset(const char *why);   // 0.5.3: zmiana przeliczania poziomu - bez falszywego tankowania / naglego spadku

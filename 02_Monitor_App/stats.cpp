@@ -235,6 +235,21 @@ void statsDropClear(bool acked) {
   }
 }
 
+// 0.5.3: kalibracja, gestosc, zakres czujnika lub tabela pradu zmieniaja przeliczony poziom skokowo.
+// Historia sprzed zmiany nie moze dac tankowania ani naglego spadku: okna liczone od nowa.
+void statsLevelReset(const char *why) {
+  const time_t now = time(nullptr);
+  for (uint8_t i = 0; i < TANK_COUNT; i++) {
+    TankStats &s = st[i];
+    const TankExtra &x = cfg.tx[i];
+    s.refilling = false;
+    s.refEndMin = curMin + 1;                                     // okno tankowania od nastepnej pelnej minuty
+    const uint32_t w = (x.nightEn ? 61u : (uint32_t)x.dropMin + 1u) * 60u;
+    if ((uint32_t)s.suspendUntil < (uint32_t)now + w) s.suspendUntil = now + w;   // okno spadku tylko z nowych odczytow
+  }
+  logEvent("STATYSTYKI", String("Zmiana przeliczania poziomu (") + why + ") – tankowanie i nagły spadek liczone od nowa");
+}
+
 void statsSuspend(uint8_t i, uint16_t minutes) {
   st[i].suspendUntil = time(nullptr) + minutes * 60;
   st[i].drop = false;

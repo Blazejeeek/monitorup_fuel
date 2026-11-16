@@ -49,13 +49,16 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 16.11.2026 (0.5.2)
-- SW **0.5.2** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
+## Stan na 16.11.2026 (0.5.3)
+- SW **0.5.3** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
 - Układ stały: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia WY1 POPRAWNY, WY2 MINIMALNY, WY3 KRYTYCZNY, WY4 buzer, WY5 przekaźnik usterki.
 - WY3 i buzer WY4 migają razem wg rodzaju alarmu (`blinkMask`/`blinkPeriodMs` w zadaniu PWM, outputs.cpp): ciągle KRYT, 1000 ms ZA DUŻY, 500 ms SPADEK, 333 ms błąd czujnika.
 - IN1 na stanowisku stale aktywne (`di` = 1) – do wyjaśnienia z użytkownikiem; od 0.5.2 stan IN1 po starcie nie wycisza buzera.
 - Alarmy: `cfg.alarmMode` (0 własne, 1 ppoż. woda, 2 ppoż. paliwo) + `cfg.thrPct[3]`; progi cm liczone z % w `cfgAlarmToCm()` (config.cpp, wołane w cfgEnforceFixed i przy zapisie). `ALARM_PRESET` = progi stałe – do potwierdzenia przez użytkownika.
 - Kalibracja jednym punktem: `POST /api/v1/calibrate {"point":"level","cm":…}` zmienia `offsetCm`.
+- Zmiana przeliczania poziomu (kalibracja, gęstość, zakres, tabela prądu) → `statsLevelReset()` (stats.cpp): koniec tankowania, `refEndMin`, wstrzymanie spadku na dropMin+1 min. Wykrywanie w web.cpp przez `lvlSig()`.
+- logRow (logger.cpp) sprawdza `SD.exists` pliku dnia – po usunięciu logów zakłada katalogi od nowa.
+- Reset hasła awaryjny: DOWNLOAD (GPIO0) 10 s podczas pracy → admin/admin + sieć fabryczna (AP hasło monitor123), kalibracja zostaje.
 - Nakładka A4: `grafika/nakladka_gen.py` → SVG/PDF/PNG (otwory 22,3 mm, rozstaw do dopasowania do obudowy).
 - Testy: `TESTY.md` + `stanowisko/` (sym.py, blink.py, dropen.py, droptest.sh). 16.11 przeszły testy 1–5 i 8; rytmy WY3 zmierzone przez API (pole `out` = faktyczny stan wyjść): 1,00 i 1,99 Hz.
 - Testy 16.11 (0.5.2): wszystkie alarmy + usterka czujnika (ręczne odłączenie A4, `fault.py`) – OK. Zostaje: test 7 (> 21 mA, potrzebne wyjście czynne), pliki podsumowań po północy.

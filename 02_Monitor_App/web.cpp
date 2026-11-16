@@ -324,6 +324,12 @@ static void applyAfterChange(JsonObjectConst r, bool &reboot) {
   if (r["modbus"].is<JsonObjectConst>()) mbApply();
 }
 
+// 0.5.3: odcisk parametrow przeliczania poziomu (zmiana = statsLevelReset)
+static float lvlSig() {
+  const TankCal &c = cfg.tank[0];
+  return c.minX * 1.0f + c.minCm * 3.0f + c.maxX * 7.0f + c.maxCm * 11.0f + c.offsetCm * 13.0f + cfg.densityKgM3 * 0.017f;
+}
+
 static void hConfigPost() {
   if (!auth(A_CFG)) return;
   JsonDocument d;
@@ -334,9 +340,11 @@ static void hConfigPost() {
       if (strcmp(p.key().c_str(), "tanks") && strcmp(p.key().c_str(), "alarm") && strcmp(p.key().c_str(), "logs")) {
         sendErr(403, "Token może zmieniać tylko: tanks, alarm, logs"); return;
       }
+  const float sig0 = lvlSig();
   String err = cfgFromJson(r);
   if (err.length()) { sendErr(400, err.c_str()); return; }
   cfgSave();
+  if (fabsf(lvlSig() - sig0) > 1e-3f) statsLevelReset("ustawienia przetwornika");
   bool reboot;
   applyAfterChange(r, reboot);
   String secs;
@@ -398,6 +406,7 @@ static void hCalibrate() {
     if (fabsf(c.offsetCm) > 500.0f) { c.offsetCm = oldOff; sendErr(400, "Korekta większa niż 5 m – sprawdź zakres czujnika i gęstość"); return; }
     cfgSave();
     sensorsReset();
+    statsLevelReset("kalibracja");
     logEvent("KALIBRACJA", String(cfg.tankName[i]) + ": poziom " + String(before, 1) + " → " + String(cm, 1) + " cm (" + String(x, 3) +
              " mA), przesunięcie " + String(oldOff, 1) + " → " + String(c.offsetCm, 1) + " cm");
     JsonDocument r; r["ok"] = true; r["x"] = x; r["before"] = before; r["after"] = cm; r["offset"] = c.offsetCm; r["oldOffset"] = oldOff;
@@ -415,6 +424,7 @@ static void hCalibrate() {
   }
   cfgSave();
   sensorsReset();
+  statsLevelReset("kalibracja");
   logEvent("KALIBRACJA", String(cfg.tankName[i]) + ": punkt " + pt + " = " + String(x, 3) + " mA → " + String(cm, 1) + " cm cieczy (" + String(water, 1) + " cm H2O)");
   JsonDocument r; r["ok"] = true; r["x"] = x; r["water"] = water;
   sendJson(200, r);
@@ -800,6 +810,7 @@ static void hCalTablePost() {
   String err = calFromJson(d.as<JsonObjectConst>());
   if (err.length() && calTab.n == 0) { sendErr(400, err.c_str()); return; }
   sensorsReset();
+  statsLevelReset("tabela kalibracji prądu");
   logEvent("KALIBRACJA", String("Wczytano tabelę kalibracji prądu A4: ") + calTab.n + " pkt" + (calTab.date[0] ? String(", z ") + calTab.date : String("")) + " (" + who() + ")");
   JsonDocument r; r["ok"] = true; r["n"] = calTab.n;
   if (err.length()) r["warn"] = err;
@@ -809,6 +820,7 @@ static void hCalTableClear() {
   if (!auth(A_ADMIN)) return;
   calClear();
   sensorsReset();
+  statsLevelReset("tabela kalibracji prądu");
   logEvent("KALIBRACJA", "Usunięto tabelę kalibracji prądu A4 (" + who() + ")");
   sendOk();
 }

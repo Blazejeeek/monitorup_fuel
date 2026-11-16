@@ -164,7 +164,9 @@ void logRow() {
   if (!sdMounted || !timeValid()) return;
   time_t now = time(nullptr);
   String fn = logPath(now);
-  if (fn != curLogFile) {
+  // 0.5.3: plik mogl zniknac (usuniecie logow ze strony, wymiana karty) - wtedy naglowek i katalogi od nowa;
+  // wczesniej zapis do nieistniejacego katalogu konczyl sie co 5 min bledem karty SD do polnocy
+  if (fn != curLogFile || !SD.exists(fn)) {
     curLogFile = fn; curLogHdr = "";
     File r = SD.open(fn);
     if (r) { curLogHdr = r.readStringUntil('\n'); curLogHdr.trim(); r.close(); }

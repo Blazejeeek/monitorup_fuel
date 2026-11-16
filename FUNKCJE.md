@@ -7,12 +7,12 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.5.2** (rejestr Modbus 0 = 52) |
+| Oprogramowanie (SW) | **0.5.3** (rejestr Modbus 0 = 53) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.5.2)
+## Funkcje (stan na 0.5.3)
 
 **Pomiar**
 - Jeden zbiornik: przetwornik 4–20 mA na A4, rezystor pomiarowy 150 Ω na stałe (bez wyboru wejścia, typu i rezystora).
@@ -52,6 +52,11 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.5.3 – 16.11.2026
+- Karta SD: po usunięciu logów ze strony (albo zniknięciu pliku) zapis pomiarów zakłada plik i katalogi od nowa – wcześniej co 5 min „Błąd zapisu karty SD” i brak pomiarów do północy.
+- Kalibracja, gęstość, zakres czujnika, tabela kalibracji prądu: po zmianie przeliczania poziomu tankowanie i nagły spadek liczone od nowa (zdarzenie STATYSTYKI) – bez fałszywego „TANKOWANIA” i alarmu nagłego spadku z buzerem.
+- Wgrane przez API; test: kalibracja +10 cm i −10 cm bez fałszywych zdarzeń, zapis SD o 14:00 i 14:05 bez błędów.
 
 ### 0.5.2 – 16.11.2026
 - Buzer (WY4) gra w rytmie czerwonej kontrolki: ciągle (krytyczny), 1×/s (przepełnienie), 2×/s (nagły spadek), 3×/s (usterka czujnika); równe piknięcia, bez serii podobnych do sygnału ewakuacji.

@@ -31,6 +31,7 @@ Na płytce testowej: KRYTYCZNY ≤ 30 cm (6,4 mA), MINIMALNY ≤ 60 cm (8,8 mA),
 | `python3 sym.py ack [s]` | wycisza buzer i kasuje alarm przez API (jak przycisk IN1) |
 | `python3 blink.py [s]` | mierzy rytm czerwonej kontrolki (WY3) i buzera (WY4) z pola `out` statusu – faktyczny stan wyjść, próbki co ok. 40 ms |
 | `python3 fault.py [max_s]` | test ręczny usterki czujnika: czeka na odłączenie A4, mierzy wszystkie wyjścia (WY1–WY5), czeka na ponowne podłączenie |
+| `python3 caltest.py` | kalibracja +10 cm, po 3 min −10 cm, obserwacja 4 min: nie może być TANKOWANIA ani NAGŁEGO SPADKU; na koniec przesunięcie jak przed testem |
 | `bash buzzer_test.sh` | po podłączeniu A4: krytyczny, przepełnienie i nagły spadek z pomiarem kontrolki i buzera (ok. 25 min) |
 | `python3 dropen.py 0\|1` | wyłącza / włącza alarm nagłego spadku (wyłączenie gasi zatrzaśnięty alarm) |
 | `bash droptest.sh` | pełny test nagłego spadku (ok. 20 min): 14 mA → czeka na koniec „tankowania” → 12,8 mA → pomiar migania → wyciszenie |
@@ -74,11 +75,20 @@ Dodatkowo, ręcznie przy płytce:
 | Chwilowy „BŁĄD CZUJNIKA” przy zmianie prądu | Połączenie Pi z zadajnikiem chwilowo przerywa pętlę (ok. 2 s), potem stany pośrednie | po zmianie czekać ≥ 25 s; zdarzenia z tej chwili pomijać |
 | Buzer wyciszony zaraz po starcie (SW ≤ 0.5.1) | Stale aktywne wejście IN1 (`di` = 1) – stary program po starcie brał je za naciśnięcie | od 0.5.2 poprawione; stale aktywne IN1 blokuje jednak przycisk wyciszenia – sprawdzić okablowanie IN1 |
 | Po skasowaniu zatrzaśnięcia (`dropen.py 0/1`) od razu nowy NAGŁY SPADEK | spadek nadal jest w historii z ostatnich 10 min | `dropen.py 0`, odczekać 11 min, `dropen.py 1` |
+| Fałszywe TANKOWANIE / NAGŁY SPADEK po zmianie gęstości lub kalibracji (SW ≤ 0.5.2) | skok przeliczonego poziomu | od 0.5.3 okna liczone od nowa po zmianie |
+| Brak zapisu pomiarów po „Usuń logi” (SW ≤ 0.5.2) | sterownik nie zakładał skasowanych katalogów | od 0.5.3 poprawione |
 | HTTP 429 „Za dużo zapytań” | Limit 10 zapytań/s dla tokenu API | szybkie odczyty (`blink.py`) przez sesję z logowaniem |
 | Odczyt wyższy o ok. 0,07 mA | Błąd toru / zadajnika (znany) | tabela kalibracji prądu (Ustawienia → Przetworniki) |
 | Buzer gra po teście | alarm nieskasowany | `sym.py ack 3` |
 
 ## 6. Wyniki – 16.11.2026
+
+### SW 0.5.3 – kalibracja i karta SD (13:59–14:07)
+
+| Test | Wynik |
+|---|---|
+| Kalibracja +10 cm (149,1 → 159,1 cm), po 3 min −10 cm | zdarzenia STATYSTYKI + KALIBRACJA, **bez** tankowania i nagłego spadku, stan POPRAWNY ✅ |
+| Zapis pomiarów po usunięciu logów (13:29) | 0.5.2: błąd zapisu co 5 min; 0.5.3: zapis 14:00 i 14:05 bez błędów, plik dnia założony od nowa ✅ |
 
 ### SW 0.5.2 – buzer w rytmie kontrolki (13:05–13:27)
 
