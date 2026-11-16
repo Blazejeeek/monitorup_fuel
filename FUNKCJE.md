@@ -7,27 +7,27 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 | | |
 |---|---|
-| Oprogramowanie (SW) | **0.4.9** (rejestr Modbus 0 = 49) |
+| Oprogramowanie (SW) | **0.5.0** (rejestr Modbus 0 = 50) |
 | Płytka (HW) | **1.0** – KinCony B8M (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM) |
 | Plik do aktualizacji przez stronę | `MonitorUp_v<SW>.bin` (Ustawienia → System → Aktualizacja) |
 | Kompilacja | Windows: `upload.ps1 -Sketch 02_Monitor_App -Compile` · Linux: `./build.sh 02_Monitor_App` (rdzeń esp32 3.3.x) |
 
-## Funkcje (stan na 0.4.9)
+## Funkcje (stan na 0.5.0)
 
 **Pomiar**
 - Jeden zbiornik: przetwornik 4–20 mA na A4, rezystor pomiarowy 150 Ω na stałe (bez wyboru wejścia, typu i rezystora).
 - Gęstość cieczy (woda 1000, olej napędowy ok. 840 kg/m³): punkty MIN/MAX zakresu czujnika zapisywane jako słup wody.
 - Tabela kalibracji prądu A4 (do 24 punktów, plik JSON z pomiaru wzorcowym miernikiem, `/api/v1/calib/ma`) – zapisywana osobno (NVS + kopia w EEPROM), aktualizacja jej nie kasuje.
 - Próbki co 100 ms, wynik co 1 s ze średniej z 2 s z odrzuceniem skrajnych, opcjonalne wygładzanie. Błąd czujnika poniżej 3,6 mA lub powyżej 21 mA.
-- Kalibracja dwupunktowa z bieżącego odczytu (poziom zmierzony miarką), przesunięcie sondy.
+- Kalibracja: wpisz aktualny poziom zmierzony miarką [cm] i kliknij „Kalibruj” – korekta przesunięcia sondy (zakres czujnika i gęstość bez zmian). Kalibracja dwupunktowa MIN/MAX jako opcja zaawansowana.
 - Litry (opcja): walec leżący, walec stojący, prostopadłościan, tabela cm → litry.
 
 **Alarmy i wyjścia**
-- Progi w cm: KRYTYCZNY < MINIMALNY < ZA DUŻY (maksymalny), histereza, opóźnienie.
+- Tryb alarmu do wyboru: **zbiornik ppoż. wody** (KRYTYCZNY ≤ 90 %, MINIMALNY ≤ 95 %, ZA DUŻY ≥ 98 %), **zbiornik ppoż. paliwa** (80 / 90 / 95 %) albo **własne** progi w % wysokości zbiornika; histereza [cm], opóźnienie.
 - Alarm nagłego spadku (wyciek / kradzież): spadek o Y cm w T min, okno nocne z czulszym progiem.
-- Wyjścia na stałe: WY1 kontrolka zielona (poziom OK), WY2 pomarańczowa (MINIMALNY), WY3 czerwona (KRYTYCZNY / ZA DUŻY / NAGŁY SPADEK), WY4 buzer (alarm WY3 lub błąd czujnika, wyciszenie wejściem IN1, stroną, Modbus, MQTT), WY5 przekaźnik usterki zbiorczej (zasilony = brak usterki).
+- Wyjścia na stałe: WY1 POPRAWNY (kontrolka zielona), WY2 MINIMALNY (pomarańczowa), WY3 KRYTYCZNY (czerwona), WY4 buzer (alarm WY3 lub błąd czujnika, wyciszenie wejściem IN1, stroną, Modbus, MQTT), WY5 przekaźnik usterki zbiorczej (zasilony = brak usterki).
 - Usterka zbiorcza – wybór przyczyn w Ustawieniach → Wyjścia, z podglądem na żywo: błąd czujnika, ADS1115, karta SD (domyślnie), a także czas nieustawiony, brak sieci, brak połączenia MQTT, PCF8575.
-- Błąd czujnika: kontrolki WY1–WY3 migają razem 3 razy na sekundę (równy rytm, liczony w zadaniu PWM co 10 ms) i włącza się buzer.
+- Czerwona kontrolka (WY3): świeci ciągle – poziom krytyczny; miga 1× na sekundę – ZA DUŻY (przepełnienie); 2× na sekundę – NAGŁY SPADEK; 3× na sekundę – usterka czujnika (zielona i pomarańczowa zgaszone, buzer).
 - PWM programowy 100 Hz (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalny sprzętowy PWM lampki (GPIO13/14/21).
 - Kasowanie alarmu do wyboru: ręczne (DI1, strona, Modbus, MQTT, API; przypomnienie po X min) albo automatyczne – bez kasowania, alarm gaśnie po powrocie poziomu do normy.
 
@@ -52,6 +52,14 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Ustawienia w NVS + kopia kalibracji i progów w EEPROM 24C02; nowe pola na końcu struktury – aktualizacja nie kasuje konfiguracji.
 
 ## Historia wersji
+
+### 0.5.0 – 16.11.2026
+- Czerwona kontrolka sygnalizuje rodzaj alarmu: ciągle = krytyczny, 1×/s = przepełnienie, 2×/s = nagły spadek, 3×/s = usterka czujnika (wcześniej przy usterce migały WY1–WY3).
+- Kalibracja jednym punktem: aktualny poziom [cm] + „Kalibruj” (korekta przesunięcia sondy); dwa punkty w „zaawansowane”. API: `point:"level"`.
+- Alarmy: tryb zbiornik ppoż. wody / zbiornik ppoż. paliwa / własne; progi w % wysokości zbiornika (podgląd w cm). Nowe pola na końcu ustawień (`alarmMode`, `thrPct`); progi % starszych urządzeń przeliczane z cm. Zapis progów w cm (API, Modbus) = tryb własny.
+- Wyjścia opisane: WY1 POPRAWNY, WY2 MINIMALNY, WY3 KRYTYCZNY + opis migania czerwonej kontrolki (strona: Wyjścia i Alarmy).
+- Nakładka A4: nazwy POPRAWNY / MINIMALNY / KRYTYCZNY i legenda migania czerwonej kontrolki.
+- Wgrane przez API (Pi masim); sprawdzone przez API: tryby i progi %, odrzucenie złych progów, stare API w cm, kalibracja +5 cm (175,5 → 180,5 cm) i przywrócenie.
 
 ### 0.4.9 – 16.11.2026
 - Błąd czujnika: WY1–WY3 migają 3 razy na sekundę (było 1 Hz); miganie w zadaniu PWM, więc rytm jest równy.
@@ -111,5 +119,5 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Wszystkie etapy 1–9 planu: pomiar, kalibracja, litry, progi, wyjścia z PWM, OLED, sieć, czas, logi SD, statystyki, Modbus TCP, MQTT/HA, API z tokenami, OTA, kopia ustawień, watchdog. Domyślnie jeden zbiornik (paliwo, A4).
 
 ## Znane sprawy otwarte
-- Do decyzji: kalibracja jednym punktem (korekta przesunięcia), typ zbiornika w Alarmach (paliwo ppoż. / woda ppoż. / własny), różne tempo migania dla stanów alarmu.
+- Do potwierdzenia: progi stałe zbiorników ppoż. (woda 90/95/98 %, paliwo 80/90/95 %). Do obejrzenia na żywo: rytmy migania czerwonej kontrolki.
 - W terenie: kalibracja przetwornika, działanie buzzera lampki przy obniżonej jasności, dopuszczalny prąd wyjść MOSFET.

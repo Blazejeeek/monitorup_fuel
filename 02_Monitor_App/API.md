@@ -42,10 +42,11 @@ Kody stanu zbiornika (`state`): 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY
 | Metoda | Adres | Treść |
 |---|---|---|
 | POST | `/api/v1/config` | zapis częściowy, np. `{"tanks":[{"thrMin":70},{}]}` |
+| POST | `/api/v1/config` | tryb alarmów (od 0.5.0): `{"tanks":[{"alarmMode":0,"pct":[10,20,95]},{}]}` – 0 własne progi w % wysokości (krytyczny, minimalny, za duży), 1 zbiornik ppoż. wody (90/95/98 %), 2 zbiornik ppoż. paliwa (80/90/95 %). Progi w cm (`thrCrit`, `thrMin`, `thrHigh`) nadal działają – przełączają na tryb własny i przeliczają %. |
 
 ## Tylko po zalogowaniu na stronie
 
-`GET /api/v1/config`, `GET /api/v1/wifi/scan[?start=1]`, `POST /api/v1/calibrate {"tank":0,"point":"min","cm":0}`,
+`GET /api/v1/config`, `GET /api/v1/wifi/scan[?start=1]`, `POST /api/v1/calibrate {"tank":0,"point":"level","cm":120}` (od 0.5.0: zmierzony poziom koryguje przesunięcie sondy; `"point":"min"|"max"` – kalibracja dwupunktowa),
 `POST /api/v1/time {"epoch":…}`, `POST /api/v1/time/sync`, `GET/POST /api/v1/tokens`, `POST /api/v1/tokens/revoke {"id":0[,"renew":true]}`,
 `GET /api/v1/backup` (bez haseł), `POST /api/v1/backup` `{"pass":"…"}` (z hasłami, zaszyfrowana AES-256-GCM; wgranie wymaga pola `_pass`), `POST /api/v1/restore`, `POST /api/v1/ota` (multipart, plik .bin), `POST /api/v1/reboot`,
 `POST /api/v1/factory {"keepCal":true}`, `POST /api/v1/logs/clear`, `POST /api/v1/password`.

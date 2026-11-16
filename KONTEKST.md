@@ -49,9 +49,11 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 16.11.2026
-- SW **0.4.9** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`.
-- Układ stały od 0.4.8: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia na stałe (WY1–WY5); błąd czujnika = WY1–WY3 migają 3 Hz (`blinkMask` w zadaniu PWM, outputs.cpp) + buzer.
-- Nakładka A4 na drzwi obudowy: `grafika/nakladka_gen.py` → SVG/PDF/PNG (otwory 22,3 mm, rozstaw do dopasowania do obudowy).
-- Do decyzji użytkownika: kalibracja jednym punktem, typ zbiornika w Alarmach (paliwo ppoż. / woda ppoż. / własny – progi?), tempo migania dla innych stanów.
-- Do sprawdzenia na żywo: miganie 3 Hz przy odłączonym przetworniku, pliki podsumowań po północy.
+## Stan na 16.11.2026 (0.5.0)
+- SW **0.5.0** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
+- Układ stały: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia WY1 POPRAWNY, WY2 MINIMALNY, WY3 KRYTYCZNY, WY4 buzer, WY5 przekaźnik usterki.
+- WY3 miga wg rodzaju alarmu (`blinkMask`/`blinkPeriodMs` w zadaniu PWM, outputs.cpp): ciągle KRYT, 1000 ms ZA DUŻY, 500 ms SPADEK, 333 ms błąd czujnika.
+- Alarmy: `cfg.alarmMode` (0 własne, 1 ppoż. woda, 2 ppoż. paliwo) + `cfg.thrPct[3]`; progi cm liczone z % w `cfgAlarmToCm()` (config.cpp, wołane w cfgEnforceFixed i przy zapisie). `ALARM_PRESET` = progi stałe – do potwierdzenia przez użytkownika.
+- Kalibracja jednym punktem: `POST /api/v1/calibrate {"point":"level","cm":…}` zmienia `offsetCm`.
+- Nakładka A4: `grafika/nakladka_gen.py` → SVG/PDF/PNG (otwory 22,3 mm, rozstaw do dopasowania do obudowy).
+- Do sprawdzenia na żywo: rytmy migania WY3, pliki podsumowań po północy.

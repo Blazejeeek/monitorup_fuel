@@ -12,7 +12,7 @@
 #include "logger.h"
 #include <SD.h>
 
-#define FW_NUM 49            // wersja programu w rejestrze 0 (30 = 0.3.0)
+#define FW_NUM 50            // wersja programu w rejestrze 0 (30 = 0.3.0)
 #define MB_MAX_CLIENTS 4
 
 static WiFiServer *mbServer = nullptr;
@@ -180,7 +180,9 @@ static bool mbHoldWrite(uint16_t a, uint16_t v) {
     float old, nv = (int16_t)v / 10.0f;
     if (!holdFloat(t, o, &old, &nv)) return false;
     const TankCal &c = cfg.tank[t];
-    if (!(c.thrCrit < c.thrMin && c.thrMin < c.thrHigh) || c.heightCm <= 0 || c.hyst < 0) { holdFloat(t, o, nullptr, &old); return false; }
+    if (!(c.thrCrit < c.thrMin && c.thrMin < c.thrHigh) || c.heightCm <= 0 || c.hyst < 0 || (o <= 2 && c.thrHigh > c.heightCm)) { holdFloat(t, o, nullptr, &old); return false; }
+    if (t == 0 && o <= 2) cfgAlarmFromCm();       // 0.5.0: zapis progu w cm = tryb wlasny, % przeliczone
+    else if (t == 0 && o == 5) cfgAlarmToCm();    // nowa wysokosc: progi cm z %
     mbSaveDirty = true;
     return true;
   }

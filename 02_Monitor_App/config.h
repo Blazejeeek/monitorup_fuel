@@ -158,6 +158,10 @@ struct Config {
   uint8_t  faultBlink;
   // Gestosc mierzonej cieczy [kg/m3] (0.4.8): punkty MIN/MAX to slup wody, poziom cieczy = slup wody * 1000 / gestosc
   float    densityKgM3;
+  // Tryb alarmow (0.5.0): ALM_OWN = wlasne progi w % wysokosci, ALM_FIRE_WATER / ALM_FIRE_FUEL = progi stale (ALARM_PRESET)
+  uint8_t  alarmMode;
+  // Progi wlasne w % wysokosci zbiornika: [0] KRYTYCZNY, [1] MINIMALNY, [2] ZA DUZY; < 0 = przelicz z cm (starsze ustawienia)
+  float    thrPct[3];
 };
 
 extern Config cfg;
@@ -175,4 +179,9 @@ bool eeBackupSave();
 bool eeBackupLoad(TankCal *out);
 void cfgSave();
 void cfgLoad();
+enum AlarmMode : uint8_t { ALM_OWN = 0, ALM_FIRE_WATER = 1, ALM_FIRE_FUEL = 2 };
+extern const float ALARM_PRESET[3][3];   // % wysokosci: KRYTYCZNY, MINIMALNY, ZA DUZY dla kazdego trybu (wiersz 0 nieuzywany)
+const float *alarmPct();                  // progi % aktualnego trybu
+void cfgAlarmToCm();                      // progi cm zbiornika z % (po zmianie trybu, % lub wysokosci)
+void cfgAlarmFromCm();                    // progi % z cm, tryb wlasny (stare API w cm, Modbus)
 void cfgEnforceFixed();          // 0.4.8: jeden zbiornik na A4, 4-20 mA, wyjscia i DI1 na stale

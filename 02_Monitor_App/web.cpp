@@ -387,11 +387,28 @@ static void hCalibrate() {
   TankCal &c = cfg.tank[i];
   if (!s.valid && !(s.mA > 3.0f && s.mA < 22.0f)) { sendErr(400, "Brak prawidłowego odczytu czujnika"); return; }
   float x = s.mA;
+  if (!strcmp(pt, "level")) {
+    // 0.5.0: kalibracja jednym punktem - zmierzony poziom cieczy koryguje przesuniecie sondy (zakres czujnika i gestosc bez zmian)
+    if (!s.valid) { sendErr(400, "Brak prawidłowego odczytu czujnika"); return; }
+    if (cm < 0 || (c.heightCm > 0 && cm > c.heightCm * 1.2f)) { sendErr(400, "Podaj zmierzony poziom cieczy w cm (0 – wysokość zbiornika)"); return; }
+    const float span = c.maxX - c.minX;
+    const float liq = (c.minCm + (x - c.minX) * (c.maxCm - c.minCm) / span) * 1000.0f / cfg.densityKgM3;   // poziom bez przesuniecia
+    const float before = liq + c.offsetCm, oldOff = c.offsetCm;
+    c.offsetCm = roundf((cm - liq) * 10.0f) / 10.0f;
+    if (fabsf(c.offsetCm) > 500.0f) { c.offsetCm = oldOff; sendErr(400, "Korekta większa niż 5 m – sprawdź zakres czujnika i gęstość"); return; }
+    cfgSave();
+    sensorsReset();
+    logEvent("KALIBRACJA", String(cfg.tankName[i]) + ": poziom " + String(before, 1) + " → " + String(cm, 1) + " cm (" + String(x, 3) +
+             " mA), przesunięcie " + String(oldOff, 1) + " → " + String(c.offsetCm, 1) + " cm");
+    JsonDocument r; r["ok"] = true; r["x"] = x; r["before"] = before; r["after"] = cm; r["offset"] = c.offsetCm; r["oldOffset"] = oldOff;
+    sendJson(200, r);
+    return;
+  }
   float water = (cm - c.offsetCm) * cfg.densityKgM3 / 1000.0f;   // 0.4.8: punkty zapisywane jako slup wody
   float oldMin = c.minX, oldMax = c.maxX, oldMinCm = c.minCm, oldMaxCm = c.maxCm;
   if (!strcmp(pt, "min")) { c.minX = x; c.minCm = water; }
   else if (!strcmp(pt, "max")) { c.maxX = x; c.maxCm = water; }
-  else { sendErr(400, "Punkt: min lub max"); return; }
+  else { sendErr(400, "Punkt: level, min lub max"); return; }
   if (fabsf(c.maxX - c.minX) < 0.05f) {
     c.minX = oldMin; c.maxX = oldMax; c.minCm = oldMinCm; c.maxCm = oldMaxCm;
     sendErr(400, "Odczyty MIN i MAX są zbyt bliskie – zmień poziom w zbiorniku między punktami"); return;

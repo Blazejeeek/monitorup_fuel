@@ -15,8 +15,8 @@ bool warnActive = false;         // MINIMALNY / BLAD CZUJNIKA / prognoza
 static uint32_t alarmBits = 0;          // aktywne warunki alarmu (nowy bit = ponowne uruchomienie syreny)
 uint32_t alarmSince = 0, ackTime = 0;
 uint8_t outLevel[8];             // wyliczona jasnosc wyjsc 0-100 %
-static volatile uint8_t blinkMask = 0;  // wyjscia migajace 3 Hz (miganie w zadaniu PWM, krok 10 ms)
-#define BLINK_PERIOD_MS 333              // 3 migniecia na sekunde
+static volatile uint8_t blinkMask = 0;       // wyjscia migajace (miganie w zadaniu PWM, krok 5-10 ms)
+static volatile uint16_t blinkPeriodMs = 1000; // okres migania: 1000 = 1x/s, 500 = 2x/s, 333 = 3x/s
 static uint8_t lastEff[TANK_COUNT] = {255, 255};
 volatile bool outTestRun = false;
 static bool outputsReady = false;
@@ -66,7 +66,8 @@ static void pwmTask(void *) {
     if (outTestRun || !outputsReady) { vTaskDelay(10); continue; }
     uint8_t mask = 0;
     bool frac = false;
-    const bool blinkOff = (millis() % BLINK_PERIOD_MS) >= BLINK_PERIOD_MS / 2;
+    const uint16_t bp = blinkPeriodMs;
+    const bool blinkOff = (millis() % bp) >= bp / 2;
     for (uint8_t k = 0; k < 8; k++) {
       uint8_t lv = (outLevel[k] + 5) / 10;               // 0..10
       if (lv > 0 && lv < 10) frac = true;
@@ -155,20 +156,25 @@ void alarmLoop() {
   // ---- Wyjscia na stale (0.4.8) ----
   // WY1 zielona: poziom OK, system bez uwag | WY2 pomaranczowa: MINIMALNY | WY3 czerwona: KRYTYCZNY / ZA DUZY / NAGLY SPADEK
   // WY4 buzer: alarm WY3 lub blad czujnika, do wyciszenia (DI1) | WY5 przekaznik usterki zbiorczej: zasilony = brak usterki
-  // Blad czujnika: WY1-WY3 migaja 3 Hz (3 razy na sekunde) + buzer. WY6-WY8 nieuzywane.
+  // WY3 czerwona (0.5.0): swieci ciagle = KRYTYCZNY, miga 1x/s = ZA DUZY (przepelnienie), 2x/s = NAGLY SPADEK,
+  // 3x/s = BLAD CZUJNIKA (wtedy WY1 i WY2 zgaszone, buzer). WY6-WY8 nieuzywane.
   const uint8_t e = tankEffState(0);
   const bool fault = fb & cfg.faultMask;
   uint8_t L[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  uint16_t period = 0;                            // 0 = bez migania
   if (sensorFault) {
-    L[0] = L[1] = L[2] = 100;
+    L[2] = 100; period = 333;
   } else {
     L[0] = (e == ST_NORMAL && !fault) ? 100 : 0;
     L[1] = (e == ST_MIN) ? 100 : 0;
     L[2] = isAlarmState(e) ? 100 : 0;
+    if (e == ST_HIGH) period = 1000;
+    else if (e == ST_DROP) period = 500;
   }
   L[3] = ((alarmActive || sensorFault) && !buzzSilenced) ? 100 : 0;
   L[4] = fault ? 0 : 100;                         // brak zasilania / usterka = przekaznik puszczony (styki zwarte)
-  blinkMask = sensorFault ? 0x07 : 0;
+  if (period) blinkPeriodMs = period;
+  blinkMask = period ? 0x04 : 0;
   for (uint8_t k = 0; k < 8; k++) outLevel[k] = L[k];
   lampHwApply(0);
 }

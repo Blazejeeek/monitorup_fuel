@@ -65,7 +65,13 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
     JsonObject t = ta.add<JsonObject>();
     t["name"] = cfg.tankName[i];
     t["en"] = (bool)c.enabled; t["ch"] = c.channel; t["type"] = c.type; t["smooth"] = c.smooth;
-    if (i == 0) t["density"] = cfg.densityKgM3;   // 0.4.8; kanal A4, 4-20 mA i 150 ohm na stale
+    if (i == 0) {
+      t["density"] = cfg.densityKgM3;   // 0.4.8; kanal A4, 4-20 mA i 150 ohm na stale
+      t["alarmMode"] = cfg.alarmMode;   // 0.5.0: 0 wlasne (%), 1 ppoz. woda, 2 ppoz. paliwo
+      JsonArray pc = t["pct"].to<JsonArray>(); for (uint8_t k = 0; k < 3; k++) pc.add(cfg.thrPct[k]);
+      JsonArray pr = t["presets"].to<JsonArray>();
+      for (uint8_t m = 1; m < 3; m++) { JsonArray q = pr.add<JsonArray>(); for (uint8_t k = 0; k < 3; k++) q.add(ALARM_PRESET[m][k]); }
+    }
     t["minX"] = c.minX; t["minCm"] = c.minCm; t["maxX"] = c.maxX; t["maxCm"] = c.maxCm;
     t["offset"] = c.offsetCm; t["height"] = c.heightCm;
     t["thrCrit"] = c.thrCrit; t["thrMin"] = c.thrMin; t["thrHigh"] = c.thrHigh;
@@ -166,6 +172,7 @@ String cfgFromJson(JsonObjectConst r) {
       }
       c.minX = numOr(t["minX"], c.minX); c.minCm = numOr(t["minCm"], c.minCm); c.maxX = numOr(t["maxX"], c.maxX); c.maxCm = numOr(t["maxCm"], c.maxCm);
       c.offsetCm = numOr(t["offset"], c.offsetCm); c.heightCm = numOr(t["height"], c.heightCm);
+      const bool cmThr = !t["thrCrit"].isNull() || !t["thrMin"].isNull() || !t["thrHigh"].isNull();
       c.thrCrit = numOr(t["thrCrit"], c.thrCrit); c.thrMin = numOr(t["thrMin"], c.thrMin); c.thrHigh = numOr(t["thrHigh"], c.thrHigh);
       c.hyst = numOr(t["hyst"], c.hyst); c.delayS = numOr(t["delay"], c.delayS);
       x.volEn = boolOr(t["volEn"], x.volEn); x.shape = numOr(t["shape"], x.shape);
@@ -185,6 +192,24 @@ String cfgFromJson(JsonObjectConst r) {
       if (i > 0) { i++; continue; }                  // 0.4.8: tylko jeden zbiornik (A4)
       if (fabsf(c.maxX - c.minX) < 0.01f) return fail(n + "punkty MIN i MAX muszą się różnić");
       if (c.heightCm <= 0) return fail(n + "podaj wysokość zbiornika");
+      // 0.5.0: progi w % wysokosci (tryb wlasny) albo stale progi ppoz.; progi w cm (dawne API) = tryb wlasny
+      if (!t["alarmMode"].isNull()) {
+        uint8_t m = t["alarmMode"].as<uint8_t>();
+        if (m > ALM_FIRE_FUEL) return fail(n + "tryb alarmów: 0 własne, 1 zbiornik ppoż. wody, 2 zbiornik ppoż. paliwa");
+        cfg.alarmMode = m;
+      }
+      if (t["pct"].is<JsonArrayConst>()) {
+        JsonArrayConst pa = t["pct"];
+        float q[3];
+        for (uint8_t k = 0; k < 3; k++) q[k] = pa[k] | -1.0f;
+        if (!(q[0] >= 0 && q[0] < q[1] && q[1] < q[2] && q[2] <= 100.0f)) return fail(n + "progi w %: 0 ≤ krytyczny < minimalny < za duży ≤ 100");
+        memcpy(cfg.thrPct, q, sizeof(q));
+      } else if (cmThr) {
+        if (!(c.thrCrit < c.thrMin && c.thrMin < c.thrHigh)) return fail(n + "progi muszą spełniać: krytyczny < minimalny < za duży");
+        if (c.thrHigh > c.heightCm) return fail(n + "próg ZA DUŻY większy niż wysokość zbiornika");
+        cfgAlarmFromCm();
+      }
+      cfgAlarmToCm();
       if (!(c.thrCrit < c.thrMin && c.thrMin < c.thrHigh)) return fail(n + "progi muszą spełniać: krytyczny < minimalny < za duży");
       if (c.thrHigh > c.heightCm * 1.05f)
         return fail(n + "wysokość zbiornika " + String(c.heightCm, 0) + " cm jest mniejsza niż próg ZA DUŻY " + String(c.thrHigh, 0) +

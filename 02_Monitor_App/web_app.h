@@ -289,10 +289,12 @@ SET.przetworniki=el=>{const t=C.tanks[0],i=0;el.innerHTML=`<div class="grid"><di
  <div class="g2">${F.num('tminx0','Punkt MIN – prąd [mA]',t.minX)}${F.num('tminc0','Punkt MIN – słup wody [cm H₂O]',t.minCm)}
  ${F.num('tmaxx0','Punkt MAX – prąd [mA]',t.maxX)}${F.num('tmaxc0','Punkt MAX – słup wody [cm H₂O]',t.maxCm)}</div>
  <p class="muted" style="font-size:12px">Wpisz zakres z tabliczki czujnika, np. 4 mA = 0 cm H₂O, 20 mA = 200 cm H₂O. Poziom cieczy = słup wody × 1000 / gęstość + przesunięcie sondy.</p>
- <h2 style="margin-top:14px;font-size:15px">Kalibracja z bieżącego odczytu</h2>
- <div class="g2">${F.num('tlvl0','Poziom cieczy teraz (zmierzony miarką) [cm]','')}<div></div></div>
+ <h2 style="margin-top:14px;font-size:15px">Kalibracja</h2>
+ <div class="g2">${F.num('tlvl0','Aktualny poziom cieczy (zmierzony miarką) [cm]','')}<div style="display:flex;align-items:flex-end"><button class="btn" onclick="calib(0,'level')">Kalibruj</button></div></div>
+ <p class="muted" style="font-size:12px">Zmierz poziom w zbiorniku, wpisz wartość w cm i kliknij „Kalibruj” – urządzenie poprawi przesunięcie sondy tak, żeby odczyt był równy pomiarowi. Zakres czujnika i gęstość zostają bez zmian (ustaw je wcześniej).</p>
+ <details style="margin-top:6px"><summary class="muted" style="cursor:pointer;font-size:13px">Kalibracja dwupunktowa (zaawansowane)</summary>
  <div class="btns"><button class="btn sec sm" onclick="calib(0,'min')">Ustaw jako punkt MIN</button><button class="btn sec sm" onclick="calib(0,'max')">Ustaw jako punkt MAX</button></div>
- <p class="muted" style="font-size:12px">Przy niskim poziomie zmierz poziom miarką, wpisz go i kliknij „MIN”; drugi punkt przy wysokim poziomie („MAX”). Gęstość ustaw przed kalibracją – punkty są zapisywane jako słup wody.</p>
+ <p class="muted" style="font-size:12px">Gdy odczyt rozjeżdża się przy innym poziomie: przy niskim poziomie wpisz pomiar i kliknij „MIN”, przy wysokim – „MAX”. Punkty są zapisywane jako słup wody.</p></details>
  <div class="g2">${F.num('tof0','Przesunięcie montażowe sondy [cm]',t.offset)}${F.num('th0','Wysokość zbiornika (100 %) [cm]',t.height)}</div>
  <h2 style="margin-top:14px;font-size:15px">Litry</h2>${F.chk('tve0','Przeliczaj na litry',t.volEn)}
  <div id="tvb0">${F.sel('tsp0','Kształt zbiornika',t.shape,SHAPES)}<div class="g2" id="tdim0"></div>
@@ -325,27 +327,40 @@ function tankForm(i){const s=+V('tsp'+i);const tb=V('ttt'+i).split('\n').map(l=>
  offset:N('tof'+i),height:N('th'+i),volEn:B('tve'+i),shape:s,dimA:$('tda'+i)?N('tda'+i):C.tanks[i].dimA,dimB:$('tdb'+i)?N('tdb'+i):C.tanks[i].dimB,table:tb}}
 window.saveTank=i=>{const t=C.tanks.map(()=>({}));t[i]=tankForm(i);save({tanks:t},'Zapisano ustawienia przetwornika')};
 window.calib=async(i,p)=>{const cm=N('tlvl'+i);if(isNaN(cm)){toast('Wpisz zmierzony poziom cieczy [cm]',1);return}
+ if(p=='level'){if(!confirm(`Skalibrować: aktualny poziom = ${fc(cm,1)} cm?`))return;const j=await post('/api/v1/calibrate',{tank:i,point:'level',cm});
+  toast(`Skalibrowano: ${fc(j.before,1)} → ${fc(j.after,1)} cm (przesunięcie sondy ${fc(j.offset,1)} cm)`);await cfgLoad();settingsShow('przetworniki');return}
  if(!confirm(`Zapisać bieżący odczyt jako punkt ${p.toUpperCase()} = ${cm} cm cieczy (gęstość ${fc(C.tanks[0].density??1000,0)} kg/m³)?`))return;const j=await post('/api/v1/calibrate',{tank:i,point:p,cm});
  toast(`Zapisano punkt ${p.toUpperCase()}: ${fc(j.x,3)} mA → ${fc(j.water,1)} cm H₂O`);await cfgLoad();settingsShow('przetworniki')};
 
-SET.alarmy=el=>{const t=C.tanks[0];el.innerHTML=`<div class="grid"><div class="card"><h2>${esc(t.name)}</h2>
- <div class="g3">${F.num('ac0','KRYTYCZNY ≤ [cm]',t.thrCrit)}${F.num('am0','MINIMALNY ≤ [cm]',t.thrMin)}${F.num('ah0','ZA DUŻY ≥ [cm]',t.thrHigh)}</div>
+const ALMODES=[[1,'Zbiornik ppoż. wody'],[2,'Zbiornik ppoż. paliwa'],[0,'Własne']];
+SET.alarmy=el=>{const t=C.tanks[0];const pc=t.pct||[10,20,95];el.innerHTML=`<div class="grid"><div class="card"><h2>${esc(t.name)}</h2>
+ ${F.sel('amo0','Tryb alarmu',t.alarmMode??0,ALMODES)}
+ <div class="g3">${F.num('ac0','KRYTYCZNY ≤ [%]',pc[0])}${F.num('am0','MINIMALNY ≤ [%]',pc[1])}${F.num('ah0','ZA DUŻY ≥ [%]',pc[2])}</div>
+ <div class="live" id="acm0"></div>
  <div class="g2">${F.num('ahy0','Histereza [cm]',t.hyst)}${F.num('ad0','Opóźnienie alarmu [s]',t.delay,1)}</div>
  <div class="g2">${F.num('aht0','Wysokość zbiornika (100 %) [cm]',t.height)}<div></div></div>
- <p class="muted" style="font-size:12px">Kolejność: krytyczny &lt; minimalny &lt; za duży ≤ wysokość zbiornika. Wysokość i progi zapisują się razem.</p></div>
+ <p class="muted" style="font-size:12px">Progi w % wysokości zbiornika. Zbiorniki ppoż. mają progi stałe (zbiornik powinien być stale pełny); „Własne” – wpisz progi: krytyczny &lt; minimalny &lt; za duży ≤ 100 %.</p></div>
  <div class="card"><h2>Buzer i kasowanie</h2>
+ <p class="muted" style="font-size:13px">Czerwona kontrolka (WY3): świeci ciągle – KRYTYCZNY, miga 1× na sekundę – ZA DUŻY (przepełnienie), 2× – NAGŁY SPADEK, 3× – usterka czujnika.</p>
  <p class="muted" style="font-size:13px">Buzer (WY4) włącza się przy stanie KRYTYCZNYM, ZA DUŻYM, NAGŁYM SPADKU i przy błędzie czujnika. Wyciszenie: przycisk na wejściu <b>IN1</b> (także strona, Modbus, MQTT). Kontrolki świecą do powrotu poziomu do normy; nagły spadek trzyma się do wyciszenia.</p>
  ${F.num('arm','Przypomnienie: ponowny buzer po [min] od wyciszenia (0 = wyłączone)',C.alarm.reminderMin,1)}</div></div>
  <div class="btns"><button class="btn" id="asv2">Zapisz</button></div>`;
- $('asv2').onclick=()=>save({tanks:[{thrCrit:N('ac0'),thrMin:N('am0'),thrHigh:N('ah0'),hyst:N('ahy0'),delay:+V('ad0'),height:N('aht0')},{}],alarm:{reminderMin:+V('arm')}})};
+ const PR={1:(t.presets||[])[0],2:(t.presets||[])[1]};
+ const amode=()=>{const m=+V('amo0');if(m&&PR[m])[['ac0',0],['am0',1],['ah0',2]].forEach(([id,k])=>$(id).value=PR[m][k]);
+  ['ac0','am0','ah0'].forEach(id=>$(id).disabled=!!m);acm()};
+ const acm=()=>{const h=N('aht0');$('acm0').innerHTML=h>0?`Przy wysokości ${fc(h,0)} cm: KRYTYCZNY ≤ <b>${fc(N('ac0')*h/100,1)} cm</b> · MINIMALNY ≤ <b>${fc(N('am0')*h/100,1)} cm</b> · ZA DUŻY ≥ <b>${fc(N('ah0')*h/100,1)} cm</b>`:'Podaj wysokość zbiornika'};
+ $('amo0').onchange=amode;['ac0','am0','ah0','aht0'].forEach(id=>$(id).oninput=acm);amode();
+ $('asv2').onclick=()=>{const m=+V('amo0');const o={alarmMode:m,hyst:N('ahy0'),delay:+V('ad0'),height:N('aht0')};if(!m)o.pct=[N('ac0'),N('am0'),N('ah0')];
+  save({tanks:[o,{}],alarm:{reminderMin:+V('arm')}})}};
 
 const FAULTS=[[1,'błąd czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
-const OUTFIX=[['WY1','Kontrolka zielona','poziom OK, system działa bez uwag'],['WY2','Kontrolka pomarańczowa','poziom MINIMALNY'],['WY3','Kontrolka czerwona','KRYTYCZNY, ZA DUŻY, NAGŁY SPADEK'],
+const OUTFIX=[['WY1','POPRAWNY – kontrolka zielona','poziom poprawny, system działa bez uwag'],['WY2','MINIMALNY – kontrolka pomarańczowa','poziom minimalny'],
+ ['WY3','KRYTYCZNY – kontrolka czerwona','świeci ciągle: poziom krytyczny · miga 1× na sekundę: ZA DUŻY (przepełnienie) · 2× na sekundę: NAGŁY SPADEK · 3× na sekundę: usterka czujnika'],
  ['WY4','Buzer','alarm z WY3 lub błąd czujnika – do wyciszenia przyciskiem IN1'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
  ['WY6–WY8','—','nieużywane']];
 SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Wyjścia (przypisanie stałe)</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Kiedy włączone</th><th>Teraz</th></tr>`+
  OUTFIX.map(([o,f,w],k)=>`<tr><td>${o}</td><td>${f}</td><td class="muted">${w}</td><td id="ol${k}">—</td></tr>`).join('')+`</table></div>
- <p class="muted" style="font-size:12px">Błąd czujnika: WY1–WY3 migają razem szybko (3 razy na sekundę) i włącza się buzer. Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
+ <p class="muted" style="font-size:12px">Miganie czerwonej kontrolki (WY3): <b>ciągle</b> – krytyczny poziom · <b>1× na sekundę</b> – przepełnienie (ZA DUŻY) · <b>2× na sekundę</b> – nagły spadek (wyciek / kradzież) · <b>3× na sekundę</b> – usterka czujnika (zielona i pomarańczowa zgaszone, włącza się buzer). Wejście IN1: wyciszenie buzera i skasowanie alarmu.</p>
  <div class="btns"><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza (WY5) – co ją wywołuje</h2><p class="muted" style="font-size:13px">Przekaźnik WY5 puszcza, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
  ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}

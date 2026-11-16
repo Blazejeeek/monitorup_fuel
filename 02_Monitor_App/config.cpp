@@ -89,6 +89,8 @@ void outDefaults() {
   cfg.ackAuto = 0;
   cfg.faultBlink = 1;
   cfg.densityKgM3 = 1000.0f;
+  cfg.alarmMode = ALM_OWN;
+  cfg.thrPct[0] = cfg.thrPct[1] = cfg.thrPct[2] = -1.0f;   // przy starcie przeliczane z progow cm
 }
 
 void tankExtraDefaults(uint8_t i) {
@@ -197,6 +199,34 @@ bool eeBackupLoad(TankCal *out) {
 // ---------------- Staly uklad (0.4.8) ----------------
 // Jeden zbiornik na wejsciu A4, sygnal 4-20 mA (rezystor 150 ohm na stale - calib.h), drugi zbiornik wylaczony.
 // Wyjscia maja stale funkcje (outputs.cpp), kasowanie/wyciszenie: DI1 + strona, tryb reczny.
+// ---------------- Tryb alarmow i progi w % (0.5.0) ----------------
+// Zbiorniki ppoz. powinny byc stale pelne: alarm juz przy niewielkim ubytku. Paliwo: ZA DUZY 95 % (miejsce na rozszerzalnosc).
+const float ALARM_PRESET[3][3] = {
+  {0, 0, 0},          // ALM_OWN - progi z cfg.thrPct
+  {90, 95, 98},       // ALM_FIRE_WATER: zbiornik ppoz. wody
+  {80, 90, 95},       // ALM_FIRE_FUEL:  zbiornik ppoz. paliwa
+};
+
+const float *alarmPct() { return cfg.alarmMode == ALM_OWN || cfg.alarmMode > ALM_FIRE_FUEL ? cfg.thrPct : ALARM_PRESET[cfg.alarmMode]; }
+
+void cfgAlarmToCm() {
+  TankCal &c = cfg.tank[0];
+  if (c.heightCm <= 0) return;
+  const float *p = alarmPct();
+  c.thrCrit = p[0] * c.heightCm / 100.0f;
+  c.thrMin  = p[1] * c.heightCm / 100.0f;
+  c.thrHigh = p[2] * c.heightCm / 100.0f;
+}
+
+void cfgAlarmFromCm() {
+  const TankCal &c = cfg.tank[0];
+  if (c.heightCm <= 0) return;
+  cfg.alarmMode = ALM_OWN;
+  cfg.thrPct[0] = roundf(c.thrCrit * 1000.0f / c.heightCm) / 10.0f;
+  cfg.thrPct[1] = roundf(c.thrMin * 1000.0f / c.heightCm) / 10.0f;
+  cfg.thrPct[2] = roundf(c.thrHigh * 1000.0f / c.heightCm) / 10.0f;
+}
+
 void cfgEnforceFixed() {
   cfg.tank[0].enabled = 1;
   cfg.tank[0].channel = 3;
@@ -207,6 +237,15 @@ void cfgEnforceFixed() {
   cfg.ackAuto = 0;
   cfg.faultBlink = 1;
   if (!(cfg.densityKgM3 >= 300.0f && cfg.densityKgM3 <= 2500.0f)) cfg.densityKgM3 = 1000.0f;
+  if (cfg.alarmMode > ALM_FIRE_FUEL) cfg.alarmMode = ALM_OWN;
+  const float *p = cfg.thrPct;
+  if (!(p[0] >= 0 && p[0] < p[1] && p[1] < p[2] && p[2] <= 100.0f)) {   // starsze ustawienia: % z dotychczasowych progow cm
+    const uint8_t m = cfg.alarmMode;
+    cfgAlarmFromCm();
+    cfg.alarmMode = m;
+    if (!(p[0] >= 0 && p[0] < p[1] && p[1] < p[2] && p[2] <= 100.0f)) { cfg.thrPct[0] = 10; cfg.thrPct[1] = 20; cfg.thrPct[2] = 95; }
+  }
+  cfgAlarmToCm();
 }
 
 // ---------------- NVS ----------------
