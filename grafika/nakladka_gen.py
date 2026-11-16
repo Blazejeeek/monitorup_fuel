@@ -42,17 +42,15 @@ svg = [f"<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' vi
        "<path d='M0 34 Q8 30 16 34 T32 34 T48 34 T64 34 V64 H0Z' fill='#0ea5e9' opacity='.55'/></g>"
        "<path d='M20 20h8M20 26h5' stroke='#38bdf8' stroke-width='2.5' stroke-linecap='round'/></g>",
        f"<text x='60' y='37' {F} font-size='15' font-weight='bold' fill='{TXT}' letter-spacing='.3'>MonitorUp<tspan fill='{ACC}'>.pl</tspan></text>",
-       text(60, 46, "Monitoring poziomu zbiornika paliwa", 4.6, MUTED, anchor="start"),
+       text(60, 46, "Poziom zbiornika", 4.6, MUTED, anchor="start"),
        # nazwa zbiornika
        text(22, 82, "ZBIORNIK", 3.4, MUTED, "bold", "start", .6),
        f"<line x1='48' y1='82.5' x2='188' y2='82.5' stroke='{LINE}' stroke-width='.5'/>",
-       text(22, 96, "SYGNALIZACJA", 3.4, ACC, "bold", "start", .6),
-       f"<line x1='60' y1='95' x2='188' y2='95' stroke='{LINE}' stroke-width='.4'/>",
 ]
 RED = "#ef4444"
-lamps = [("#22c55e", "POPRAWNY", ["poziom poprawny,", "system bez uwag"]),
-         ("#f59e0b", "MINIMALNY", ["niski poziom –", "zaplanuj tankowanie"]),
-         (RED, "KRYTYCZNY", ["alarm – rodzaj", "wg migania (niżej)"])]
+lamps = [("#22c55e", "NORMALNY", []),
+         ("#f59e0b", "NIEPRAWIDŁOWY", []),
+         (RED, "KRYTYCZNY", [])]
 for cx, (col, lab, desc) in zip(LAMPS_X, lamps):
     svg.append(hole(cx, LAMPS_Y, col))
     svg.append(text(cx, LAMPS_Y + 27, lab, 5.2, col, "bold", ls=.4))
@@ -61,15 +59,15 @@ for cx, (col, lab, desc) in zip(LAMPS_X, lamps):
 
 # legenda migania czerwonej kontrolki: rysunek 1 sekundy (pasek = kontrolka świeci)
 yl = 164
-svg += [f"<rect x='22' y='{yl}' width='166' height='38' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>",
-        text(28, yl + 7.5, "CZERWONA KONTROLKA I BUZER – CO OZNACZA", 3.5, RED, "bold", "start", .4)]
-rows = [(0, "świeci ciągle", "poziom krytyczny – uzupełnij zbiornik"),
-        (1, "miga 1× na sekundę", "przepełnienie zbiornika"),
-        (2, "miga 2× na sekundę", "nagły spadek – możliwy wyciek lub kradzież"),
-        (3, "miga 3× na sekundę", "usterka czujnika – powiadom serwis")]
-TX, TW = 28, 22                       # oś czasu: x, szerokość (1 s)
+yl = 158
+svg += [f"<rect x='40' y='{yl}' width='130' height='36' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
+rows = [(0, "", "poziom krytyczny"),
+        (1, "", "przepełnienie"),
+        (2, "", "nagły spadek"),
+        (3, "", "usterka czujnika")]
+TX, TW = 52, 22                       # oś czasu: x, szerokość (1 s)
 for k, (n, how, what) in enumerate(rows):
-    y = yl + 14 + k * 6.6
+    y = yl + 9.5 + k * 7
     svg.append(f"<rect x='{TX}' y='{y-2.6}' width='{TW}' height='2.6' rx='1.3' fill='#1c2942'/>")
     if n == 0:
         svg.append(f"<rect x='{TX}' y='{y-2.6}' width='{TW}' height='2.6' rx='1.3' fill='{RED}'/>")
@@ -77,34 +75,20 @@ for k, (n, how, what) in enumerate(rows):
         seg = TW / n
         for j in range(n):
             svg.append(f"<rect x='{TX + j*seg:.2f}' y='{y-2.6}' width='{seg/2:.2f}' height='2.6' rx='1.2' fill='{RED}'/>")
-    svg.append(text(TX + TW + 5, y, f"<tspan font-weight='bold' fill='{TXT}'>{how}</tspan>  –  {what}", 3.4, MUTED, anchor="start"))
+    svg.append(text(TX + TW + 8, y, what, 4, TXT, anchor="start"))
 
 # przycisk wyciszenia
 bx, by = BTN
 svg += [hole(bx, by, ACC),
-        text(bx, by + 23, "WYCISZ", 4.6, ACC, "bold", ls=.4),
-        text(80, by - 7, "WYCISZENIE BUZERA", 5.6, TXT, "bold", "start", .3),
-        text(80, by - 1, "Buzer gra w rytmie czerwonej kontrolki. Naciśnij", 3.6, MUTED, anchor="start"),
-        text(80, by + 4, "przycisk, aby go wyciszyć i skasować alarm.", 3.6, MUTED, anchor="start"),
-        text(80, by + 9, "Kontrolka świeci do powrotu poziomu do normy.", 3.6, MUTED, anchor="start"),
-        f"<g transform='translate(80 {by+13})' fill='none' stroke='{ACC}' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'>"
+        text(84, by + 2.5, "WYCISZ", 7, ACC, "bold", "start", .4),
+        f"<g transform='translate(127 {by-4}) scale(1.1)' fill='none' stroke='{ACC}' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'>"
         "<path d='M0 2h2.5l3-2.5v8l-3-2.5H0z' fill='#38bdf8' fill-opacity='.25'/><path d='M8 0.5l4 4M12 0.5l-4 4'/></g>"]
-# co robić
-yb = 250
-svg += [f"<rect x='22' y='{yb}' width='166' height='25' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>",
-        text(28, yb + 7, "GDY ŚWIECI LUB MIGA CZERWONA KONTROLKA", 3.4, RED, "bold", "start", .4),
-        text(28, yb + 13, "1.  Wycisz buzer przyciskiem.", 3.5, TXT, anchor="start"),
-        text(28, yb + 18, "2.  Sprawdź poziom paliwa i szczelność zbiornika.", 3.5, TXT, anchor="start"),
-        text(28, yb + 23, "3.  Powiadom osobę odpowiedzialną lub serwis.", 3.5, TXT, anchor="start")]
 # stopka
 yf = 281
 svg += [f"<line x1='22' y1='{yf-2}' x2='188' y2='{yf-2}' stroke='{LINE}' stroke-width='.4'/>",
         text(22, yf + 4, "Serwis, tel.:", 3.3, MUTED, anchor="start"),
         f"<line x1='44' y1='{yf+4.5}' x2='112' y2='{yf+4.5}' stroke='{LINE}' stroke-width='.4'/>",
-        text(22, yf + 10, "Adres urządzenia:", 3.3, MUTED, anchor="start"),
-        f"<line x1='55' y1='{yf+10.5}' x2='112' y2='{yf+10.5}' stroke='{LINE}' stroke-width='.4'/>",
         text(188, yf + 4, "www.monitorup.pl", 4.4, ACC, "bold", "end"),
-        text(188, yf + 10, "sterownik HW 1.0 · otwory ⌀" + str(HOLE_D).replace('.', ',') + " mm", 2.6, "#5b6b86", anchor="end"),
         "</svg>"]
 s = "\n".join(svg)
 (OUT / "nakladka_A4.svg").write_text(s)
