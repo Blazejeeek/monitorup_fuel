@@ -83,9 +83,7 @@ svg += [hole(bx, by, ACC),
 # stopka
 yf = 281
 svg += [f"<line x1='22' y1='{yf-2}' x2='188' y2='{yf-2}' stroke='{LINE}' stroke-width='.4'/>",
-        text(22, yf + 4, "Serwis, tel.:", 3.3, MUTED, anchor="start"),
-        f"<line x1='44' y1='{yf+4.5}' x2='112' y2='{yf+4.5}' stroke='{LINE}' stroke-width='.4'/>",
-        text(188, yf + 4, "www.monitorup.pl", 4.4, ACC, "bold", "end"),
+        text(105, yf + 4, "www.monitorup.pl", 4.4, ACC, "bold"),
         "</svg>"]
 s = "\n".join(svg)
 (OUT / "nakladka_A4.svg").write_text(s)
