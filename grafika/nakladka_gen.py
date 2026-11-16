@@ -48,19 +48,19 @@ svg = [f"<svg xmlns='http://www.w3.org/2000/svg' width='210mm' height='297mm' vi
 ]
 RED, GRN, AMB = "#ef4444", "#22c55e", "#f59e0b"
 # Propozycja „kolor mówi, co zrobić”: zielona = OK, pomarańczowa = uwaga/serwis, czerwona = działaj
-lamps = [(GRN, "OK"), (AMB, "UWAGA"), (RED, "ALARM")]
+lamps = [(GRN, "NORMA"), (AMB, "OSTRZEŻENIE"), (RED, "ALARM")]
 for cx, (col, lab) in zip(LAMPS_X, lamps):
     svg.append(hole(cx, LAMPS_Y, col))
-    svg.append(text(cx, LAMPS_Y + 27, lab, 6, col, "bold", ls=.6))
+    svg.append(text(cx, LAMPS_Y + 27, lab, 5.2, col, "bold", ls=.6))
 
 # legenda: pasek ciągły = świeci, długie kreski = miga, krótkie kropki = miga szybko
 yl = 152
 svg += [f"<rect x='26' y='{yl}' width='158' height='46' rx='4' fill='{PANEL}' stroke='{LINE}' stroke-width='.4'/>"]
-rows = [(AMB, "s", "Niski poziom", "zaplanuj tankowanie"),
-        (AMB, "m", "Usterka", "wezwij serwis"),
-        (RED, "s", "Brak paliwa", "zatankuj"),
-        (RED, "m", "Przepełnienie", "przerwij tankowanie"),
-        (RED, "f", "Nagły spadek", "sprawdź, czy nie ma wycieku")]
+rows = [(AMB, "s", "Poziom minimalny", "zaplanować uzupełnienie"),
+        (AMB, "m", "Awaria czujnika", "wezwać serwis"),
+        (RED, "s", "Poziom krytyczny", "uzupełnić zbiornik"),
+        (RED, "m", "Przepełnienie", "wstrzymać napełnianie"),
+        (RED, "f", "Nagły spadek poziomu", "sprawdzić szczelność")]
 TX, TW = 33, 14
 for k, (col, kind, what, todo) in enumerate(rows):
     y = yl + 9 + k * 8
@@ -72,14 +72,14 @@ for k, (col, kind, what, todo) in enumerate(rows):
     else:
         segs = [(j * 2.4, 1.3) for j in range(6)]
     svg += [f"<rect x='{TX + a:.2f}' y='{y-2.8}' width='{b:.2f}' height='2.8' rx='1.3' fill='{col}'/>" for a, b in segs]
-    svg.append(text(TX + TW + 3, y, {"s": "świeci", "m": "miga", "f": "miga szybko"}[kind], 3.2, MUTED, anchor="start"))
+    svg.append(text(TX + TW + 3, y, {"s": "ciągłe", "m": "przerywane", "f": "szybkie"}[kind], 3.2, MUTED, anchor="start"))
     svg.append(text(TX + TW + 26, y, f"<tspan font-weight='bold' fill='{col}'>{what}</tspan>  –  {todo}", 4.2, TXT, anchor="start"))
 
 # przycisk wyciszenia
 bx, by = BTN
 svg += [hole(bx, by, ACC),
-        text(84, by + 2.5, "WYCISZ", 7, ACC, "bold", "start", .4),
-        f"<g transform='translate(127 {by-4}) scale(1.1)' fill='none' stroke='{ACC}' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'>"
+        text(84, by + 2.5, "KASOWANIE ALARMU", 5.4, ACC, "bold", "start", .4),
+        f"<g transform='translate(160 {by-4}) scale(1.1)' fill='none' stroke='{ACC}' stroke-width='.7' stroke-linejoin='round' stroke-linecap='round'>"
         "<path d='M0 2h2.5l3-2.5v8l-3-2.5H0z' fill='#38bdf8' fill-opacity='.25'/><path d='M8 0.5l4 4M12 0.5l-4 4'/></g>"]
 # stopka
 yf = 281
