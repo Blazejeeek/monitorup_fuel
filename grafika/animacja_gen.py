@@ -17,7 +17,7 @@ STATES = [("Wszystko OK", "nic nie rób", GRN[0], (1, 0, 0)),
           ("Usterka", "wezwij serwis", AMB[0], (0, 2, 0)),
           ("Brak paliwa", "zatankuj", RED[0], (0, 0, 1)),
           ("Przepełnienie", "przerwij tankowanie", RED[0], (0, 0, 2)),
-          ("Wyciek?", "sprawdź zbiornik", RED[0], (0, 0, 4))]
+          ("Nagły spadek", "sprawdź, czy nie ma wycieku", RED[0], (0, 0, 4))]
 FPS, LOOP = 20, 2.0
 W, H, PW, PH = 960, 640, 300, 270
 

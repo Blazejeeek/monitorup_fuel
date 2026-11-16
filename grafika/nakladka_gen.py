@@ -60,7 +60,7 @@ rows = [(AMB, "s", "Niski poziom", "zaplanuj tankowanie"),
         (AMB, "m", "Usterka", "wezwij serwis"),
         (RED, "s", "Brak paliwa", "zatankuj"),
         (RED, "m", "Przepełnienie", "przerwij tankowanie"),
-        (RED, "f", "Wyciek?", "sprawdź zbiornik")]
+        (RED, "f", "Nagły spadek", "sprawdź, czy nie ma wycieku")]
 TX, TW = 33, 14
 for k, (col, kind, what, todo) in enumerate(rows):
     y = yl + 9 + k * 8
