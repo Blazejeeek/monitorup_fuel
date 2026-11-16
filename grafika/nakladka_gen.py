@@ -82,11 +82,11 @@ svg += [hole(bx, by, ACC),
         text(bx, by + 29.5, "ALARMU", 4.6, ACC, "bold", ls=.4)]
 
 # zbiornik ze strefami w kolorach kontrolek (od dołu: krytyczny, minimalny, norma, przepełnienie)
-TKX, TKY, TKW, TKH = 104, 207, 30, 64
-zones = [(0.00, 0.12, RED, "POZIOM KRYTYCZNY"), (0.12, 0.30, AMB, "POZIOM MINIMALNY"),
+TKX, TKY, TKW, TKH = 84, 215, 66, 34          # zbiornik leżący
+zones = [(0.00, 0.12, RED, "KRYTYCZNY"), (0.12, 0.30, AMB, "MINIMALNY"),
          (0.30, 0.90, GRN, "NORMA"), (0.90, 1.00, RED, "PRZEPEŁNIENIE")]
-svg.append(f"<clipPath id='tk'><rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='5'/></clipPath>")
-svg.append(f"<rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='5' fill='#060b16'/>")
+svg.append(f"<clipPath id='tk'><rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='11'/></clipPath>")
+svg.append(f"<rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='11' fill='#060b16'/>")
 svg.append("<g clip-path='url(#tk)'>")
 for lo, hi, col, lab in zones:
     y1, y2 = TKY + TKH * (1 - hi), TKY + TKH * (1 - lo)
@@ -94,7 +94,9 @@ for lo, hi, col, lab in zones:
     if lo > 0:
         svg.append(f"<line x1='{TKX}' y1='{y2:.2f}' x2='{TKX + TKW}' y2='{y2:.2f}' stroke='#0b1324' stroke-width='.6'/>")
 svg.append("</g>")
-svg.append(f"<rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='5' fill='none' stroke='{MUTED}' stroke-width='.6'/>")
+svg.append(f"<rect x='{TKX}' y='{TKY}' width='{TKW}' height='{TKH}' rx='11' fill='none' stroke='{MUTED}' stroke-width='.6'/>")
+for sx in (TKX + 12, TKX + TKW - 18):      # siodła
+    svg.append(f"<path d='M{sx} {TKY + TKH - 2}h6l2 7h-10z' fill='#1c2942' stroke='{MUTED}' stroke-width='.4'/>")
 for lo, hi, col, lab in zones:
     ym = TKY + TKH * (1 - (lo + hi) / 2)
     svg.append(f"<line x1='{TKX + TKW + 1.5}' y1='{ym:.2f}' x2='{TKX + TKW + 5}' y2='{ym:.2f}' stroke='{col}' stroke-width='.5'/>")

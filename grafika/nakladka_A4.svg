@@ -61,26 +61,28 @@
 <text x='52' y='229' font-family='DejaVu Sans, sans-serif' font-size='2.2' fill='#5b6b86' text-anchor='middle'>⌀22,3</text>
 <text x='52' y='246' font-family='DejaVu Sans, sans-serif' font-size='4.6' font-weight='bold' fill='#38bdf8' text-anchor='middle' letter-spacing='0.4'>KASOWANIE</text>
 <text x='52' y='251.5' font-family='DejaVu Sans, sans-serif' font-size='4.6' font-weight='bold' fill='#38bdf8' text-anchor='middle' letter-spacing='0.4'>ALARMU</text>
-<clipPath id='tk'><rect x='104' y='207' width='30' height='64' rx='5'/></clipPath>
-<rect x='104' y='207' width='30' height='64' rx='5' fill='#060b16'/>
+<clipPath id='tk'><rect x='84' y='215' width='66' height='34' rx='11'/></clipPath>
+<rect x='84' y='215' width='66' height='34' rx='11' fill='#060b16'/>
 <g clip-path='url(#tk)'>
-<rect x='104' y='263.32' width='30' height='7.68' fill='#ef4444' opacity='.75'/>
-<rect x='104' y='251.80' width='30' height='11.52' fill='#f59e0b' opacity='.75'/>
-<line x1='104' y1='263.32' x2='134' y2='263.32' stroke='#0b1324' stroke-width='.6'/>
-<rect x='104' y='213.40' width='30' height='38.40' fill='#22c55e' opacity='.75'/>
-<line x1='104' y1='251.80' x2='134' y2='251.80' stroke='#0b1324' stroke-width='.6'/>
-<rect x='104' y='207.00' width='30' height='6.40' fill='#ef4444' opacity='.75'/>
-<line x1='104' y1='213.40' x2='134' y2='213.40' stroke='#0b1324' stroke-width='.6'/>
+<rect x='84' y='244.92' width='66' height='4.08' fill='#ef4444' opacity='.75'/>
+<rect x='84' y='238.80' width='66' height='6.12' fill='#f59e0b' opacity='.75'/>
+<line x1='84' y1='244.92' x2='150' y2='244.92' stroke='#0b1324' stroke-width='.6'/>
+<rect x='84' y='218.40' width='66' height='20.40' fill='#22c55e' opacity='.75'/>
+<line x1='84' y1='238.80' x2='150' y2='238.80' stroke='#0b1324' stroke-width='.6'/>
+<rect x='84' y='215.00' width='66' height='3.40' fill='#ef4444' opacity='.75'/>
+<line x1='84' y1='218.40' x2='150' y2='218.40' stroke='#0b1324' stroke-width='.6'/>
 </g>
-<rect x='104' y='207' width='30' height='64' rx='5' fill='none' stroke='#93a4bf' stroke-width='.6'/>
-<line x1='135.5' y1='267.16' x2='139' y2='267.16' stroke='#ef4444' stroke-width='.5'/>
-<text x='141' y='268.46' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#ef4444' text-anchor='start' letter-spacing='0.3'>POZIOM KRYTYCZNY</text>
-<line x1='135.5' y1='257.56' x2='139' y2='257.56' stroke='#f59e0b' stroke-width='.5'/>
-<text x='141' y='258.86' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#f59e0b' text-anchor='start' letter-spacing='0.3'>POZIOM MINIMALNY</text>
-<line x1='135.5' y1='232.60' x2='139' y2='232.60' stroke='#22c55e' stroke-width='.5'/>
-<text x='141' y='233.9' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#22c55e' text-anchor='start' letter-spacing='0.3'>NORMA</text>
-<line x1='135.5' y1='210.20' x2='139' y2='210.20' stroke='#ef4444' stroke-width='.5'/>
-<text x='141' y='211.5' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#ef4444' text-anchor='start' letter-spacing='0.3'>PRZEPEŁNIENIE</text>
+<rect x='84' y='215' width='66' height='34' rx='11' fill='none' stroke='#93a4bf' stroke-width='.6'/>
+<path d='M96 247h6l2 7h-10z' fill='#1c2942' stroke='#93a4bf' stroke-width='.4'/>
+<path d='M132 247h6l2 7h-10z' fill='#1c2942' stroke='#93a4bf' stroke-width='.4'/>
+<line x1='151.5' y1='246.96' x2='155' y2='246.96' stroke='#ef4444' stroke-width='.5'/>
+<text x='157' y='248.26000000000002' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#ef4444' text-anchor='start' letter-spacing='0.3'>KRYTYCZNY</text>
+<line x1='151.5' y1='241.86' x2='155' y2='241.86' stroke='#f59e0b' stroke-width='.5'/>
+<text x='157' y='243.16000000000003' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#f59e0b' text-anchor='start' letter-spacing='0.3'>MINIMALNY</text>
+<line x1='151.5' y1='228.60' x2='155' y2='228.60' stroke='#22c55e' stroke-width='.5'/>
+<text x='157' y='229.9' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#22c55e' text-anchor='start' letter-spacing='0.3'>NORMA</text>
+<line x1='151.5' y1='216.70' x2='155' y2='216.70' stroke='#ef4444' stroke-width='.5'/>
+<text x='157' y='218.0' font-family='DejaVu Sans, sans-serif' font-size='3.6' font-weight='bold' fill='#ef4444' text-anchor='start' letter-spacing='0.3'>PRZEPEŁNIENIE</text>
 <line x1='22' y1='279' x2='188' y2='279' stroke='#24324d' stroke-width='.4'/>
 <text x='105' y='285' font-family='DejaVu Sans, sans-serif' font-size='4.4' font-weight='bold' fill='#38bdf8' text-anchor='middle' letter-spacing='0'>www.monitorup.pl</text>
 </svg>
