@@ -119,6 +119,15 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
   JsonObject api = r["api"].to<JsonObject>();
   api["localRead"] = (bool)cfg.apiLocalRead;
 
+  JsonObject ml = r["mail"].to<JsonObject>();
+  ml["en"] = (bool)cfg.mailEn; ml["host"] = cfg.smtpHost; ml["port"] = cfg.smtpPort; ml["sec"] = cfg.smtpSec;
+  ml["verify"] = (bool)cfg.smtpVerify; ml["user"] = cfg.smtpUser;
+  if (secrets) ml["pass"] = cfg.smtpPass;
+  ml["hasPass"] = cfg.smtpPass[0] != 0;
+  ml["from"] = cfg.mailFrom; ml["fromName"] = cfg.mailFromName; ml["dailyHour"] = cfg.mailDailyHour; ml["gapMin"] = cfg.mailGapMin;
+  JsonArray rc = ml["rcpt"].to<JsonArray>();
+  for (auto &x : cfg.rcpt) { JsonObject j = rc.add<JsonObject>(); j["addr"] = x.addr; j["mask"] = x.mask; }
+
   if (backup) r["_monitorup"] = CFG_VERSION;
 }
 
@@ -268,6 +277,34 @@ String cfgFromJson(JsonObjectConst r) {
     size_t L = strlen(cfg.mqttPrefix);
     while (L && cfg.mqttPrefix[L - 1] == '/') cfg.mqttPrefix[--L] = 0;
     if (!L) return fail("Podaj prefiks tematów MQTT");
+  }
+  if (r["mail"].is<JsonObjectConst>()) {
+    JsonObjectConst m = r["mail"];
+    cfg.mailEn = boolOr(m["en"], cfg.mailEn); cpyStr(cfg.smtpHost, m["host"]); cfg.smtpPort = numOr(m["port"], cfg.smtpPort);
+    cfg.smtpSec = numOr(m["sec"], cfg.smtpSec); cfg.smtpVerify = boolOr(m["verify"], cfg.smtpVerify); cpyStr(cfg.smtpUser, m["user"]);
+    if (m["pass"].is<const char *>() && (strlen(m["pass"]) > 0 || m["clearPass"] == true)) cpyStr(cfg.smtpPass, m["pass"]);
+    cpyStr(cfg.mailFrom, m["from"]); cpyStr(cfg.mailFromName, m["fromName"]);
+    cfg.mailDailyHour = numOr(m["dailyHour"], cfg.mailDailyHour); cfg.mailGapMin = numOr(m["gapMin"], cfg.mailGapMin);
+    if (m["rcpt"].is<JsonArrayConst>()) {
+      uint8_t k = 0;
+      for (JsonObjectConst j : m["rcpt"].as<JsonArrayConst>()) {
+        if (k >= MAIL_RCPT_N) break;
+        cpyStr(cfg.rcpt[k].addr, j["addr"]); cfg.rcpt[k].mask = numOr(j["mask"], cfg.rcpt[k].mask);
+        if (cfg.rcpt[k].addr[0] && !strchr(cfg.rcpt[k].addr, '@')) return fail(String("Nieprawidłowy adres e-mail: ") + cfg.rcpt[k].addr);
+        k++;
+      }
+      for (; k < MAIL_RCPT_N; k++) cfg.rcpt[k].addr[0] = 0;
+    }
+    if (cfg.smtpSec > 2) return fail("Nieprawidłowy rodzaj szyfrowania SMTP");
+    if (cfg.mailDailyHour > 23) return fail("Godzina raportu: 0–23");
+    if (cfg.mailGapMin > 1440) cfg.mailGapMin = 1440;
+    if (cfg.mailEn) {
+      if (!cfg.smtpHost[0]) return fail("Podaj serwer SMTP");
+      if (!strchr(cfg.mailFrom, '@')) return fail("Podaj adres nadawcy");
+      bool any = false;
+      for (auto &x : cfg.rcpt) any |= x.addr[0] != 0;
+      if (!any) return fail("Podaj co najmniej jednego odbiorcę");
+    }
   }
   if (r["modbus"].is<JsonObjectConst>()) {
     JsonObjectConst m = r["modbus"];

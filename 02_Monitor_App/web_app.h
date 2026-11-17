@@ -250,7 +250,7 @@ function netBind(p){$(p+'dhcp').onchange=()=>$(p+'st').style.display=$(p+'dhcp')
 function netVal(p){return {dhcp:$(p+'dhcp').value=='1',ip:V(p+'ip'),mask:V(p+'mask'),gw:V(p+'gw'),dns1:V(p+'dns1'),dns2:V(p+'dns2')}}
 async function save(obj,msg){const j=await post('/api/v1/config',obj);if(j.reboot){rebootWait('Zapisano ustawienia sieci. Urządzenie uruchamia się ponownie z nowymi ustawieniami.')}else{toast(msg||'Zapisano');await cfgLoad()}}
 async function cfgLoad(){C=await (await api('/api/v1/config')).json()}
-const TABS=[['siec','Sieć'],['przetworniki','Przetworniki'],['alarmy','Alarmy'],['wyjscia','Wyjścia'],['statystyki','Statystyki'],['czas','Data i czas'],['logi','Logi'],['mqtt','MQTT'],['modbus','Modbus'],['api','API'],['konto','Konto'],['system','System']];
+const TABS=[['siec','Sieć'],['przetworniki','Przetworniki'],['alarmy','Alarmy'],['wyjscia','Wyjścia'],['statystyki','Statystyki'],['czas','Data i czas'],['logi','Logi'],['mqtt','MQTT'],['mail','Powiadomienia'],['modbus','Modbus'],['api','API'],['konto','Konto'],['system','System']];
 async function settingsShow(tab){window.onStatus=null;if(!C){$('sbody').innerHTML='<div class="card muted">Wczytywanie ustawień…</div>';try{await cfgLoad()}catch(e){$('sbody').innerHTML='<div class="card">Nie udało się wczytać ustawień. <a href="javascript:location.reload()">Odśwież stronę</a></div>';return}}
  $('snav').innerHTML=TABS.map(([k,t])=>`<a href="#ustawienia/${k}" class="${k==tab?'on':''}">${t}</a>`).join('');
  const fn=SET[tab]||SET.siec;$('sbody').innerHTML='';fn($('sbody'))}
@@ -414,6 +414,25 @@ SET.mqtt=el=>{const m=C.mqtt;el.innerHTML=`<div class="card" style="max-width:64
  <p class="muted" style="font-size:12px">Tematy: ${esc(m.prefix)}/zbiornik1/poziom_cm, …/procent, …/stan, …/litry, …/zuzycie_dzis, ${esc(m.prefix)}/alarm, ${esc(m.prefix)}/status (online/offline). Komendy: ${esc(m.prefix)}/cmd/kasuj, ${esc(m.prefix)}/cmd/out/N.</p>
  <div class="btns"><button class="btn" id="mqs">Zapisz</button></div></div>`;
  $('mqs').onclick=()=>{const o={en:B('mqe'),host:V('mqh'),port:+V('mqp'),user:V('mqu'),prefix:V('mqx'),intervalS:+V('mqi'),cmd:B('mqc')};if($('mqw').value)o.pass=$('mqw').value;save({mqtt:o})}};
+
+SET.mail=el=>{const m=C.mail;const K=[[1,'Poziom krytyczny'],[2,'Przepełnienie'],[4,'Nagły spadek poziomu'],[8,'Awaria czujnika'],[16,'Poziom minimalny'],[32,'Powrót do stanu normalnego'],[64,'Skasowanie alarmu'],[128,'Usterka zbiorcza'],[256,'Raport dzienny']];
+ el.innerHTML=`<div class="grid"><div class="card"><h2>Serwer poczty (SMTP)</h2><div class="live">Ostatnia wysyłka: <b>${esc(S&&S.mailMsg||'—')}</b></div>
+ ${F.chk('mle','Powiadomienia e-mail włączone',m.en)}<div class="g2">${F.txt('mlh','Serwer SMTP',m.host,'smtp.firma.pl')}${F.num('mlp','Port',m.port,1)}
+ ${F.sel('mls','Szyfrowanie',m.sec,[[1,'SSL/TLS (port 465)'],[2,'STARTTLS (port 587)'],[0,'bez szyfrowania (port 25)']])}${F.txt('mlu','Użytkownik (login)',m.user)}
+ ${F.pw('mlw','Hasło',m.hasPass?'•••••• (bez zmian)':'')}${F.txt('mlf','Adres nadawcy',m.from,'alarmy@firma.pl')}${F.txt('mln','Nazwa nadawcy',m.fromName)}
+ ${F.num('mld','Raport dzienny o godzinie',m.dailyHour,1)}${F.num('mlg','Ten sam rodzaj zdarzenia najwyżej raz na [min]',m.gapMin,1)}</div>
+ ${F.chk('mlv','Sprawdzaj certyfikat serwera',m.verify)}
+ <p class="muted" style="font-size:12px">Sterownik wymaga połączenia wychodzącego do serwera SMTP (internet lub serwer poczty w sieci lokalnej). Nieudana wysyłka jest ponawiana przez 24 h.</p></div>
+ <div class="card"><h2>Odbiorcy i rodzaj powiadomień</h2>${m.rcpt.map((r,i)=>`<div style="${i?'border-top:1px solid #24324d;':''}padding:8px 0">${F.txt('mra'+i,'Odbiorca '+(i+1)+' – adres e-mail',r.addr,'')}
+ <div class="g2" style="gap:0 12px">${K.map(([b,t])=>F.chk('mrk'+i+'_'+b,t,r.mask&b)).join('')}</div></div>`).join('')}</div></div>
+ <div class="card" style="margin-top:16px;max-width:640px"><h2>Wiadomość testowa</h2><div class="g2">${F.txt('mlt','Adres odbiorcy',(m.rcpt.find(r=>r.addr)||{}).addr||'')}
+ <div style="display:flex;align-items:flex-end"><button class="btn sec" id="mltb">Wyślij test</button></div></div>
+ <p class="muted" style="font-size:12px">Najpierw zapisz ustawienia serwera. Wynik pojawi się w polu „Ostatnia wysyłka” i w dzienniku zdarzeń.</p></div>
+ <div class="btns"><button class="btn" id="mlsv">Zapisz</button></div>`;
+ $('mls').onchange=()=>{const v=$('mls').value;$('mlp').value=v=='1'?465:v=='2'?587:25};
+ $('mlsv').onclick=()=>{const o={en:B('mle'),host:V('mlh'),port:+V('mlp'),sec:+$('mls').value,user:V('mlu'),from:V('mlf'),fromName:V('mln'),verify:B('mlv'),dailyHour:+V('mld'),gapMin:+V('mlg'),
+  rcpt:m.rcpt.map((r,i)=>({addr:V('mra'+i),mask:K.reduce((a,[b])=>a|(B('mrk'+i+'_'+b)?b:0),0)}))};if($('mlw').value)o.pass=$('mlw').value;save({mail:o})};
+ $('mltb').onclick=async()=>{try{await post('/api/v1/mail/test',{to:V('mlt')});toast('Wysyłam wiadomość testową…')}catch(e){}}};
 
 SET.modbus=el=>{const m=C.modbus;el.innerHTML=`<div class="card" style="max-width:640px"><h2>Modbus TCP</h2><div class="live">Połączeni klienci: <b>${S?S.mb:0}</b></div>
  ${F.chk('mbe','Serwer Modbus TCP włączony',m.en)}<div class="g2">${F.num('mbp','Port',m.port,1)}${F.num('mbu','Adres urządzenia (Unit ID)',m.unit,1)}</div>

@@ -58,6 +58,8 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - W pliku pomiarów dni bez danych między dniami z danymi oznaczone wierszem `RRRR-MM-DD;brak danych` (dni przed pierwszym i po ostatnim pliku pomijane).
 - W trakcie wysyłania logów (wiele dni) obsługiwane są alarmy (co 100 ms) i przycisk kasowania (co 50 ms) – wcześniej pętla główna stała przez cały czas pobierania.
 - Do zrobienia przed wydaniem: sygnalizacja wg nakładki (NORMA/OSTRZEŻENIE/ALARM; awaria czujnika = OSTRZEŻENIE przerywane), test czasu pobrania 7/31/365 dni na płytce.
+- **Powiadomienia e-mail** (Ustawienia → Powiadomienia): serwer SMTP (SSL/TLS 465, STARTTLS 587 albo bez szyfrowania, sprawdzanie certyfikatu wbudowanym pakietem CA), login, hasło (jak inne hasła – w kopii tylko szyfrowanej), nadawca; do 5 odbiorców, **każdy z własnym wyborem**: poziom krytyczny, przepełnienie, nagły spadek, awaria czujnika, poziom minimalny, powrót do normy, skasowanie alarmu, usterka zbiorcza, raport dzienny (o wybranej godzinie). Ten sam rodzaj zdarzenia najwyżej raz na X min (domyślnie 15). Wysyłka w osobnym zadaniu (`mail.cpp`, własny klient SMTP bez bibliotek), ponawianie 1/5/15/60 min do ok. 24 h, wynik na stronie i w dzienniku zdarzeń, przycisk „Wyślij test” (`POST /api/v1/mail/test {"to":…}`, tylko po zalogowaniu). Ustawienia maili zmienia tylko zalogowany użytkownik (tokeny API – nie).
+- Wersja w kodzie: `0.5.5-dev` (rejestr Modbus 0 = 55) – plik `MonitorUp_v0.5.5-dev.bin`, niewydany.
 - Buzer (decyzja użytkownika 17.11.2026): stany ALARM (krytyczny, przepełnienie, nagły spadek) **oraz awaria czujnika**; gra w rytmie migającej kontrolki; przy poziomie minimalnym cicho.
 
 ### 0.5.4 – 16.11.2026

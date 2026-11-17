@@ -17,6 +17,7 @@
 #include "display.h"
 #include "hw.h"
 #include "calib.h"
+#include "mail.h"
 #include <SD.h>
 #include <ETH.h>
 #include <WiFi.h>
@@ -249,6 +250,7 @@ static void hStatus() {
   d["fault"] = faultBits();
   d["mqtt"] = mqttConnected();
   d["mqttMsg"] = mqttStatusText();
+  d["mailMsg"] = mailStatusText();
   d["mb"] = mbClientCount();
   d["rtcTemp"] = rtcInfo.temp;
   JsonArray ta = d["tanks"].to<JsonArray>();
@@ -438,6 +440,16 @@ static void hTime() {
   int64_t e = d["epoch"] | 0LL;
   if (e < 1700000000LL) { sendErr(400, "Nieprawidłowy czas"); return; }
   timeSetManual((time_t)e, d["src"] | "przeglądarka");
+  sendOk();
+}
+
+static void hMailTest() {
+  if (!auth(A_ADMIN)) return;
+  JsonDocument d;
+  if (!parseBody(d)) return;
+  String to = d["to"] | "";
+  if (!mailTest(to)) { sendErr(400, "Podaj adres odbiorcy i zapisz ustawienia serwera SMTP"); return; }
+  logEvent("E-MAIL", "Wiadomość testowa do " + to + " (" + who() + ")");
   sendOk();
 }
 
@@ -956,6 +968,7 @@ void webBegin() {
   server.on("/api/v1/calib/ma/clear", HTTP_POST, hCalTableClear);
   server.on("/api/v1/time", HTTP_POST, hTime);
   server.on("/api/v1/time/sync", HTTP_POST, hNtpSync);
+  server.on("/api/v1/mail/test", HTTP_POST, hMailTest);
   server.on("/api/v1/alarm/ack", HTTP_POST, hAck);
   server.on("/api/v1/outputs", HTTP_POST, hOutputs);
   server.on("/api/v1/logs", HTTP_GET, hLogs);

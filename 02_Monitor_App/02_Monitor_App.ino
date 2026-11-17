@@ -13,6 +13,7 @@
 #include "hw.h"
 #include "calib.h"
 #include "config.h"
+#include "mail.h"
 #include "cfgjson.h"
 #include "sensors.h"
 #include "logger.h"
@@ -116,6 +117,7 @@ void setup() {
   mbApply();
   webBegin();
   mqttBegin();
+  mailBegin();
 
   esp_task_wdt_config_t wc = {.timeout_ms = WDT_TIMEOUT_MS, .idle_core_mask = 0, .trigger_panic = true};
   if (esp_task_wdt_reconfigure(&wc) != ESP_OK) esp_task_wdt_init(&wc);
@@ -130,6 +132,7 @@ void loop() {
   webLoop();
   mbLoop();
   mqttLoop();
+  mailLoop();
 
   uint32_t now = millis();
   static uint32_t tDi = 0, tAl = 0, tOled = 0, tSec = 0, tLog = 0;

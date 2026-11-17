@@ -163,6 +163,25 @@ Alarm zadziała, gdy poziom spadnie o zadaną wartość w zadanym czasie (fabryc
 - **Kasowanie** (Ustawienia → Alarmy → Buzer i kasowanie): ręczne (przycisk, strona, Modbus, MQTT, API; opcjonalne przypomnienie po X min) lub automatyczne – alarm gaśnie po powrocie poziomu do normy.
 - **Usterka zbiorcza:** w **Ustawienia → Wyjścia** wybrać przyczyny (awaria czujnika, przetwornika A/C, karty pamięci, brak synchronizacji czasu, brak sieci, brak połączenia MQTT); podgląd stanu na żywo.
 
+### 7.7 Powiadomienia e-mail (Ustawienia → Powiadomienia)
+
+Sterownik może wysyłać wiadomości e-mail o zdarzeniach i raport dzienny. Wymaga połączenia wychodzącego do serwera poczty (internet lub serwer w sieci lokalnej).
+
+1. Wpisać dane serwera SMTP: adres, port, rodzaj szyfrowania (SSL/TLS – port 465, STARTTLS – port 587), login, hasło, adres i nazwę nadawcy.
+2. Wpisać do 5 odbiorców i dla każdego zaznaczyć rodzaje powiadomień.
+3. Zapisać ustawienia i wysłać wiadomość testową przyciskiem **Wyślij test**. Wynik widoczny jest w polu „Ostatnia wysyłka” i w dzienniku zdarzeń.
+
+| Rodzaj powiadomienia | Kiedy jest wysyłane |
+|---|---|
+| Poziom krytyczny, przepełnienie, nagły spadek poziomu | wystąpienie stanu ALARM |
+| Awaria czujnika, poziom minimalny | wystąpienie stanu OSTRZEŻENIE |
+| Powrót do stanu normalnego | ustąpienie alarmu lub ostrzeżenia |
+| Skasowanie alarmu | potwierdzenie alarmu przyciskiem, ze strony lub systemu nadrzędnego |
+| Usterka zbiorcza | pojawienie się przyczyny usterki (karta SD, sieć, czas, MQTT) |
+| Raport dzienny | codziennie o wybranej godzinie: poziom, objętość, zużycie |
+
+Wiadomość zawiera nazwę urządzenia i zbiornika, czas zdarzenia, poziom, objętość, stan oraz zalecane działanie. Ten sam rodzaj zdarzenia jest wysyłany najwyżej raz na ustawiony czas (fabrycznie 15 min). Nieudana wysyłka jest ponawiana przez 24 h. Ustawienia powiadomień może zmienić wyłącznie zalogowany użytkownik.
+
 ## 8. Rejestracja danych
 
 - Pomiary zapisywane są na karcie microSD (FAT32) co 5 min i przy każdej zmianie stanu; przechowywanie fabrycznie 10 lat.

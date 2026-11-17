@@ -70,6 +70,16 @@ struct OutCfg {
   uint8_t  manual;          // wartosc dla trybu recznego 0-100 %
 };
 
+// Powiadomienia e-mail (0.5.6): rodzaje zdarzen (bity maski odbiorcy)
+enum MailKind : uint16_t { MK_CRIT = 1, MK_HIGH = 2, MK_DROP = 4, MK_SENSOR = 8, MK_MIN = 16, MK_NORMAL = 32,
+                           MK_ACK = 64, MK_SYSFAULT = 128, MK_DAILY = 256, MK_TEST = 0x8000 };
+#define MAIL_RCPT_N 5
+#define MK_DEFAULT (MK_CRIT | MK_HIGH | MK_DROP | MK_SENSOR | MK_MIN | MK_NORMAL)
+struct MailRcpt {
+  char     addr[64];        // pusty = nieuzywany
+  uint16_t mask;            // MailKind - co ten odbiorca dostaje
+};
+
 // Token API (przechowywany tylko skrot)
 struct ApiToken {
   uint8_t  used;
@@ -162,6 +172,19 @@ struct Config {
   uint8_t  alarmMode;
   // Progi wlasne w % wysokosci zbiornika: [0] KRYTYCZNY, [1] MINIMALNY, [2] ZA DUZY; < 0 = przelicz z cm (starsze ustawienia)
   float    thrPct[3];
+  // Powiadomienia e-mail (0.5.6)
+  uint8_t  mailEn;
+  char     smtpHost[64];
+  uint16_t smtpPort;
+  uint8_t  smtpSec;         // 0 = bez szyfrowania, 1 = SSL/TLS (465), 2 = STARTTLS (587)
+  uint8_t  smtpVerify;      // 1 = sprawdzaj certyfikat serwera (wbudowany pakiet CA)
+  char     smtpUser[64];
+  char     smtpPass[64];
+  char     mailFrom[64];
+  char     mailFromName[32];
+  MailRcpt rcpt[MAIL_RCPT_N];
+  uint8_t  mailDailyHour;   // godzina raportu dziennego (0-23)
+  uint16_t mailGapMin;      // ten sam rodzaj zdarzenia najwyzej raz na X min
 };
 
 extern Config cfg;

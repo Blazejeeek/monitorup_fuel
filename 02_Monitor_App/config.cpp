@@ -131,6 +131,12 @@ void cfgDefaultsV2() {
   memset(cfg.tok, 0, sizeof(cfg.tok));
   cfg.apiLocalRead = 0;
   cfg.oledDimMin = 10;
+  // 0.5.6 powiadomienia e-mail - domyslnie wylaczone
+  cfg.mailEn = 0; cfg.smtpHost[0] = 0; cfg.smtpPort = 465; cfg.smtpSec = 1; cfg.smtpVerify = 1;
+  cfg.smtpUser[0] = 0; cfg.smtpPass[0] = 0; cfg.mailFrom[0] = 0;
+  strlcpy(cfg.mailFromName, "MonitorUp.pl", sizeof(cfg.mailFromName));
+  for (auto &r : cfg.rcpt) { r.addr[0] = 0; r.mask = MK_DEFAULT; }
+  cfg.mailDailyHour = 7; cfg.mailGapMin = 15;
 }
 
 // Wersja 3: urzadzenie dla jednego zbiornika paliwa. Slot 0 = paliwo na A4 (przejmuje kalibracje z A4), slot 1 = opcjonalny, wylaczony.

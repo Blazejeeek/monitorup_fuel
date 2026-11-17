@@ -8,6 +8,7 @@
 #include "stats.h"
 #include "net.h"
 #include "mqtt.h"
+#include "mail.h"
 
 bool alarmAcked = false;
 bool alarmActive = false;        // KRYTYCZNY / ZA DUZY / NAGLY SPADEK
@@ -57,6 +58,7 @@ void alarmAck(uint8_t src) {
   if (!changed) return;
   ackTime = millis();
   logEvent("ALARM", String("Wyciszono buzer / skasowano alarm (") + ackSrcName(src) + ")");
+  mailEvent(MK_ACK, 0, String("Alarm skasowany: ") + ackSrcName(src));
 }
 
 // ---------------- Programowy PWM (PCF8575, ok. 100 Hz, 10 poziomow) ----------------
@@ -133,12 +135,25 @@ void alarmLoop() {
       if (lastEff[i] != 255) {
         logEvent(isAlarmState(e) ? "ALARM" : "STAN", String(cfg.tankName[i]) + ": " + stateName(lastEff[i]) + " → " + stateName(e));
         logRow();
+        static const uint16_t MK_OF[] = {MK_NORMAL, MK_MIN, MK_CRIT, MK_HIGH, MK_SENSOR, 0, MK_DROP};   // indeks = TankStateCode
+        if (e < sizeof(MK_OF) / sizeof(MK_OF[0]) && MK_OF[e])
+          mailEvent(MK_OF[e], i, String("Zmiana stanu: ") + stateName(lastEff[i]) + " → " + stateName(e));
       }
       lastEff[i] = e;
     }
   }
   const uint8_t fb = faultBits();
   const bool sensorFault = fb & FAULT_SENSOR;
+  // usterka zbiorcza (bez bledu czujnika - ten ma wlasne powiadomienie) - e-mail przy pojawieniu sie nowej przyczyny
+  static uint8_t sysPrev = 0;
+  const uint8_t sys = fb & cfg.faultMask & ~FAULT_SENSOR;
+  if (sys & ~sysPrev) {
+    static const char *FN[] = {"czujnik", "przetwornik A/C", "karta SD", "czas nieustawiony", "brak sieci", "brak połączenia MQTT", "ekspander wejść/wyjść"};
+    String why;
+    for (uint8_t b = 1; b < 7; b++) if (sys & ~sysPrev & (1 << b)) { if (why.length()) why += ", "; why += FN[b]; }
+    mailEvent(MK_SYSFAULT, 0, "Przyczyna: " + why);
+  }
+  sysPrev = sys;
   static bool sensorFaultPrev = false;
   if (bits & ~alarmBits) { alarmAcked = false; buzzSilenced = false; if (!alarmBits) alarmSince = time(nullptr); }   // nowy warunek
   if (!bits && alarmBits) { alarmAcked = false; logEvent("ALARM", "Koniec alarmu – stan normalny"); }
