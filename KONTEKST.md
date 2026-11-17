@@ -50,7 +50,32 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 16.11.2026 (0.5.4)
+## Stan na 17.11.2026 (0.5.5-dev – NIEWYDANA, wgrana na płytkę testową)
+
+### Gdzie jesteśmy
+- W kodzie `FW_VERSION "0.5.5-dev"`, `FW_NUM 55`. Wgrane 17.11 19:01 (OTA z Pi masim, plik `build/MonitorUp_v0.5.5-dev.bin`, podpisany). **Bez tagu, bez wydania.** Ostatni commit: b6948d1 (dev, lokalnie – push robi użytkownik: `git push origin dev`; agentowi tryb auto blokuje push).
+- Uwaga `build.sh`: nazwa pliku z `FW_VERSION` – przy niezmienionej wersji nadpisuje podpisany plik wydania (17.11 nadpisał 0.5.4, przywrócony z karty #139). Zawsze najpierw podbij wersję (`-dev`).
+- Próba 22 h na 0.5.4 (16.11 16:12 – 17.11 14:12): zaliczona (0 restartów, 0 błędów, heap stabilny) – komentarz w karcie #139.
+
+### Co zawiera 0.5.5 (gotowe w kodzie)
+1. **Sygnalizacja wg nakładki** (decyzje użytkownika 16–17.11): WY1 NORMA zielona; WY2 OSTRZEŻENIE pomarańczowa – ciągłe = poziom minimalny, przerywane 1×/s = awaria czujnika; WY3 ALARM czerwona – ciągłe = krytyczny, 1×/s = przepełnienie, 4×/s (`period` 250 ms) = nagły spadek. **Buzer WY4**: stany ALARM + awaria czujnika, w rytmie migającej kontrolki (`blinkMask` WY2|WY4 przy awarii, WY3|WY4 przy alarmie); przy minimalnym cicho. Strona (`ST`, OUTFIX, opisy) i OLED – nazwy jak na nakładce; **Modbus/MQTT/API bez zmian** (NORMALNY, ZA DUŻY, BŁĄD CZUJNIKA…).
+2. **Logi:** „Pobierz pomiary (CSV)” = wszystkie pomiary z dnia/miesiąca/roku jednym plikiem (`/api/v1/logs/csv?from&to`, limit 400 dni), „Pobierz podsumowanie (CSV)” = dane dobowe/miesięczne; luki między dniami z danymi → wiersz `RRRR-MM-DD;brak danych`; `webBusyTick()` w web.cpp obsługuje alarmy i DI1 w trakcie wysyłania.
+3. **Powiadomienia e-mail** (`mail.h/.cpp`, Ustawienia → Powiadomienia): własny klient SMTP (SSL/TLS 465, STARTTLS 587, bez szyfr.; `useBuiltinCACertBundle`), 5 odbiorców z własną maską zdarzeń (`MailKind` w config.h: krytyczny, przepełnienie, spadek, awaria czujnika, minimalny, powrót do normy, skasowanie, usterka zbiorcza, raport dzienny), ochrona przed zalewem (`mailGapMin`, 15), ponawianie do 24 h, test `POST /api/v1/mail/test`. Pola na końcu `struct Config`. **Nietestowane z prawdziwym serwerem.**
+
+### Testy 0.5.5 na płytce (17.11)
+- OK: normalny, minimalny, krytyczny, przepełnienie 1,00×/s, nagły spadek 4,00×/s, kasowanie, CSV dzień/miesiąc/rok (`stanowisko/csvtest.py`).
+- **Zostało przed wydaniem:** (a) awaria czujnika – ręcznie odłączyć A4 (`fault.py`), oczekiwane: pomarańczowa + buzer 1×/s; (b) e-mail – użytkownik poda serwer/port/login SMTP (np. alarmy@globalsmart.pl), hasło wpisze sam na stronie; (c) wydanie: `FW_VERSION "0.5.5"`, tag, bin do karty, instrukcja.
+- `sym.py` na Pi ma stary tekst „czerwona miga 2×/s” (tylko opis w skrypcie).
+
+### Grafika i dokumentacja (gotowe, wersje robocze)
+- Nakładka A4 `grafika/nakladka_gen.py` (ciemna, logo, NORMA/OSTRZEŻENIE/ALARM, legenda ciągłe/przerywane/szybkie, zbiornik leżący ze strefami, przycisk „KASOWANIE ALARMU”, otwory jak dotąd); wersja biała `nakladka_min_gen.py` (nieużywana). Animacja `grafika/animacja_gen.py` → `animacja_stanow.gif`.
+- `dokumentacja/instrukcja/`: `instrukcja_obslugi.md` (0.2 + rozdz. 7.7 e-mail, załączniki A Modbus, B MQTT, C API), `karta_katalogowa.md`; PDF w stylu firmowym: `python3 build_pdf.py` (Chromium). Zasady: dokument dla klienta bez odwołań do plików repo; styl profesjonalny, zalecenia w bezokoliczniku, minimum tekstu.
+- **[do uzupełnienia] w dokumentach:** dane producenta, pobór mocy, temperatura pracy, IP obudowy, kody zamówieniowe, schemat podłączenia przetwornika, potwierdzenie progów ppoż. (woda 90/95/98, paliwo 80/90/95).
+
+### Stan płytki testowej (17.11 23:00)
+- 0.5.5-dev, stan normalny 14,02 mA / 149,2 cm, alarm spadku włączony. Ustawienia użytkownika: wysokość 200 cm, progi 10/20/100 %, gęstość ok. 840.
+
+## Historia stanu – 16.11.2026 (0.5.4)
 - SW **0.5.4** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.
 - Układ stały: jeden zbiornik 4–20 mA na A4, 150 Ω, gęstość cieczy, tabela kalibracji prądu, wyjścia WY1 POPRAWNY, WY2 MINIMALNY, WY3 KRYTYCZNY, WY4 buzer, WY5 przekaźnik usterki.
 - WY3 i buzer WY4 migają razem wg rodzaju alarmu (`blinkMask`/`blinkPeriodMs` w zadaniu PWM, outputs.cpp): ciągle KRYT, 1000 ms ZA DUŻY, 500 ms SPADEK, 333 ms błąd czujnika.
