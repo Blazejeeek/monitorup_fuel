@@ -466,6 +466,15 @@ static bool parseDate(const String &s, struct tm &tm) {
   return true;
 }
 
+// W trakcie dlugiego wysylania logow (wiele dni) petla glowna stoi - alarmy i przycisk kasowania obslugujemy tutaj
+static void webBusyTick() {
+  static uint32_t tDi = 0, tAl = 0;
+  uint32_t n = millis();
+  if (n - tDi >= 50)  { tDi = n; pcfRead(); }
+  if (n - tAl >= 100) { tAl = n; alarmLoop(); }
+  wdtFeed();
+}
+
 // Zakres dni [from, to] jako lista sciezek plikow
 static std::vector<String> dayFiles(int maxDays = 400) {
   std::vector<String> v;
@@ -506,7 +515,8 @@ static void hLogs() {
       auto fld = [&](int k2) { if (k2 < 0 || k2 >= (int)v.size() || !v[k2].length()) return String("null"); String x = v[k2]; x.replace(',', '.'); return x; };
       buf += (first ? "[" : ",[") + String((uint32_t)mktime(&tm)) + "," + fld(lc.cm[0]) + "," + fld(lc.cm[1]) + "," + fld(lc.l[0]) + "," + fld(lc.l[1]) + "]";
       first = false;
-      if (buf.length() > 1200) { server.sendContent(buf); buf = ""; wdtFeed(); }
+      if (buf.length() > 1200) { server.sendContent(buf); buf = ""; webBusyTick(); }
+      else if ((k & 255) == 0) webBusyTick();
     }
     f.close();
   }
@@ -524,13 +534,23 @@ static void hLogsCsv() {
   server.sendContent("\xEF\xBB\xBF");   // BOM - Excel rozpozna UTF-8
   uint8_t buf[1024];
   String lastHdr;
+  String gap;          // dni bez pliku miedzy dniami z danymi (urzadzenie wylaczone / brak karty) - widoczna luka
+  bool any = false;    // dni przed pierwszym i po ostatnim pliku pomijamy (np. przed montazem)
   for (auto &fn : files) {
+    webBusyTick();
     File f = SD.open(fn);
-    if (!f) continue;
+    if (!f) {
+      int sl = fn.lastIndexOf('/');
+      String day = fn.substring(sl + 1, sl + 11);
+      if (any && day.length() == 10 && day[4] == '-' && gap.length() < 4000) gap += day + ";brak danych\r\n";
+      continue;
+    }
+    if (gap.length()) { server.sendContent(gap); gap = ""; }
+    any = true;
     String hdr = f.readStringUntil('\n'); hdr.trim();
     if (hdr != lastHdr) { server.sendContent(hdr + "\r\n"); lastHdr = hdr; }   // naglowek tylko przy zmianie kolumn
     size_t n;
-    while ((n = f.read(buf, sizeof(buf))) > 0) { server.sendContent((const char *)buf, n); wdtFeed(); }
+    while ((n = f.read(buf, sizeof(buf))) > 0) { server.sendContent((const char *)buf, n); webBusyTick(); }
     f.close();
   }
   server.sendContent("");

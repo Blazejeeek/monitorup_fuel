@@ -166,7 +166,9 @@ Alarm zadziała, gdy poziom spadnie o zadaną wartość w zadanym czasie (fabryc
 ## 8. Rejestracja danych
 
 - Pomiary zapisywane są na karcie microSD (FAT32) co 5 min i przy każdej zmianie stanu; przechowywanie fabrycznie 10 lat.
-- Zakładka **Logi**: wykresy dzień / miesiąc / rok / wszystkie lata, zużycie, tankowania, dziennik zdarzeń, pobieranie plików CSV.
+- Zakładka **Logi**: wykresy dzień / miesiąc / rok / wszystkie lata, zużycie, tankowania, dziennik zdarzeń.
+- **Pobierz pomiary (CSV)** – wszystkie pomiary z wybranego dnia, miesiąca lub roku w jednym pliku (separator `;`, przecinek dziesiętny, kodowanie UTF-8 – plik otwiera się bezpośrednio w programie Excel). Dni, w których sterownik nie rejestrował danych, są oznaczone wierszem „brak danych”. Przygotowanie pliku z całego roku może potrwać do minuty.
+- **Pobierz podsumowanie (CSV)** – wartości dobowe (widok miesiąca) lub miesięczne (widok roku): poziom minimalny, średni i maksymalny, zużycie, tankowania.
 - Brak lub uszkodzenie karty nie zatrzymuje pomiaru ani alarmów (ostatnie 24 h dostępne w pamięci sterownika).
 
 ## 9. Integracja z systemami nadrzędnymi
@@ -340,7 +342,7 @@ Przykład: `curl -H "Authorization: Bearer <token>" http://192.168.0.12/api/v1/s
 |---|---|---|---|
 | GET | `/api/v1/status` | odczyt | poziom, stan, objętość, alarm, wyjścia, sieć, czas |
 | GET | `/api/v1/history` | odczyt | ostatnie 24 h, co 5 min |
-| GET | `/api/v1/logs/csv?from=RRRR-MM-DD&to=RRRR-MM-DD` | odczyt | pomiary z zakresu dat, plik CSV |
+| GET | `/api/v1/logs/csv?from=RRRR-MM-DD&to=RRRR-MM-DD` | odczyt | pomiary z zakresu dat (do 400 dni) w jednym pliku CSV |
 | GET | `/api/v1/stats` | odczyt | zużycie dzienne (do 30 dni) |
 | GET | `/api/v1/summary?view=years` | odczyt | podsumowanie lat (także `view=year&y=RRRR`, `view=month&y=RRRR&m=MM`) |
 | GET | `/api/v1/events` | odczyt | dziennik zdarzeń |

@@ -20,7 +20,7 @@ static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><he
  <div class="card"><h2>Wykres poziomu</h2>
   <div class="row"><div><label>Widok</label><select id="lv"><option value="years">Wszystkie lata (do 10)</option><option value="year">Rok – 12 miesięcy</option><option value="month">Miesiąc – kolejne dni</option><option value="day" selected>Dzień – pomiary</option></select></div>
   <div id="lvy"><label>Rok</label><input type="number" id="ly" min="2020" max="2100" step="1"></div><div id="lvm"><label>Miesiąc</label><input type="month" id="lm"></div><div id="lvd"><label>Dzień</label><input type="date" id="ld"></div>
-  <div style="flex:2" class="btns"><button class="btn sm" id="lshow">Pokaż</button><button class="btn sec sm" id="lcsv">Pobierz CSV</button></div></div>
+  <div style="flex:2" class="btns"><button class="btn sm" id="lshow">Pokaż</button><button class="btn sec sm" id="lraw">Pobierz pomiary (CSV)</button><button class="btn sec sm" id="lcsv">Pobierz podsumowanie (CSV)</button></div></div>
   <div class="legend" id="lleg"></div><div class="chartbox"><canvas id="lch" height="320"></canvas><div class="tip" id="ltip"></div></div>
   <p class="muted" style="font-size:12px;margin:6px 0 0" id="lnote"></p></div>
  <div class="card" style="margin-top:16px"><h2><span id="btitle">Zużycie</span> <select id="stk" style="width:auto"></select></h2><div class="chartbox" id="bbox"><canvas id="bch" height="220"></canvas><div class="tip" id="btip"></div></div><div class="live" id="bday" style="display:none"></div></div>
@@ -180,7 +180,12 @@ function barChart(cv,tip,labels,vals,full,color,unit){const ctx=cv.getContext('2
 // ---------- logi: widoki Dzień / Miesiąc / Rok / Wszystkie lata (zawsze z jednego pliku) ----------
 let logsReady=false,lastRows=null,sumData=null,dayCons=null;
 const MN=['sty','lut','mar','kwi','maj','cze','lip','sie','wrz','paź','lis','gru'];
-function lvShow(){const v=$('lv').value;$('lvy').style.display=v=='year'?'':'none';$('lvm').style.display=v=='month'?'':'none';$('lvd').style.display=v=='day'?'':'none'}
+function lvShow(){const v=$('lv').value;$('lvy').style.display=v=='year'?'':'none';$('lvm').style.display=v=='month'?'':'none';$('lvd').style.display=v=='day'?'':'none';$('lraw').style.display=v=='years'?'none':'';$('lcsv').style.display=v=='day'?'none':''}
+function logsRaw(){const v=$('lv').value,p=n=>String(n).padStart(2,'0'),t=new Date(),td=`${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`;let a,b;
+ if(v=='day'){a=b=$('ld').value}else if(v=='month'){const [y,m]=($('lm').value||'').split('-').map(Number);if(!y){toast('Wybierz miesiąc',1);return}a=`${y}-${p(m)}-01`;b=`${y}-${p(m)}-${p(new Date(y,m,0).getDate())}`}
+ else if(v=='year'){const y=+$('ly').value;if(!y){toast('Wybierz rok',1);return}a=`${y}-01-01`;b=`${y}-12-31`}else return;
+ if(!a){toast('Wybierz dzień',1);return}if(a>td){toast('Brak danych – wybrany okres jest w przyszłości',1);return}if(b>td)b=td;
+ if(v=='year')toast('Przygotowanie pliku z całego roku może potrwać do minuty');location=`/api/v1/logs/csv?from=${a}&to=${b}`}
 async function logsLoad(){if(!S)return;const v=$('lv').value;lastRows=null;sumData=null;dayCons=null;
  try{if(v=='day'){const d=$('ld').value;const r=await api(`/api/v1/logs?from=${d}&to=${d}`);if(!r.ok){const j=await r.json();toast(j.error||'Błąd',1);return}lastRows=(await r.json()).rows;
    const [y,m]=d.split('-');const q=await api(`/api/v1/summary?view=month&y=${+y}&m=${+m}`);if(q.ok){const j=await q.json();dayCons=j.rows.find(x=>x.k==d||(x.k=='dziś'&&d==dstr(new Date())))||null}}
@@ -225,7 +230,7 @@ async function filesLoad(){try{const j=await (await api('/api/v1/logs/files')).j
  $('sdinfo').textContent=j.sd?`Zajęte ${j.usedMB} MB z ${j.totalMB} MB`:'Brak karty SD';
  $('sdf').innerHTML='<tr><th>Dzień</th><th>Rozmiar</th><th></th></tr>'+(j.days||[]).sort().reverse().map(d=>`<tr><td>${d[0]}</td><td>${(d[1]/1024).toFixed(1)} kB</td><td><a href="/api/v1/logs/csv?from=${d[0]}&to=${d[0]}">CSV</a></td></tr>`).join('')}catch(e){}}
 function logsInit(){if(!logsReady){logsReady=true;const d=new Date();$('ld').value=dstr(d);$('lm').value=d.getFullYear()+'-'+pad(d.getMonth()+1);$('ly').value=d.getFullYear();lvShow();
- $('lv').onchange=()=>{lvShow();logsLoad()};$('lshow').onclick=logsLoad;$('lcsv').onclick=logsCsv;$('stk').onchange=drawStats;
+ $('lv').onchange=()=>{lvShow();logsLoad()};$('lshow').onclick=logsLoad;$('lcsv').onclick=logsCsv;$('lraw').onclick=logsRaw;$('stk').onchange=drawStats;
  const sel=$('evm');sel.add(new Option('bieżące (ostatnie 60)',''));
  for(let k=0;k<12;k++){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-k);const v=d.getFullYear()+'-'+pad(d.getMonth()+1);sel.add(new Option(v,v))}
  sel.onchange=eventsLoad;window.addEventListener('resize',()=>{drawLogs();drawStats()})}
