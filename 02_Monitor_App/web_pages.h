@@ -39,7 +39,7 @@ main{max-width:1200px;margin:auto;padding:18px 16px 90px}
 .pct{font-size:20px;color:var(--mut);margin:6px 0 10px}
 .badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;letter-spacing:.3px}
 .s0{background:#22c55e22;color:var(--ok)}.s1{background:#f59e0b22;color:var(--warn)}.s2{background:#ef444433;color:var(--crit);animation:bl 1s infinite}
-.s3{background:#a855f733;color:var(--high);animation:bl 1s infinite}.s4,.s5{background:#64748b33;color:#cbd5e1}
+.s3{background:#ef444433;color:var(--crit);animation:bl 1s infinite}.s4{background:#f59e0b22;color:var(--warn);animation:bl 1s infinite}.s5{background:#64748b33;color:#cbd5e1}
 @keyframes bl{50%{opacity:.45}}
 .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;color:var(--mut);margin-top:12px}.kv b{color:var(--txt);font-weight:500}
 .wave{animation:wv 3s linear infinite}@keyframes wv{to{transform:translateX(-40px)}}

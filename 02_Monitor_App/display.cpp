@@ -141,14 +141,15 @@ void oledTank(uint8_t i) {
     if (s.vol >= 0) snprintf(p, sizeof(p), "%.0f%% %.0fl", s.pct, s.vol); else snprintf(p, sizeof(p), "%.0f%%", s.pct);
     u8g2.drawStr(0, 52, p);
     uint8_t e = tankEffState(i);
-    String stn = stateName(e);
+    static const char *OLN[] = {"NORMA", "MINIMALNY", "KRYTYCZNY", "PRZEPEŁNIENIE", "AWARIA CZUJNIKA", "WYŁĄCZONY", "NAGŁY SPADEK"};   // jak na nakladce (0.5.5)
+    String stn = e < 7 ? OLN[e] : stateName(e);
     if (isAlarmState(e) && alarmAcked) stn = "SKASOWANY";
     int px = u8g2.getStrWidth(p) + 5;
-    if (px + u8g2.getUTF8Width(stn.c_str()) > 108) { u8g2.setFont(u8g2_font_5x7_tf); if (e == ST_HIGH) stn = "ZA DUZY"; else if (e == ST_DROP) stn = "SPADEK"; }
+    if (px + u8g2.getUTF8Width(stn.c_str()) > 108) { u8g2.setFont(u8g2_font_5x7_tf); if (e == ST_HIGH) stn = "PRZEPELN."; else if (e == ST_DROP) stn = "SPADEK"; }
     u8g2.drawUTF8(px, 52, stn.c_str());
   } else {
     u8g2.setFont(u8g2_font_helvB08_te);                 // mniejsza czcionka: napis nie wchodzi na slupek zbiornika (x >= 109)
-    u8g2.drawUTF8(0, 38, s.state == ST_OFF ? "WYŁĄCZONY" : "BŁĄD CZUJNIKA");
+    u8g2.drawUTF8(0, 38, s.state == ST_OFF ? "WYŁĄCZONY" : "AWARIA CZUJNIKA");
     u8g2.setFont(u8g2_font_5x7_tf);
     if (c.type == 0 && s.state == ST_FAULT) {
       fmtComma(b, sizeof(b), s.mA, 2);
