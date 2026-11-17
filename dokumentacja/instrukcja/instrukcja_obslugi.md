@@ -58,7 +58,7 @@ Panel w drzwiach obudowy zawiera trzy kontrolki stanu, przycisk kasowania alarmu
 
 ### 3.3 Sygnał akustyczny i kasowanie alarmu
 
-- Sygnalizator akustyczny (buzer) włącza się przy stanach ALARM i pracuje w rytmie czerwonej kontrolki. **[do potwierdzenia]**
+- Sygnalizator akustyczny (buzer) włącza się przy stanach ALARM oraz przy awarii czujnika i pracuje w rytmie migającej kontrolki. Przy poziomie minimalnym sygnalizator nie działa.
 - Przycisk **KASOWANIE ALARMU** wycisza sygnalizator i potwierdza alarm. Kontrolka ALARM świeci dalej, dopóki przyczyna nie ustąpi.
 - Wystąpienie nowego, poważniejszego stanu ponownie włącza sygnalizator.
 - Alarm można też skasować ze strony WWW, przez Modbus, MQTT lub API.

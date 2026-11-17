@@ -57,7 +57,8 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 - Logi: przycisk **„Pobierz pomiary (CSV)”** – wszystkie pomiary z wybranego dnia, miesiąca albo roku w jednym pliku (`/api/v1/logs/csv?from=…&to=…`); „Pobierz podsumowanie (CSV)” – wartości dobowe/miesięczne jak dotąd.
 - W pliku pomiarów dni bez danych między dniami z danymi oznaczone wierszem `RRRR-MM-DD;brak danych` (dni przed pierwszym i po ostatnim pliku pomijane).
 - W trakcie wysyłania logów (wiele dni) obsługiwane są alarmy (co 100 ms) i przycisk kasowania (co 50 ms) – wcześniej pętla główna stała przez cały czas pobierania.
-- Do zrobienia przed wydaniem: sygnalizacja wg nakładki (NORMA/OSTRZEŻENIE/ALARM), test czasu pobrania 7/31/365 dni na płytce.
+- Do zrobienia przed wydaniem: sygnalizacja wg nakładki (NORMA/OSTRZEŻENIE/ALARM; awaria czujnika = OSTRZEŻENIE przerywane), test czasu pobrania 7/31/365 dni na płytce.
+- Buzer (decyzja użytkownika 17.11.2026): stany ALARM (krytyczny, przepełnienie, nagły spadek) **oraz awaria czujnika**; gra w rytmie migającej kontrolki; przy poziomie minimalnym cicho.
 
 ### 0.5.4 – 16.11.2026
 - Aktualizacja przez stronę / API przyjmuje tylko pliki podpisane kluczem MonitorUp.pl: podpis ECDSA P-256 nad SHA-256 obrazu doklejony na końcu pliku (`MUPSIG01`), sprawdzany przed przełączeniem partycji startowej. Odrzucenie zapisywane w dzienniku (OTA).
