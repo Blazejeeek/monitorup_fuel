@@ -12,6 +12,7 @@
 #include <esp_task_wdt.h>
 #include "hw.h"
 #include "calib.h"
+#include "fab.h"
 #include "config.h"
 #include "mail.h"
 #include "cfgjson.h"
@@ -66,7 +67,7 @@ static void bootSequence() {
   while (millis() - t0 < BOOT_LOGO_MS) { oledBoot("", phase++); delay(80); }
 }
 
-// Przycisk DOWNLOAD (GPIO0) trzymany 10 s = reset loginu/hasla i sieci (kalibracja zostaje)
+// Przycisk DOWNLOAD (GPIO0) trzymany 10 s = reset loginu/hasla i sieci (kalibracja zostaje); od 0.5.6 hasla z naklejki egzemplarza
 static void resetButtonLoop() {
   static uint32_t pressT = 0;
   if (digitalRead(PIN_BTN_DOWNLOAD) == LOW) {
@@ -96,6 +97,7 @@ void setup() {
   setOutputs(0);                 // wyjscia wylaczone jak najszybciej
   Serial.printf("PCF8575: %s\n", pcfOk ? "OK" : "BLAD");
 
+  fabLoad();                                   // 0.5.6: dane fabryczne (numer, hasla startowe) - przed ustawieniami
   cfgLoad();
   calLoad();                                   // 0.4.8: tabela kalibracji pradu A4 (NVS / kopia EEPROM)
   Serial.printf("Kalibracja pradu: %s (%u pkt)\n", calSource.c_str(), calTab.n);
@@ -123,12 +125,14 @@ void setup() {
   if (esp_task_wdt_reconfigure(&wc) != ESP_OK) esp_task_wdt_init(&wc);
   esp_task_wdt_add(NULL);
 
-  logEvent("SYSTEM", String("Start v" FW_VERSION " (") + resetName() + ")");
+  logEvent("SYSTEM", String("Start v" FW_VERSION " (") + resetName() + ")" + (fabSn()[0] ? String(", ") + fabSn() : String("")));
+  if (fabState == FAB_EE_ONLY) logEvent("SYSTEM", String("Brak danych fabrycznych w pamięci (numer ") + fabSn() + " z kopii EEPROM) – wymagane programowanie serwisowe");
   Serial.printf("Strona WWW: http://%s.local, AP http://192.168.4.1 (%s)\n", MDNS_NAME, cfg.apSsid);
 }
 
 void loop() {
   esp_task_wdt_reset();
+  fabLoop();                     // 0.5.6: polecenia produkcyjne PROV-* z USB
   webLoop();
   mbLoop();
   mqttLoop();

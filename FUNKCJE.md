@@ -53,6 +53,14 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 ## Historia wersji
 
+### 0.5.6-dev – w przygotowaniu (karta #177, rejestr produkcji)
+- **Dane fabryczne egzemplarza** (osobna pamięć `fab`, nie kasują jej ustawienia fabryczne, reset DOWNLOAD, kopia ustawień ani aktualizacja): numer seryjny MU-RRMM-NNNN, wersja sprzętu, data produkcji, indywidualne hasło Wi-Fi (AP), hasło startowe panelu (tylko skrót), dane chmury MonitorUp.pl (na przyszłość), fabryczna kalibracja prądu A4. Kopia numeru z CRC w EEPROM 24C02 (adres 232).
+- **Programowanie przez USB** na stanowisku: `PROV-INFO`, `PROVISION`, `PROV-CAL`, `PROV-MEAS`, `PROV-OUTTEST`; ponowny zapis tylko z flagą serwisową i obecnym numerem. Hasła nigdy nie są wypisywane.
+- **Wymuszona zmiana hasła startowego**: do zmiany panel działa tylko w podglądzie (zapis, sterowanie i aktualizacja zablokowane), nowe hasło nie może być równe startowemu.
+- Reset DOWNLOAD i ustawienia fabryczne: hasła z naklejki egzemplarza; ustawienia fabryczne bez zachowania kalibracji przywracają kalibrację prądu z produkcji.
+- Numer seryjny: strona (pasek stanu, System), OLED (ekran startowy i sieci), API `/api/v1/status` (`sn`, `fab`), Modbus IR 15–18 i 20–27, MQTT `urzadzenie`.
+- Sterownik bez danych fabrycznych działa jak dotąd (admin/admin, Wi-Fi monitor123).
+
 ### 0.5.5 – w przygotowaniu (niewydana, nie wgrana)
 - Logi: przycisk **„Pobierz pomiary (CSV)”** – wszystkie pomiary z wybranego dnia, miesiąca albo roku w jednym pliku (`/api/v1/logs/csv?from=…&to=…`); „Pobierz podsumowanie (CSV)” – wartości dobowe/miesięczne jak dotąd.
 - W pliku pomiarów dni bez danych między dniami z danymi oznaczone wierszem `RRRR-MM-DD;brak danych` (dni przed pierwszym i po ostatnim pliku pomijane).

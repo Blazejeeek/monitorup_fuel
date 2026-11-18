@@ -7,6 +7,7 @@
 #include <esp_random.h>
 #include <esp_mac.h>
 #include "hw.h"
+#include "fab.h"
 
 Config cfg;
 Preferences prefs;
@@ -61,7 +62,8 @@ void netDefaults() {
   esp_read_mac(mac, ESP_MAC_WIFI_STA);
   cfg.apMode = 0;
   snprintf(cfg.apSsid, sizeof(cfg.apSsid), "MonitorUp.pl-%02X%02X", mac[4], mac[5]);
-  strlcpy(cfg.apPass, "monitor123", sizeof(cfg.apPass));
+  // 0.5.6: haslo Wi-Fi z danych fabrycznych egzemplarza (naklejka), bez nich - wspolne haslo dawnych wersji
+  strlcpy(cfg.apPass, fabProgrammed() ? fab.apPass : "monitor123", sizeof(cfg.apPass));
   cfg.apChannel = 6;
   cfg.wifiEn = 0;
   cfg.wifiSsid[0] = 0; cfg.wifiPass[0] = 0;
@@ -72,8 +74,11 @@ void netDefaults() {
 
 void accountDefaults() {
   strlcpy(cfg.user, "admin", sizeof(cfg.user));
-  pwSet("admin");
-  cfg.mustChange = 1;
+  if (fabProgrammed()) {                      // 0.5.6: haslo startowe z naklejki (w pamieci tylko skrot)
+    memcpy(cfg.salt, fab.panelSalt, sizeof(cfg.salt));
+    memcpy(cfg.hash, fab.panelHash, sizeof(cfg.hash));
+  } else pwSet("admin");
+  cfg.mustChange = 1;                         // zmiana hasla wymuszona przy pierwszym logowaniu
   cfg.sessionMin = 30;
 }
 

@@ -18,7 +18,7 @@ curl -H "Authorization: Bearer ma_xxxxxxxx" http://192.168.0.12/api/v1/status
 
 | Metoda | Adres | Opis |
 |---|---|---|
-| GET | `/api/v1/status` | poziomy, stany, litry, statystyki, alarm, wyjścia, wejścia, sieć, czas, SD |
+| GET | `/api/v1/status` | poziomy, stany, litry, statystyki, alarm, wyjścia, wejścia, sieć, czas, SD; od 0.5.6 `sn` (numer seryjny) i `fab` (ok / brak / tylko_eeprom) |
 | GET | `/api/v1/history` | ostatnie 24 h co 5 min (poziom cm), do wykresu |
 | GET | `/api/v1/logs?from=RRRR-MM-DD&to=RRRR-MM-DD&max=1500` | `rows: [[epoch, z1_cm, z2_cm, z1_l, z2_l], …]` (z redukcją punktów) |
 | GET | `/api/v1/logs/csv?from=…&to=…` | plik CSV (separator `;`, przecinek dziesiętny) |

@@ -27,6 +27,7 @@
 #include "crypt.h"
 #include "summary.h"
 #include "web_pages.h"
+#include "fab.h"
 
 WebServer server(80);
 static uint32_t rebootAt = 0;
@@ -122,7 +123,11 @@ static bool parseBody(JsonDocument &d) {
 
 static bool auth(uint8_t level) {
   curToken = -1;
-  if (findSession()) return true;
+  if (findSession()) {
+    // 0.5.6: po pierwszym logowaniu (haslo startowe z naklejki) tylko odczyt, dopoki haslo nie zostanie zmienione
+    if (cfg.mustChange && level > A_READ) { sendErr(403, "Najpierw zmień hasło startowe"); return false; }
+    return true;
+  }
   uint32_t rip = (uint32_t)server.client().remoteIP();
   String h = server.header("Authorization");
   if (h.startsWith("Bearer ")) {
@@ -212,6 +217,7 @@ static void hPassword() {
   if (!cfg.mustChange && !pwCheck(d["old"] | "")) { sendErr(403, "Obecne hasło jest nieprawidłowe"); return; }
   if (strlen(np) < 6 || strlen(np) > 64) { sendErr(400, "Hasło musi mieć od 6 do 64 znaków"); return; }
   if (strcmp(np, "admin") == 0) { sendErr(400, "Wybierz inne hasło niż domyślne"); return; }
+  if (fabIsStartPanelPass(np)) { sendErr(400, "Wybierz inne hasło niż startowe z naklejki"); return; }
   const char *nu = d["user"] | "";
   if (*nu) strlcpy(cfg.user, nu, sizeof(cfg.user));
   pwSet(np);
@@ -228,6 +234,8 @@ static void hStatus() {
   d["fw"] = FW_VERSION;
   d["buzzMuted"] = buzzerSilenced();
   d["hw"] = HW_NAME " / HW " HW_VERSION;
+  d["sn"] = fabSn();                                          // 0.5.6: numer seryjny ("" = niezaprogramowany)
+  d["fab"] = fabState == FAB_OK ? "ok" : fabState == FAB_EE_ONLY ? "tylko_eeprom" : "brak";
   d["name"] = cfg.devName;
   d["t"] = (int64_t)time(nullptr);
   d["timeOk"] = timeOk();
@@ -867,7 +875,7 @@ static void hFactory() {
   const float dens = cfg.densityKgM3;
   cfgDefaults();
   if (keepCal) { memcpy(cfg.tank, tc, sizeof(tc)); memcpy(cfg.tx, tx, sizeof(tx)); memcpy(cfg.tankName, nm, sizeof(nm)); cfg.densityKgM3 = dens; }
-  else calClear();
+  else calRestoreFactory();                       // 0.5.6: kalibracja pradu z produkcji (bez niej - brak tabeli)
   cfgEnforceFixed();
   cfgSave();
   logEvent("SYSTEM", String("Przywrócono ustawienia fabryczne") + (keepCal ? " (kalibracja zachowana)" : ""));
@@ -891,6 +899,7 @@ static void hOtaUpload() {
     otaAllowed = findSession() != nullptr;
     otaErr = "";
     if (!otaAllowed) { otaErr = "Wymagane logowanie"; return; }
+    if (cfg.mustChange) { otaErr = "Najpierw zmień hasło startowe"; otaAllowed = false; return; }
     if (!u.filename.endsWith(".bin")) { otaErr = "Wybierz plik .bin"; otaAllowed = false; return; }
     int cmd = server.arg("type") == "fs" ? U_SPIFFS : U_FLASH;
     if (!Update.begin(UPDATE_SIZE_UNKNOWN, cmd)) { otaErr = Update.errorString(); otaAllowed = false; return; }

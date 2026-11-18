@@ -2,6 +2,7 @@
 #include "calib.h"
 #include <Preferences.h>
 #include "hw.h"
+#include "fab.h"
 
 CalTable calTab;
 String calSource = "brak";
@@ -86,8 +87,25 @@ void calLoad() {
     calSource = "EEPROM (odtworzono w NVS)";
     return;
   }
+  if (fabCal(e)) {                                  // 0.5.6: kalibracja fabryczna ze stanowiska
+    calTab = e;
+    nvsSave(calTab);
+    eeSave(calTab);
+    calSource = "fabryczna";
+    return;
+  }
   memset(&calTab, 0, sizeof(calTab));
   calSource = "brak";
+}
+
+bool calRestoreFactory() {
+  CalTable e;
+  if (!fabCal(e)) { calClear(); return false; }
+  calTab = e;
+  nvsSave(calTab);
+  eeSave(calTab);
+  calSource = "fabryczna";
+  return true;
 }
 
 float calRawToMa(float raw) {

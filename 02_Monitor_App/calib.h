@@ -30,3 +30,4 @@ float  calRawToMa(float raw);                      // mA z tabeli albo napiecie 
 String calFromJson(JsonObjectConst f);             // import pliku kalibracji; "" = OK, inaczej opis bledu
 void   calToJson(JsonObject o);                    // eksport w formacie pliku
 void   calClear();
+bool   calRestoreFactory();                         // 0.5.6: tabela fabryczna (dane fab), bez niej - calClear()

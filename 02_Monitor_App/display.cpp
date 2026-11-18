@@ -11,6 +11,7 @@
 #include "logger.h"
 #include "stats.h"
 #include "outputs.h"
+#include "fab.h"
 
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 bool oledOk = false;
@@ -60,7 +61,7 @@ void oledBoot(const char *bottom, uint8_t phase) {
   u8g2.drawStr(34, 20, "MonitorUp.pl");
   u8g2.setFont(u8g2_font_helvR08_tf);
   u8g2.drawStr(34, 31, "SW " FW_VERSION);
-  u8g2.drawStr(34, 41, "HW " HW_VERSION " (B8M)");
+  u8g2.drawStr(34, 41, fabSn()[0] ? (String("SN ") + fabSn()).c_str() : "HW " HW_VERSION " (B8M)");
   u8g2.drawHLine(0, 44, 128);
   u8g2.setFont(u8g2_font_helvR08_tf);
   int w = u8g2.getStrWidth(WWW_ADDR);
@@ -172,7 +173,7 @@ void oledNet() {
   u8g2.drawStr(0, 26, l2.c_str());
   u8g2.drawStr(0, 34, l3.c_str());
   u8g2.drawStr(0, 42, l4.c_str());
-  u8g2.drawStr(0, 50, "SW " FW_VERSION "  HW " HW_VERSION " B8M");
+  u8g2.drawStr(0, 50, fabSn()[0] ? (String("SN ") + fabSn() + "  SW " FW_VERSION).c_str() : "SW " FW_VERSION "  HW " HW_VERSION " B8M");
   drawFooter();
 }
 

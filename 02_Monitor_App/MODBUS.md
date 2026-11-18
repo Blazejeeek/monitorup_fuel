@@ -17,7 +17,7 @@ Pełna mapa (plik CSV do zaimportowania) jest do pobrania ze strony: Ustawienia 
 
 | Adres | Nazwa | Typ / jednostka |
 |---|---|---|
-| 0 | wersja programu | 54 = 0.5.4 |
+| 0 | wersja programu | 56 = 0.5.6 |
 | 1 | status (b0 SD, b1 ADS, b2 RTC, b3 czas, b4 ETH, b5 WiFi, b6 MQTT, b7 alarm, b8 skasowany, b9 test) | bity |
 | 2–3 | czas pracy | UINT32 s |
 | 4–9 | rok, miesiąc, dzień, godzina, minuta, sekunda | czas lokalny |
@@ -25,6 +25,10 @@ Pełna mapa (plik CSV do zaimportowania) jest do pobrania ze strony: Ustawienia 
 | 11 / 12 | wyjścia OUT1–8 / wejścia DI1–8 | bity |
 | 13 | wolne miejsce SD | MB |
 | 14 | temperatura DS3231 | °C ×10 |
+| 15 / 16 | numer seryjny MU-RRMM-NNNN: RRMM / NNNN (od 0.5.6; 0 = niezaprogramowany) | UINT16 |
+| 17 | wersja sprzętu | ×10 (10 = HW 1.0) |
+| 18 | dane fabryczne: 0 brak, 1 OK, 2 tylko numer z kopii EEPROM (wymagany serwis) | UINT16 |
+| 20–27 | numer seryjny jako tekst (16 znaków, 2 na rejestr, starszy bajt pierwszy) | ASCII |
 | **100–129** | **zbiornik 1 (paliwo, A4 – domyślnie włączony)** | |
 | **200–229** | **zbiornik 2 (A3 – domyślnie wyłączony)** – ten sam układ | |
 | +0 / +1 / +2 | poziom cm ×10 / % ×10 / mA ×100 | INT16 |

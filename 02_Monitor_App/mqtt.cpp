@@ -11,6 +11,7 @@
 #include "net.h"
 #include "logger.h"
 #include "hw.h"
+#include "fab.h"
 #include <esp_mac.h>
 
 // MQTT dziala we wlasnym zadaniu FreeRTOS (rdzen 0): laczenie z brokerem (DNS, TCP) nie blokuje
@@ -82,6 +83,10 @@ static void mqttPublishAll() {
   for (uint8_t k = 0; k < 8; k++) w["out" + String(k + 1)] = outLevel[k];
   o = ""; serializeJson(w, o);
   mqttPub("wyjscia", o);
+  JsonDocument u;                                   // 0.5.6: dane urzadzenia (numer seryjny)
+  u["sn"] = fabSn(); u["fw"] = FW_VERSION; u["hw"] = HW_VERSION; u["mac"] = WiFi.macAddress();
+  o = ""; serializeJson(u, o);
+  mqttPub("urzadzenie", o);
 }
 
 static void mqttCallback(char *t, byte *payload, unsigned int len) {

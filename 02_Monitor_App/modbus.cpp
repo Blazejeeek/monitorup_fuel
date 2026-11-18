@@ -10,9 +10,10 @@
 #include "net.h"
 #include "mqtt.h"
 #include "logger.h"
+#include "fab.h"
 #include <SD.h>
 
-#define FW_NUM 55            // wersja programu w rejestrze 0 (30 = 0.3.0)
+#define FW_NUM 56            // wersja programu w rejestrze 0 (30 = 0.3.0)
 #define MB_MAX_CLIENTS 4
 
 static WiFiServer *mbServer = nullptr;
@@ -61,7 +62,18 @@ static bool mbInput(uint16_t a, uint16_t &v) {
       case 12: v = diState; return true;
       case 13: v = sdMounted ? (uint16_t)min<uint64_t>((SD.totalBytes() - SD.usedBytes()) >> 20, 65535) : 0; return true;
       case 14: v = i16s(rtcInfo.temp, 10, rtcInfo.ok); return true;
-      default: v = 0; return a < 20;
+      // 0.5.6: numer seryjny MU-RRMM-NNNN (0 = niezaprogramowany), wersja sprzetu x10, stan danych fabrycznych
+      case 15: { const char *n = fabSn(); v = strlen(n) == 12 ? atoi(n + 3) : 0; return true; }
+      case 16: { const char *n = fabSn(); v = strlen(n) == 12 ? atoi(n + 8) : 0; return true; }
+      case 17: v = fabProgrammed() ? (uint16_t)lroundf(atof(fab.hw) * 10) : 0; return true;
+      case 18: v = fabState; return true;
+      default:
+        if (a >= 20 && a < 28) {                     // numer seryjny ASCII, 2 znaki na rejestr (starszy bajt pierwszy)
+          const char *n = fabSn(); size_t L = strlen(n), k = (a - 20) * 2;
+          v = ((k < L ? (uint8_t)n[k] : 0) << 8) | (k + 1 < L ? (uint8_t)n[k + 1] : 0);
+          return true;
+        }
+        v = 0; return a < 20;
     }
   }
   uint8_t t = a / 100 - 1;

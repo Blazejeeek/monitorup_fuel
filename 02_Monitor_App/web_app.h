@@ -34,7 +34,7 @@ static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><he
 <div class="status"><div id="sb">Łączenie…</div></div>
 <div class="toast" id="toast"></div>
 <div class="modal" id="mc"><div class="lbox"><div class="logo"><img src="/logo.svg" alt="" style="width:56px;height:56px"><h1 style="font-size:20px">Zmień hasło</h1>
-<div class="sub">Ze względów bezpieczeństwa ustaw własne hasło zamiast domyślnego.</div></div>
+<div class="sub">Ze względów bezpieczeństwa ustaw własne hasło zamiast startowego. Do tego czasu panel działa tylko w trybie podglądu.</div></div>
 <label>Nowe hasło (min. 6 znaków)</label><input type="password" id="m1" autocomplete="new-password"><label>Powtórz nowe hasło</label><input type="password" id="m2" autocomplete="new-password">
 <button class="btn" id="mb">Zapisz hasło</button><div class="err" id="me"></div></div></div>
 <div class="modal" id="md"><div class="lbox" style="max-width:520px"><h2 id="mdt" style="margin-top:0"></h2><div id="mdb"></div><div class="btns"><button class="btn" id="mdc">Zamknij</button></div></div></div>
@@ -110,7 +110,7 @@ function render(s){S=s;let html='',al=[];
  <span><i class="dot ${n.ap.on?'g':''}"></i>AP <b>${n.ap.on?esc(n.ap.ssid)+' ('+n.ap.cl+')':'wyłączony'}</b></span>
  <span><i class="dot ${s.sd.ok?'g':''}"></i>SD <b>${s.sd.ok?(s.sd.totalMB-s.sd.usedMB)+' MB wolne':'brak karty'}</b></span>
  <span><i class="dot ${s.mqtt?'g':''}"></i>MQTT</span><span>Modbus <b>${s.mb}</b></span>
- <span>Praca <b>${Math.floor(up/86400)?Math.floor(up/86400)+' d ':''}${Math.floor(up%86400/3600)} h ${Math.floor(up%3600/60)} min</b></span><span>v<b>${s.fw}</b></span>`;
+ <span>Praca <b>${Math.floor(up/86400)?Math.floor(up/86400)+' d ':''}${Math.floor(up%86400/3600)} h ${Math.floor(up%3600/60)} min</b></span>${s.sn?`<span>SN <b>${esc(s.sn)}</b></span>`:''}<span>v<b>${s.fw}</b></span>`;
  if(window.onStatus)window.onStatus(s)}
 async function tick(){try{const r=await api('/api/v1/status');render(await r.json())}catch(e){if(e!==0)$('sb').textContent='Brak połączenia z urządzeniem…'}}
 async function histLoad(){try{hist=await (await api('/api/v1/history')).json()}catch(e){}}
@@ -476,7 +476,7 @@ window.tokRen=async id=>{if(!confirm('Wygenerować nowy token w miejsce starego?
 SET.konto=el=>{el.innerHTML=`<div class="grid"><div class="card"><h2>Login i hasło</h2>${F.txt('ku','Login',C.user)}${F.pw('kop','Obecne hasło')}${F.pw('kn1','Nowe hasło (min. 6 znaków)')}${F.pw('kn2','Powtórz nowe hasło')}
  <div class="btns"><button class="btn" id="kps">Zmień</button></div><div class="err" id="kpe"></div></div>
  <div class="card"><h2>Sesja</h2>${F.num('kse','Wylogowanie po bezczynności [min]',C.device.sessionMin,1)}<div class="btns"><button class="btn" id="kss">Zapisz</button></div>
- <p class="muted" style="font-size:12px">Zapomniane hasło: przytrzymaj przycisk DOWNLOAD na płytce przez 10 s (odliczanie na OLED) – login i hasło wrócą do admin/admin, a sieć do ustawień fabrycznych. Kalibracja zostaje.</p></div></div>`;
+ <p class="muted" style="font-size:12px">Zapomniane hasło: przytrzymaj przycisk DOWNLOAD na płytce przez 10 s (odliczanie na OLED) – login wróci do admin, hasło do hasła startowego z naklejki (bez naklejki: admin), a sieć do ustawień fabrycznych. Kalibracja zostaje.</p></div></div>`;
  $('kps').onclick=async()=>{$('kpe').textContent='';if($('kn1').value!==$('kn2').value){$('kpe').textContent='Hasła nie są takie same';return}
   const r=await fetch('/api/v1/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user:V('ku'),old:$('kop').value,new:$('kn1').value})});const j=await r.json();
   if(!r.ok){$('kpe').textContent=j.error;return}toast('Zmieniono login/hasło');cfgLoad()};
@@ -492,7 +492,7 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
  <p class="muted" style="font-size:12px">Kopia nie zawiera loginu, hasła ani tokenów API.</p></div>
  <div class="card"><h2>Restart i ustawienia fabryczne</h2><div class="btns"><button class="btn sec" id="srb">Uruchom ponownie</button></div>
  ${F.chk('fkc','Zachowaj kalibrację, progi i ustawienia zbiorników',true)}<div class="btns"><button class="btn red" id="sfr">Przywróć ustawienia fabryczne</button></div></div></div>`;
- window.onStatus=s=>{const e=$('sinf');if(e)e.innerHTML=`Oprogramowanie: <b>${s.fw}</b><br>Płytka: <b>${esc(s.hw||'')}</b><br>Wolna pamięć: <b>${Math.round(s.heap/1024)} kB</b><br>PSRAM: <b>${Math.round(s.psram/1024)} kB</b><br>
+ window.onStatus=s=>{const e=$('sinf');if(e)e.innerHTML=`Numer seryjny: <b>${s.sn?esc(s.sn):'brak (sterownik niezaprogramowany)'}</b>${s.fab==='tylko_eeprom'?' – <b style="color:#e5484d">brak danych fabrycznych, wymagany serwis</b>':''}<br>Oprogramowanie: <b>${s.fw}</b><br>Płytka: <b>${esc(s.hw||'')}</b><br>Wolna pamięć: <b>${Math.round(s.heap/1024)} kB</b><br>PSRAM: <b>${Math.round(s.psram/1024)} kB</b><br>
   Ostatni restart: <b>${RR[s.reset]||s.reset}</b><br>Temp. płytki (DS3231): <b>${fc(s.rtcTemp,1)} °C</b><br>ADS1115: <b>${s.ads?'OK':'BŁĄD'}</b><br>PCF8575: <b>${s.pcf?'OK':'BŁĄD'}</b><br>SD: <b>${s.sd.ok?'OK':'brak'}</b>`};if(S)window.onStatus(S);
  $('sns').onclick=()=>save({device:{name:V('sn'),oledDimMin:+V('sod')}});
  $('oup').onclick=()=>{const f=$('ofile').files[0];if(!f){toast('Wybierz plik .bin',1);return}if(!confirm('Wgrać nowy program '+f.name+'?'))return;
@@ -507,7 +507,7 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
   if(o.enc){const p=V('rpw');if(!p){toast('Ta kopia jest zaszyfrowana – podaj jej hasło',1);return}o._pass=p}
   if(!confirm('Wgrać ustawienia z pliku i uruchomić urządzenie ponownie?'))return;const rr=await api('/api/v1/restore',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(!rr.ok){let j={};try{j=await rr.json()}catch(e){}toast(j.error||'Błąd wgrywania kopii',1);return}rebootWait('Wgrano kopię ustawień.')};
  $('srb').onclick=async()=>{if(confirm('Uruchomić urządzenie ponownie?')){await post('/api/v1/reboot');rebootWait()}};
- $('sfr').onclick=async()=>{if(confirm('Przywrócić ustawienia fabryczne? Login/hasło wrócą do admin/admin, sieć do ustawień domyślnych.')){await post('/api/v1/factory',{keepCal:B('fkc')});rebootWait('Przywrócono ustawienia fabryczne. Zaloguj się: admin / admin.')}}};
+ $('sfr').onclick=async()=>{if(confirm('Przywrócić ustawienia fabryczne? Login wróci do admin, hasło do hasła startowego z naklejki, sieć do ustawień domyślnych.')){await post('/api/v1/factory',{keepCal:B('fkc')});rebootWait('Przywrócono ustawienia fabryczne. Zaloguj się: admin i hasło startowe z naklejki.')}}};
 
 // ---------- start ----------
 async function chpw(a,b,err){err.textContent='';if(a!==b){err.textContent='Hasła nie są takie same';return false}
@@ -532,6 +532,11 @@ FC04 rejestr wejsciowy;11;30012;Stan wyjsc OUT1-8;UINT16 bity;b0=OUT1
 FC04 rejestr wejsciowy;12;30013;Stan wejsc DI1-8;UINT16 bity;b0=DI1
 FC04 rejestr wejsciowy;13;30014;Wolne miejsce SD;UINT16;MB
 FC04 rejestr wejsciowy;14;30015;Temperatura DS3231;INT16;C x10
+FC04 rejestr wejsciowy;15;30016;Numer seryjny - rok i miesiac produkcji (RRMM);UINT16;MU-RRMM-NNNN, 0 = niezaprogramowany
+FC04 rejestr wejsciowy;16;30017;Numer seryjny - numer kolejny (NNNN);UINT16;0 = niezaprogramowany
+FC04 rejestr wejsciowy;17;30018;Wersja sprzetu;UINT16;x10 (10 = HW 1.0)
+FC04 rejestr wejsciowy;18;30019;Dane fabryczne;UINT16;0 brak, 1 OK, 2 tylko numer z kopii EEPROM (wymagany serwis)
+FC04 rejestr wejsciowy;20-27;30021;Numer seryjny (tekst);ASCII 16 znakow;2 znaki na rejestr, starszy bajt pierwszy
 FC04 rejestr wejsciowy;100 / 200;30101 / 30201;Poziom (zbiornik 1 / 2);INT16;cm x10
 FC04 rejestr wejsciowy;101 / 201;30102 / 30202;Wypelnienie;INT16;% x10
 FC04 rejestr wejsciowy;102 / 202;30103 / 30203;Prad przetwornika;INT16;mA x100
