@@ -16,6 +16,7 @@ DOCS = {
     "instrukcja_obslugi.md": dict(pdf="MonitorUp_instrukcja_obslugi.pdf", kind="cover",
                                   footer="Instrukcja obsługi i montażu"),
     "karta_katalogowa.md": dict(pdf="MonitorUp_karta_katalogowa.pdf", kind="band", footer="Karta katalogowa"),
+    "komunikaty_email.md": dict(pdf="MonitorUp_komunikaty_email.pdf", kind="band", footer="Komunikaty e-mail"),
 }
 
 LOGO = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='9 5 46 54'>
@@ -46,6 +47,15 @@ def md_blocks(lines):
         ln = lines[i].rstrip()
         if not ln.strip():
             i += 1
+            continue
+        if ln.strip().startswith("```"):
+            i += 1
+            code = []
+            while i < len(lines) and not lines[i].strip().startswith("```"):
+                code.append(html.escape(lines[i].rstrip()))
+                i += 1
+            i += 1
+            out.append("<pre>" + "\n".join(code) + "</pre>")
             continue
         if ln.startswith("#"):
             n = len(ln) - len(ln.lstrip("#"))
@@ -82,7 +92,7 @@ def md_blocks(lines):
         else:
             para = [ln]
             i += 1
-            while i < len(lines) and lines[i].strip() and not re.match(r"^(#|\||!\[|---|\s*([-*]|\d+\.)\s)", lines[i]):
+            while i < len(lines) and lines[i].strip() and not re.match(r"^(#|\||!\[|---|```|\s*([-*]|\d+\.)\s)", lines[i]):
                 para.append(lines[i].rstrip())
                 i += 1
             out.append(f"<p>{inline(' '.join(para))}</p>")
@@ -139,6 +149,8 @@ th code {{ background: transparent; color: #fff; }}
 figure {{ margin: 3mm 0 5mm; text-align: center; break-inside: avoid; }}
 figure img {{ max-width: 100%; max-height: 120mm; border-radius: 2.5mm; }}
 figcaption {{ font-size: 7.8pt; color: {MUTED}; margin-top: 1.5mm; }}
+pre {{ font: 8.2pt/1.45 'DejaVu Sans Mono', monospace; background: #f4f8fc; border: .3mm solid #cbd5e1;
+  border-left: 1.6mm solid {ACC}; border-radius: 2mm; padding: 4mm 5mm; white-space: pre-wrap; break-inside: avoid; color: #0f172a; }}
 hr {{ border: 0; border-top: .3mm solid #e2e8f0; margin: 6mm 0; }}
 .todo {{ background: #fef3c7; color: #92400e; border-radius: 1mm; padding: 0 1.2mm; font-weight: bold; font-size: .92em; }}
 .karta h2 {{ margin-top: 5mm; font-size: 12pt; }}

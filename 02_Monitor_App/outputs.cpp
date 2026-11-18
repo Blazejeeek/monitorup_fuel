@@ -58,7 +58,8 @@ void alarmAck(uint8_t src) {
   if (!changed) return;
   ackTime = millis();
   logEvent("ALARM", String("Wyciszono buzer / skasowano alarm (") + ackSrcName(src) + ")");
-  mailEvent(MK_ACK, 0, String("Alarm skasowany: ") + ackSrcName(src));
+  static const char *ACKPL[] = {"przycisk KASOWANIE ALARMU", "strona WWW sterownika", "Modbus TCP", "MQTT", "API HTTP"};
+  mailEvent(MK_ACK, 0, String("Źródło skasowania: ") + (src < 5 ? ACKPL[src] : "?"));
 }
 
 // ---------------- Programowy PWM (PCF8575, ok. 100 Hz, 10 poziomow) ----------------
@@ -137,7 +138,10 @@ void alarmLoop() {
         logRow();
         static const uint16_t MK_OF[] = {MK_NORMAL, MK_MIN, MK_CRIT, MK_HIGH, MK_SENSOR, 0, MK_DROP};   // indeks = TankStateCode
         if (e < sizeof(MK_OF) / sizeof(MK_OF[0]) && MK_OF[e])
-          mailEvent(MK_OF[e], i, String("Zmiana stanu: ") + stateName(lastEff[i]) + " → " + stateName(e));
+        {
+          static const char *PN[] = {"stan normalny", "poziom minimalny", "poziom krytyczny", "przepełnienie", "awaria czujnika", "zbiornik nieaktywny", "nagły spadek poziomu"};
+          mailEvent(MK_OF[e], i, String("Poprzedni stan: ") + (lastEff[i] < 7 ? PN[lastEff[i]] : "?"));
+        }
       }
       lastEff[i] = e;
     }
