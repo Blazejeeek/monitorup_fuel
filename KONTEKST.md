@@ -50,6 +50,15 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
+## Stan na 19.11.2026 (0.5.6-dev – NIEWYDANA, wgrana na płytkę testową 19.11 00:14 przez OTA z Pi masim)
+Karta #177 (rejestr produkcji). Zawiera wszystko z 0.5.5-dev oraz:
+- **Dane fabryczne** `fab.h/.cpp`: przestrzeń NVS `fab` (klucz `d` = `FabData`, `cal` = fabryczna tabela kalibracji prądu, `crt`/`key` zarezerwowane na mTLS). Nie kasują jej ustawienia fabryczne, DOWNLOAD, kopia ustawień ani OTA. Kopia numeru z CRC w EEPROM od adresu **232** (mapa EEPROM: 0–121 kalibracja zbiorników, 128–229 tabela prądu, 232–253 numer). `fabLoad()` przed `cfgLoad()`.
+- **Polecenia USB** (`fabLoop()` w pętli): `PROV-INFO`, `PROVISION {json}`, `PROV-CAL {json}`, `PROV-MEAS`, `PROV-OUTTEST`; ponownie tylko `"serwis":true` + `sn_stary`. Hasła nigdy na port. Skrypt stanowiska: repo `Blazejeeek/rejestr-produkcji` (`tools/produkcja.py`).
+- `accountDefaults()`/`netDefaults()`: przy danych fabrycznych hasło panelu = skrót z `fab`, hasło AP = `fab.apPass`; bez nich jak dotąd (admin/admin, monitor123). `cfg.mustChange` → sesja ma tylko odczyt (`auth()` w web.cpp), OTA zablokowana, nowe hasło ≠ startowe.
+- Ustawienia fabryczne bez „zachowaj kalibrację” → `calRestoreFactory()` (tabela z `fab`); `calLoad()` sięga po `fab`, gdy brak NVS i EEPROM.
+- Numer seryjny: `/api/v1/status` (`sn`, `fab`), pasek stanu i System na stronie, OLED (start, ekran sieci), Modbus IR 15–18 i 20–27 (MODBUS.md, CSV), MQTT `urzadzenie` (JSON sn/fw/hw/mac).
+- Sprawdzone na płytce: start, `sn` = "", `fab` = "brak" (płytka niezaprogramowana). Programowanie przez USB czeka na podłączenie USB płytki do masim (separator USB) i pyserial na Pi.
+
 ## Stan na 17.11.2026 (0.5.5-dev – NIEWYDANA, wgrana na płytkę testową)
 
 ### Gdzie jesteśmy
