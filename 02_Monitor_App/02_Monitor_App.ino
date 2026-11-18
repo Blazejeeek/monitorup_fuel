@@ -85,6 +85,7 @@ static void resetButtonLoop() {
 }
 
 void setup() {
+  Serial.setRxBufferSize(2560);  // 0.5.6: polecenia PROVISION / PROV-CAL (do 2500 B) z USB
   Serial.begin(115200);
   uint32_t t0 = millis();
   while (!Serial && millis() - t0 < 1500) delay(10);

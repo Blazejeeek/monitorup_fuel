@@ -195,8 +195,8 @@ static String provCal(JsonDocument &d) {
   if (!fabProgrammed()) return "najpierw PROVISION";
   CalTable old;
   if (fabCal(old) && !((d["serwis"] | false) && !strcmp(d["sn"] | "", fab.sn))) return "kalibracja fabryczna juz zapisana (ponownie tylko z flaga serwisowa i numerem)";
-  String err = calFromJson(d.as<JsonObjectConst>());   // aktywna tabela + kopia EEPROM
-  if (err.length() && calTab.n == 0) return err;
+  String err = calFromJson(d.as<JsonObjectConst>());   // aktywna tabela + kopia EEPROM (przy bledzie calTab bez zmian)
+  if (err.length() && !err.startsWith("Zapisano")) return err;   // tylko brak kopii EEPROM jest ostrzezeniem
   Preferences p;
   if (!p.begin("fab", false)) return "blad otwarcia pamieci NVS";
   size_t w = p.putBytes("cal", &calTab, sizeof(calTab));

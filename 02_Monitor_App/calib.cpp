@@ -87,7 +87,8 @@ void calLoad() {
     calSource = "EEPROM (odtworzono w NVS)";
     return;
   }
-  if (fabCal(e)) {                                  // 0.5.6: kalibracja fabryczna ze stanowiska
+  Preferences q; q.begin("monitor", true); bool off = q.getBool("mAcalOff", false); q.end();
+  if (!off && fabCal(e)) {                          // 0.5.6: kalibracja fabryczna ze stanowiska (chyba ze uzytkownik ja usunal)
     calTab = e;
     nvsSave(calTab);
     eeSave(calTab);
@@ -98,7 +99,10 @@ void calLoad() {
   calSource = "brak";
 }
 
+static void calOff(bool v) { Preferences p; p.begin("monitor", false); if (v) p.putBool("mAcalOff", true); else p.remove("mAcalOff"); p.end(); }
+
 bool calRestoreFactory() {
+  calOff(false);
   CalTable e;
   if (!fabCal(e)) { calClear(); return false; }
   calTab = e;
@@ -145,6 +149,7 @@ String calFromJson(JsonObjectConst f) {
   strlcpy(t.ref, f["wzorzec"] | "", sizeof(t.ref));
   calTab = t;
   nvsSave(calTab);
+  calOff(false);
   if (!eeSave(calTab)) return "Zapisano w pamięci, ale nie udało się zapisać kopii w EEPROM";
   calSource = "NVS";
   return "";
@@ -163,5 +168,6 @@ void calClear() {
   nvsSave(calTab);
   uint8_t z[4] = {0, 0, 0, 0};                      // unieważnij kopie w EEPROM (naglowek)
   eeWriteBlock(EE_CAL_BASE, z, 4);
+  calOff(true);                                     // 0.5.6: nie odtwarzaj tabeli fabrycznej po restarcie
   calSource = "brak";
 }
