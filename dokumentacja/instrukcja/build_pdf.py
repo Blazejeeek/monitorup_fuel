@@ -17,6 +17,7 @@ DOCS = {
                                   footer="Instrukcja obsługi i montażu"),
     "karta_katalogowa.md": dict(pdf="MonitorUp_karta_katalogowa.pdf", kind="band", footer="Karta katalogowa"),
     "komunikaty_email.md": dict(pdf="MonitorUp_komunikaty_email.pdf", kind="band", footer="Komunikaty e-mail"),
+    "analiza_logowanie_chmura.md": dict(pdf="MonitorUp_logowanie_chmura.pdf", kind="band", footer="Logowanie urządzeń do chmury"),
 }
 
 LOGO = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='9 5 46 54'>
