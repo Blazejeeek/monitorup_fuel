@@ -216,7 +216,7 @@ void statsMinute(uint32_t m) {        // m = zamknieta minuta (epoch/60)
       s.dropLastMin = m;
       if (!s.drop) {
         s.drop = true; s.dropT = now; s.dropAmount = amount;
-        logEvent("ALARM", String(cfg.tankName[i]) + ": NAGŁY SPADEK o " + numPL(amount, 1) + " cm");
+        logEvent("ALARM", String(cfg.tankName[i]) + ": nagły spadek poziomu o " + numPL(amount, 1) + " cm");
       } else if (amount > s.dropAmount) s.dropAmount = amount;
     }
   }

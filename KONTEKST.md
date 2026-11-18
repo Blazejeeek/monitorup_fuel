@@ -64,7 +64,9 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 
 ### Testy 0.5.5 na płytce (17.11)
 - OK: normalny, minimalny, krytyczny, przepełnienie 1,00×/s, nagły spadek 4,00×/s, kasowanie, CSV dzień/miesiąc/rok (`stanowisko/csvtest.py`).
-- **Zostało przed wydaniem:** (a) awaria czujnika – ręcznie odłączyć A4 (`fault.py`), oczekiwane: pomarańczowa + buzer 1×/s; (b) e-mail – użytkownik poda serwer/port/login SMTP (np. alarmy@globalsmart.pl), hasło wpisze sam na stronie; (c) wydanie: `FW_VERSION "0.5.5"`, tag, bin do karty, instrukcja.
+- 18.11: awaria czujnika OK (pomarańczowa + sygnalizator 1×/s), e-mail OK (SMTP użytkownika h54.seohost.pl:465, 2 odbiorców @globalsmart.pl; powiadomienia obecnie wyłączone w ustawieniach). Ujednolicone nazwy: pulpit (OUT1–5, DI1), Alarmy, dziennik zdarzeń (`statePanelName()`), e-mail.
+- **Zasada (użytkownik 18.11): każda zmiana nazw/opisów ma być naniesiona wszędzie** – nakładka, strona (pulpit, ustawienia, opisy), OLED, dziennik zdarzeń, e-mail, instrukcja, karta katalogowa, wykaz komunikatów e-mail. Wyjątek: Modbus/MQTT/API/CSV (zgodność BMS) – tabela A.5 w instrukcji tłumaczy.
+- **Zostało przed wydaniem:** wydanie `FW_VERSION "0.5.5"`, tag, podpisany bin do karty, PDF-y dokumentów.
 - `sym.py` na Pi ma stary tekst „czerwona miga 2×/s” (tylko opis w skrypcie).
 
 ### Grafika i dokumentacja (gotowe, wersje robocze)
@@ -72,8 +74,8 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - `dokumentacja/instrukcja/`: `instrukcja_obslugi.md` (0.2 + rozdz. 7.7 e-mail, załączniki A Modbus, B MQTT, C API), `karta_katalogowa.md`; PDF w stylu firmowym: `python3 build_pdf.py` (Chromium). Zasady: dokument dla klienta bez odwołań do plików repo; styl profesjonalny, zalecenia w bezokoliczniku, minimum tekstu.
 - **[do uzupełnienia] w dokumentach:** dane producenta, pobór mocy, temperatura pracy, IP obudowy, kody zamówieniowe, schemat podłączenia przetwornika, potwierdzenie progów ppoż. (woda 90/95/98, paliwo 80/90/95).
 
-### Stan płytki testowej (17.11 23:00)
-- 0.5.5-dev, stan normalny 14,02 mA / 149,2 cm, alarm spadku włączony. Ustawienia użytkownika: wysokość 200 cm, progi 10/20/100 %, gęstość ok. 840.
+### Stan płytki testowej (18.11 09:05)
+- 0.5.5-dev (z poprawkami nazw), czujnik A4 odłączony – awaria czujnika (alarm skasowany przez agenta po teście). Ustawienia użytkownika: wysokość 200 cm, progi 10/20/100 %, gęstość ok. 840.
 
 ## Historia stanu – 16.11.2026 (0.5.4)
 - SW **0.5.4** wgrane na płytkę testową przez API (OTA z Pi masim: `ssh masim 'fw-flash ota ~/fw/MonitorUp-X.Y.Z.ino.bin'`); płytka bez USB (pętla masy), stan: `ssh masim 'masim plytka'`. Ethernet bez kabla (DHCP), dostęp przez AP 192.168.4.1.

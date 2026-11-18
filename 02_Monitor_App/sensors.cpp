@@ -5,6 +5,20 @@
 #include "config.h"
 #include "calib.h"
 
+// Nazwy jak na panelu (strona, dziennik zdarzen, e-mail) - stateName() zostaje dla Modbus/MQTT/CSV (zgodnosc)
+const char *statePanelName(uint8_t s) {
+  switch (s) {
+    case ST_NORMAL: return "stan normalny";
+    case ST_MIN:    return "poziom minimalny";
+    case ST_CRIT:   return "poziom krytyczny";
+    case ST_HIGH:   return "przepełnienie";
+    case ST_FAULT:  return "awaria czujnika";
+    case ST_OFF:    return "zbiornik nieaktywny";
+    case ST_DROP:   return "nagły spadek poziomu";
+  }
+  return "?";
+}
+
 const char *stateName(uint8_t s) {
   switch (s) {
     case ST_NORMAL: return "NORMALNY";

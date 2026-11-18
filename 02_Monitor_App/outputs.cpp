@@ -44,7 +44,7 @@ uint8_t faultBits() {
 bool isAlarmState(uint8_t s) { return s == ST_CRIT || s == ST_HIGH || s == ST_DROP; }
 bool isWarnState(uint8_t s) { return s == ST_MIN || s == ST_FAULT; }
 
-const char *ackSrcName(uint8_t s) { static const char *n[] = {"DI1", "WWW", "Modbus", "MQTT", "API"}; return s < 5 ? n[s] : "?"; }
+const char *ackSrcName(uint8_t s) { static const char *n[] = {"przycisk DI1", "WWW", "Modbus", "MQTT", "API"}; return s < 5 ? n[s] : "?"; }
 
 // 0.4.8: buzer (WY4) wyciszany wejsciem DI1 / strona / Modbus / MQTT - przy alarmie poziomu i przy bledzie czujnika
 static bool buzzSilenced = false;
@@ -57,7 +57,7 @@ void alarmAck(uint8_t src) {
   if (!buzzSilenced) { buzzSilenced = true; changed = true; }
   if (!changed) return;
   ackTime = millis();
-  logEvent("ALARM", String("Wyciszono buzer / skasowano alarm (") + ackSrcName(src) + ")");
+  logEvent("ALARM", String("Skasowano alarm (") + ackSrcName(src) + ")");
   static const char *ACKPL[] = {"przycisk KASOWANIE ALARMU", "strona WWW sterownika", "Modbus TCP", "MQTT", "API HTTP"};
   mailEvent(MK_ACK, 0, String("Źródło skasowania: ") + (src < 5 ? ACKPL[src] : "?"));
 }
@@ -134,14 +134,11 @@ void alarmLoop() {
     if (isWarnState(e) || statForecastWarn(i)) warn = true;
     if (e != lastEff[i]) {
       if (lastEff[i] != 255) {
-        logEvent(isAlarmState(e) ? "ALARM" : "STAN", String(cfg.tankName[i]) + ": " + stateName(lastEff[i]) + " → " + stateName(e));
+        logEvent(isAlarmState(e) ? "ALARM" : "STAN", String(cfg.tankName[i]) + ": " + statePanelName(lastEff[i]) + " → " + statePanelName(e));
         logRow();
         static const uint16_t MK_OF[] = {MK_NORMAL, MK_MIN, MK_CRIT, MK_HIGH, MK_SENSOR, 0, MK_DROP};   // indeks = TankStateCode
         if (e < sizeof(MK_OF) / sizeof(MK_OF[0]) && MK_OF[e])
-        {
-          static const char *PN[] = {"stan normalny", "poziom minimalny", "poziom krytyczny", "przepełnienie", "awaria czujnika", "zbiornik nieaktywny", "nagły spadek poziomu"};
-          mailEvent(MK_OF[e], i, String("Poprzedni stan: ") + (lastEff[i] < 7 ? PN[lastEff[i]] : "?"));
-        }
+          mailEvent(MK_OF[e], i, String("Poprzedni stan: ") + statePanelName(lastEff[i]));
       }
       lastEff[i] = e;
     }

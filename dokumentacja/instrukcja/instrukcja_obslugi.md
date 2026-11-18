@@ -58,7 +58,7 @@ Panel w drzwiach obudowy zawiera trzy kontrolki stanu, przycisk kasowania alarmu
 
 ### 3.3 Sygnał akustyczny i kasowanie alarmu
 
-- Sygnalizator akustyczny (buzer) włącza się przy stanach ALARM oraz przy awarii czujnika i pracuje w rytmie migającej kontrolki. Przy poziomie minimalnym sygnalizator nie działa.
+- Sygnalizator akustyczny włącza się przy stanach ALARM oraz przy awarii czujnika i pracuje w rytmie migającej kontrolki. Przy poziomie minimalnym sygnalizator nie działa.
 - Przycisk **KASOWANIE ALARMU** wycisza sygnalizator i potwierdza alarm. Kontrolka ALARM świeci dalej, dopóki przyczyna nie ustąpi.
 - Wystąpienie nowego, poważniejszego stanu ponownie włącza sygnalizator.
 - Alarm można też skasować ze strony WWW, przez Modbus, MQTT lub API.
@@ -74,6 +74,20 @@ Wyświetlacz OLED na płytce pokazuje na przemian:
 
 - **ekran zbiornika** – poziom [cm], wypełnienie [%], objętość [l], stan i słupek z progami,
 - **ekran sieci** – adresy Ethernet, Wi-Fi i punktu dostępowego, wersje SW/HW.
+
+### 3.6 Pulpit strony WWW
+
+Pulpit strony sterownika pokazuje poziom, stan zbiornika oraz bieżący stan wyjść i wejść:
+
+| Pole na pulpicie | Znaczenie (podświetlone = aktywne) |
+|---|---|
+| OUT1 – NORMA | kontrolka NORMA |
+| OUT2 – OSTRZEŻENIE | kontrolka OSTRZEŻENIE |
+| OUT3 – ALARM | kontrolka ALARM |
+| OUT4 – sygnalizator | sygnalizator akustyczny |
+| OUT5 – usterka zbiorcza | podświetlone, gdy występuje usterka (przekaźnik puszczony) |
+| DI1 – kasowanie alarmu | przycisk KASOWANIE ALARMU wciśnięty |
+| OUT6–OUT8, DI2–DI8 | nieużywane |
 
 ## 4. Obsługa codzienna
 
@@ -160,7 +174,7 @@ Alarm zadziała, gdy poziom spadnie o zadaną wartość w zadanym czasie (fabryc
 
 ### 7.6 Kasowanie i usterka zbiorcza
 
-- **Kasowanie** (Ustawienia → Alarmy → Buzer i kasowanie): ręczne (przycisk, strona, Modbus, MQTT, API; opcjonalne przypomnienie po X min) lub automatyczne – alarm gaśnie po powrocie poziomu do normy.
+- **Kasowanie** (Ustawienia → Alarmy → Sygnalizator akustyczny i kasowanie alarmu): ręczne (przycisk, strona, Modbus, MQTT, API; opcjonalne przypomnienie po X min) lub automatyczne – alarm gaśnie po powrocie poziomu do normy.
 - **Usterka zbiorcza:** w **Ustawienia → Wyjścia** wybrać przyczyny (awaria czujnika, przetwornika A/C, karty pamięci, brak synchronizacji czasu, brak sieci, brak połączenia MQTT); podgląd stanu na żywo.
 
 ### 7.7 Powiadomienia e-mail (Ustawienia → Powiadomienia)

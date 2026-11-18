@@ -14,7 +14,7 @@ static const char APP_HTML[] PROGMEM = R"HTML(<!DOCTYPE html><html lang="pl"><he
  <div class="warnbar" id="tw"><span>Czas urządzenia nie jest ustawiony. Logi i wykresy wymagają poprawnej daty.</span><button class="btn sec" id="tsync">Ustaw czas z przeglądarki</button></div>
  <div class="grid" id="tanks"></div>
  <div class="card" style="margin-top:16px"><h2>Wyjścia <span class="muted" style="font-size:13px;font-weight:400">OUT1–OUT8</span></h2><div class="outs" id="outs"></div>
- <h2 style="margin-top:16px">Wejścia <span class="muted" style="font-size:13px;font-weight:400">DI1–DI8 (DI1 = kasowanie alarmu)</span></h2><div class="outs" id="dis"></div></div>
+ <h2 style="margin-top:16px">Wejścia <span class="muted" style="font-size:13px;font-weight:400">DI1–DI8</span></h2><div class="outs" id="dis"></div></div>
 </section>
 <section class="page" id="logi">
  <div class="card"><h2>Wykres poziomu</h2>
@@ -99,8 +99,9 @@ function render(s){S=s;let html='',al=[];
  $('tanks').innerHTML=html;
  $('ab').style.display=s.alarm.active?'flex':'none';$('abt').textContent=al.join(' · ')+(s.alarm.acked?' – skasowany':'');$('ackb').style.display=(s.alarm.acked||s.alarm.auto)?'none':'';
  $('tw').style.display=s.timeOk?'none':'flex';
- const FN=['wył.','ręczne','buzzer/syrena','lampka','alarm zb.','zbiornik 1','zbiornik 2','ostrzeż.','minimalny','maksymalny','krytyczny','usterka'];
- let o='',d='';for(let k=0;k<8;k++){o+=`<div class="o ${s.outLvl[k]?'on':''}">OUT${k+1}<br><small>${FN[s.outFunc[k]]}${s.outLvl[k]&&s.outLvl[k]<100?' '+s.outLvl[k]+'%':''}</small></div>`;d+=`<div class="o ${s.di>>k&1?'on':''}">DI${k+1}</div>`}
+ const ON=['NORMA','OSTRZEŻENIE','ALARM','sygnalizator','usterka zbiorcza','–','–','–'],DN=['kasowanie alarmu','–','–','–','–','–','–','–'];   // przypisanie stałe (0.4.8+), jak na nakładce
+ let o='',d='';for(let k=0;k<8;k++){const lit=k==4?!(s.out>>4&1):(s.out>>k&1);   // WY5: przekaznik zasilony = brak usterki - podswietlamy usterke
+  o+=`<div class="o ${lit?'on':''}">OUT${k+1}<br><small>${ON[k]}</small></div>`;d+=`<div class="o ${s.di>>k&1?'on':''}">DI${k+1}<br><small>${DN[k]}</small></div>`}
  $('outs').innerHTML=o;$('dis').innerHTML=d;
  const dt=s.timeOk?new Date(s.t*1000).toLocaleString('pl-PL'):'czas nieustawiony',up=s.up,n=s.net;
  $('sb').innerHTML=`<span><b>${dt}</b></span>
@@ -340,32 +341,32 @@ window.calib=async(i,p)=>{const cm=N('tlvl'+i);if(isNaN(cm)){toast('Wpisz zmierz
 const ALMODES=[[1,'Zbiornik ppoż. wody'],[2,'Zbiornik ppoż. paliwa'],[0,'Własne']];
 SET.alarmy=el=>{const t=C.tanks[0];const pc=t.pct||[10,20,95];el.innerHTML=`<div class="grid"><div class="card"><h2>${esc(t.name)}</h2>
  ${F.sel('amo0','Tryb alarmu',t.alarmMode??0,ALMODES)}
- <div class="g3">${F.num('ac0','KRYTYCZNY ≤ [%]',pc[0])}${F.num('am0','MINIMALNY ≤ [%]',pc[1])}${F.num('ah0','ZA DUŻY ≥ [%]',pc[2])}</div>
+ <div class="g3">${F.num('ac0','Poziom krytyczny ≤ [%]',pc[0])}${F.num('am0','Poziom minimalny ≤ [%]',pc[1])}${F.num('ah0','Przepełnienie ≥ [%]',pc[2])}</div>
  <div class="live" id="acm0"></div>
  <div class="g2">${F.num('ahy0','Histereza [cm]',t.hyst)}${F.num('ad0','Opóźnienie alarmu [s]',t.delay,1)}</div>
  <div class="g2">${F.num('aht0','Wysokość zbiornika (100 %) [cm]',t.height)}<div></div></div>
  <p class="muted" style="font-size:12px">Progi w % wysokości zbiornika. Zbiorniki ppoż. mają progi stałe (zbiornik powinien być stale pełny); „Własne” – wpisz progi: krytyczny &lt; minimalny &lt; za duży ≤ 100 %.</p></div>
- <div class="card"><h2>Buzer i kasowanie</h2>
+ <div class="card"><h2>Sygnalizator akustyczny i kasowanie alarmu</h2>
  <p class="muted" style="font-size:13px">OSTRZEŻENIE (WY2): ciągłe – poziom minimalny, przerywane – awaria czujnika. ALARM (WY3): ciągłe – poziom krytyczny, przerywane – przepełnienie, przerywane szybkie – nagły spadek poziomu.</p>
- <p class="muted" style="font-size:13px">Buzer (WY4) włącza się przy stanie KRYTYCZNYM, ZA DUŻYM, NAGŁYM SPADKU i przy błędzie czujnika – w rytmie czerwonej kontrolki (krytyczny: dźwięk ciągły). Wyciszenie: przycisk na wejściu <b>IN1</b> (także strona, Modbus, MQTT). Kontrolki świecą do powrotu poziomu do normy; nagły spadek trzyma się do wyciszenia.</p>
- ${F.num('arm','Przypomnienie: ponowny buzer po [min] od wyciszenia (0 = wyłączone)',C.alarm.reminderMin,1)}</div></div>
+ <p class="muted" style="font-size:13px">Sygnalizator akustyczny (WY4) włącza się przy stanach ALARM (poziom krytyczny, przepełnienie, nagły spadek poziomu) i przy awarii czujnika – w rytmie migającej kontrolki (poziom krytyczny: sygnał ciągły). Kasowanie: przycisk KASOWANIE ALARMU na wejściu <b>DI1</b>, a także strona, Modbus, MQTT, API. Kontrolki świecą do ustąpienia przyczyny; nagły spadek poziomu trwa do skasowania.</p>
+ ${F.num('arm','Przypomnienie: ponowne włączenie sygnalizatora po [min] od skasowania (0 = wyłączone)',C.alarm.reminderMin,1)}</div></div>
  <div class="btns"><button class="btn" id="asv2">Zapisz</button></div>`;
  const PR={1:(t.presets||[])[0],2:(t.presets||[])[1]};
  const amode=()=>{const m=+V('amo0');if(m&&PR[m])[['ac0',0],['am0',1],['ah0',2]].forEach(([id,k])=>$(id).value=PR[m][k]);
   ['ac0','am0','ah0'].forEach(id=>$(id).disabled=!!m);acm()};
- const acm=()=>{const h=N('aht0');$('acm0').innerHTML=h>0?`Przy wysokości ${fc(h,0)} cm: KRYTYCZNY ≤ <b>${fc(N('ac0')*h/100,1)} cm</b> · MINIMALNY ≤ <b>${fc(N('am0')*h/100,1)} cm</b> · ZA DUŻY ≥ <b>${fc(N('ah0')*h/100,1)} cm</b>`:'Podaj wysokość zbiornika'};
+ const acm=()=>{const h=N('aht0');$('acm0').innerHTML=h>0?`Przy wysokości ${fc(h,0)} cm: poziom krytyczny ≤ <b>${fc(N('ac0')*h/100,1)} cm</b> · poziom minimalny ≤ <b>${fc(N('am0')*h/100,1)} cm</b> · przepełnienie ≥ <b>${fc(N('ah0')*h/100,1)} cm</b>`:'Podaj wysokość zbiornika'};
  $('amo0').onchange=amode;['ac0','am0','ah0','aht0'].forEach(id=>$(id).oninput=acm);amode();
  $('asv2').onclick=()=>{const m=+V('amo0');const o={alarmMode:m,hyst:N('ahy0'),delay:+V('ad0'),height:N('aht0')};if(!m)o.pct=[N('ac0'),N('am0'),N('ah0')];
   save({tanks:[o,{}],alarm:{reminderMin:+V('arm')}})}};
 
-const FAULTS=[[1,'błąd czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
+const FAULTS=[[1,'awaria czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
 const OUTFIX=[['WY1','NORMA – kontrolka zielona','stan normalny – praca bez zakłóceń'],['WY2','OSTRZEŻENIE – kontrolka pomarańczowa','światło ciągłe: poziom minimalny · przerywane (1× na sekundę): awaria czujnika'],
  ['WY3','ALARM – kontrolka czerwona','światło ciągłe: poziom krytyczny · przerywane (1× na sekundę): przepełnienie · przerywane szybkie (4× na sekundę): nagły spadek poziomu'],
- ['WY4','Sygnalizator akustyczny','stany ALARM i awaria czujnika, w rytmie migającej kontrolki (poziom krytyczny – sygnał ciągły); przy poziomie minimalnym nie działa; kasowanie przyciskiem (IN1)'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
+ ['WY4','Sygnalizator akustyczny','stany ALARM i awaria czujnika, w rytmie migającej kontrolki (poziom krytyczny – sygnał ciągły); przy poziomie minimalnym nie działa; kasowanie przyciskiem (DI1)'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
  ['WY6–WY8','—','nieużywane']];
 SET.wyjscia=el=>{const a=C.alarm;el.innerHTML=`<div class="card"><h2>Wyjścia (przypisanie stałe)</h2><div style="overflow:auto"><table><tr><th>Wyjście</th><th>Funkcja</th><th>Kiedy włączone</th><th>Teraz</th></tr>`+
  OUTFIX.map(([o,f,w],k)=>`<tr><td>${o}</td><td>${f}</td><td class="muted">${w}</td><td id="ol${k}">—</td></tr>`).join('')+`</table></div>
- <p class="muted" style="font-size:12px">Sygnalizacja jak na nakładce panelu. <b>NORMA</b> – stan normalny. <b>OSTRZEŻENIE</b>: ciągłe – poziom minimalny (zaplanować uzupełnienie), przerywane – awaria czujnika (wezwać serwis). <b>ALARM</b>: ciągłe – poziom krytyczny (uzupełnić zbiornik), przerywane – przepełnienie (wstrzymać napełnianie), przerywane szybkie – nagły spadek poziomu (sprawdzić szczelność). Sygnalizator akustyczny pracuje w rytmie migającej kontrolki przy stanach ALARM i awarii czujnika. Wejście IN1: kasowanie alarmu.</p>
+ <p class="muted" style="font-size:12px">Sygnalizacja jak na nakładce panelu. <b>NORMA</b> – stan normalny. <b>OSTRZEŻENIE</b>: ciągłe – poziom minimalny (zaplanować uzupełnienie), przerywane – awaria czujnika (wezwać serwis). <b>ALARM</b>: ciągłe – poziom krytyczny (uzupełnić zbiornik), przerywane – przepełnienie (wstrzymać napełnianie), przerywane szybkie – nagły spadek poziomu (sprawdzić szczelność). Sygnalizator akustyczny pracuje w rytmie migającej kontrolki przy stanach ALARM i awarii czujnika. Wejście DI1: przycisk KASOWANIE ALARMU.</p>
  <div class="btns"><button class="btn sec" id="otst">Test wyjść teraz</button></div></div>
  <div class="card" style="margin-top:16px"><h2>Usterka zbiorcza (WY5) – co ją wywołuje</h2><p class="muted" style="font-size:13px">Przekaźnik WY5 puszcza, gdy wystąpi którakolwiek z zaznaczonych przyczyn. Kolor kropki: stan teraz.</p>
  ${FAULTS.map(([b,t])=>`<label class="chk" style="display:flex;align-items:center;gap:8px;margin:6px 0;cursor:pointer"><input type="checkbox" id="fm${b}" ${(a.faultMask??7)&b?'checked':''} style="width:auto"><i class="dot" id="fd${b}"></i>${t}</label>`).join('')}
