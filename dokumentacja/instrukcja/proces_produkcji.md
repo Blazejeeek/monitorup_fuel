@@ -41,18 +41,21 @@ Uruchomić: `produkcja.py make --partia <oznaczenie partii>` (opcjonalnie `--skl
 | 1 | odczytuje MAC i wersję oprogramowania przez USB | – |
 | 2 | pobiera kolejny numer z rejestru, losuje hasła (Wi-Fi, panel, chmura, kod aktywacji) | – |
 | 3 | zapisuje dane fabryczne w sterowniku, sprawdza je odczytem kontrolnym | – |
-| 4 | test: układy płytki, wyjścia OUT1–OUT8 po kolei | potwierdzić, że zapaliły się kolejno wszystkie wyjścia |
-| 5 | test: wejście DI1 | w ciągu 20 s nacisnąć przycisk kasowania |
-| 6 | test 4–20 mA w 5 punktach (4, 8, 12, 16, 20 mA), zapis kalibracji fabrycznej, kontrola przy 12 mA (±0,05 mA) | – |
-| 7 | drukuje tabliczkę znamionową i naklejkę wewnętrzną | nakleić tabliczkę na obudowę, naklejkę wewnętrzną – pod pokrywę |
+| 4 | drukuje naklejkę wewnętrzną z hasłami | odłożyć naklejkę przy sterowniku |
+| 5 | test: układy płytki, wyjścia OUT1–OUT8 po kolei | potwierdzić, że zapaliły się kolejno wszystkie wyjścia |
+| 6 | test: wejście DI1 | w ciągu 20 s nacisnąć przycisk kasowania |
+| 7 | test 4–20 mA w 5 punktach (4, 8, 12, 16, 20 mA), zapis kalibracji fabrycznej, kontrola przy 12 mA (±0,05 mA) | – |
+| 8 | drukuje tabliczkę znamionową (tylko po zaliczonym teście) | nakleić tabliczkę na obudowę, naklejkę wewnętrzną – pod pokrywę |
 
 Wynik: komunikat **GOTOWE: MU-…** i stan **gotowy**.
 
 **Błędy:**
 
-- Błąd zapisu lub odczytu kontrolnego (kroki 2–3) – wpis zostaje anulowany automatycznie. Usunąć przyczynę i uruchomić `make` ponownie (sterownik dostanie nowy numer).
-- Test niezaliczony (kroki 4–6) – egzemplarz zostaje w stanie **wyprodukowany**, naklejki nie są drukowane. Po naprawie: `produkcja.py test MU-…`.
-- Sterownik ma już numer – nie programować ponownie; sprawdzić w rejestrze (`rejestr.py szukaj MU-…`).
+- Błąd zapisu lub odczytu kontrolnego (kroki 2–3) – wpis zostaje anulowany automatycznie. Usunąć przyczynę i uruchomić `produkcja.py make --ponownie` (sterownik dostanie nowy numer; anulowany numer zostaje w historii).
+- Błąd drukarki przy naklejce z hasłami (krok 4) – usunąć usterkę, potem `produkcja.py serwis-hasla MU-… --powod "błąd druku"` (nowe hasła i nowa naklejka) i `produkcja.py test MU-…`.
+- Test niezaliczony (kroki 5–7) – egzemplarz zostaje w stanie **wyprodukowany**, tabliczka nie jest drukowana, kalibracja nie jest zapisywana. Po naprawie: `produkcja.py test MU-…` (test, kalibracja, tabliczka).
+- Ponowny test egzemplarza z kalibracją fabryczną sprawdza wejście w 3 punktach i nie zmienia tabeli; wymiana tabeli: `produkcja.py test MU-… --nowa-kalibracja`.
+- Sterownik ma już numer aktywny w rejestrze – nie programować ponownie; sprawdzić w rejestrze (`rejestr.py szukaj MU-…`).
 
 ## 5. Wydanie klientowi
 
@@ -74,6 +77,8 @@ Przy pierwszym logowaniu do panelu (login **admin**, hasło startowe z naklejki)
 | Administrator sieci klienta podaje MAC | `rejestr.py szukaj <MAC>` – numer, odbiorca, historia |
 
 Ustawienia fabryczne i reset DOWNLOAD nie kasują danych fabrycznych (numer, hasła startowe, kalibracja fabryczna). Numer seryjny ma dodatkowo kopię w pamięci EEPROM płytki.
+
+Wyczyszczenie całej pamięci sterownika (np. wgranie pełnego obrazu przez USB) usuwa dane fabryczne – zostaje tylko numer z EEPROM, a sterownik startuje z hasłami admin / monitor123. Przywrócenie: `produkcja.py serwis-hasla MU-… --powod "utrata danych fabrycznych"`, potem `produkcja.py test MU-…` (nowa kalibracja).
 
 ## 7. Oprogramowanie
 
