@@ -50,7 +50,11 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
 
-## Stan na 19.11.2026 (0.5.6-dev – NIEWYDANA, wgrana na płytkę testową 19.11 00:14 przez OTA z Pi masim)
+## Stan na 19.11.2026 (0.5.7-dev – NIEWYDANA, wgrana na płytkę testową 19.11 10:43 przez OTA z Pi masim)
+0.5.7-dev = 0.5.6-dev + MAC z eFuse (`fabMac()`, `esp_read_mac(ESP_MAC_WIFI_STA)`) w PROV-INFO, MQTT `urzadzenie` i `/api/v1/status` – `WiFi.macAddress()` zwraca 00:00:00:00:00:00, gdy Wi-Fi STA nie jest uruchomione (płytka na Ethernecie). Nie używać `WiFi.macAddress()` jako identyfikatora.
+Port USB płytki na masim trzyma usługa `monitorapp-serial` (log) – do poleceń PROV-* trzeba ją zatrzymać, inaczej odpowiedzi rozdzielają się między dwa programy.
+
+## Stan na 19.11.2026 (0.5.6-dev)
 Karta #177 (rejestr produkcji). Zawiera wszystko z 0.5.5-dev oraz:
 - **Dane fabryczne** `fab.h/.cpp`: przestrzeń NVS `fab` (klucz `d` = `FabData`, `cal` = fabryczna tabela kalibracji prądu, `crt`/`key` zarezerwowane na mTLS). Nie kasują jej ustawienia fabryczne, DOWNLOAD, kopia ustawień ani OTA. Kopia numeru z CRC w EEPROM od adresu **232** (mapa EEPROM: 0–121 kalibracja zbiorników, 128–229 tabela prądu, 232–253 numer). `fabLoad()` przed `cfgLoad()`.
 - **Polecenia USB** (`fabLoop()` w pętli): `PROV-INFO`, `PROVISION {json}`, `PROV-CAL {json}`, `PROV-MEAS`, `PROV-OUTTEST`; ponownie tylko `"serwis":true` + `sn_stary`. Hasła nigdy na port. Skrypt stanowiska: repo `Blazejeeek/rejestr-produkcji` (`tools/produkcja.py`).
