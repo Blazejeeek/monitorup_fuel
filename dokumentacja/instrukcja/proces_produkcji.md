@@ -51,9 +51,11 @@ Wynik: komunikat **GOTOWE: MU-…** i stan **gotowy**.
 
 **Błędy:**
 
+- Brak potwierdzenia zapisu (krok 3) – skrypt sam resetuje sterownik i rozstrzyga odczytem kontrolnym; przy zgodnym odczycie produkcja idzie dalej.
 - Błąd zapisu lub odczytu kontrolnego (kroki 2–3) – wpis zostaje anulowany automatycznie. Usunąć przyczynę i uruchomić `produkcja.py make --ponownie` (sterownik dostanie nowy numer; anulowany numer zostaje w historii).
 - Błąd drukarki przy naklejce z hasłami (krok 4) – usunąć usterkę, potem `produkcja.py serwis-hasla MU-… --powod "błąd druku"` (nowe hasła i nowa naklejka) i `produkcja.py test MU-…`.
 - Test niezaliczony (kroki 5–7) – egzemplarz zostaje w stanie **wyprodukowany**, tabliczka nie jest drukowana, kalibracja nie jest zapisywana. Po naprawie: `produkcja.py test MU-…` (test, kalibracja, tabliczka).
+- Test niepełny (bez operatora: `--bez-wyjsc`, `--bez-di`; bez zadajnika: `--bez-pradu`) – pominięte części są zapisane w teście, egzemplarz zostaje w stanie **wyprodukowany**, kalibracja z tego testu jest zachowana. Dokończenie: `produkcja.py test MU-…` z operatorem (wydrukuje tabliczkę).
 - Ponowny test egzemplarza z kalibracją fabryczną sprawdza wejście w 3 punktach i nie zmienia tabeli; wymiana tabeli: `produkcja.py test MU-… --nowa-kalibracja`.
 - Sterownik ma już numer aktywny w rejestrze – nie programować ponownie; sprawdzić w rejestrze (`rejestr.py szukaj MU-…`).
 

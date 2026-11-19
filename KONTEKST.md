@@ -53,6 +53,7 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 ## Stan na 19.11.2026 (0.5.7-dev – NIEWYDANA, wgrana na płytkę testową 19.11 10:43 przez OTA z Pi masim)
 0.5.7-dev = 0.5.6-dev + MAC z eFuse (`fabMac()`, `esp_read_mac(ESP_MAC_WIFI_STA)`) w PROV-INFO, MQTT `urzadzenie` i `/api/v1/status` – `WiFi.macAddress()` zwraca 00:00:00:00:00:00, gdy Wi-Fi STA nie jest uruchomione (płytka na Ethernecie). Nie używać `WiFi.macAddress()` jako identyfikatora.
 Port USB płytki na masim trzyma usługa `monitorapp-serial` (log) – do poleceń PROV-* trzeba ją zatrzymać, inaczej odpowiedzi rozdzielają się między dwa programy.
+Po `PROVISION` sterownik robi `ESP.restart()`, a port USB-Serial/JTAG na Pi (dwc_otg, niedobór zasilania Pi) potrafi wtedy przestać przesyłać dane do czasu resetu sprzętowego (RTS) – stąd `stanowisko_usb.py --reset` i decyzja o wyniku programowania z odczytu kontrolnego, nie z odpowiedzi PROV-OK (próba 19.11.2026: MU-2611-0001 anulowany, MU-2611-0002 OK).
 
 ## Stan na 19.11.2026 (0.5.6-dev)
 Karta #177 (rejestr produkcji). Zawiera wszystko z 0.5.5-dev oraz:
