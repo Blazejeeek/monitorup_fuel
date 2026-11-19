@@ -12,6 +12,7 @@
 #include "stats.h"
 #include "outputs.h"
 #include "fab.h"
+#include "cloud.h"
 
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 bool oledOk = false;
@@ -81,7 +82,8 @@ static void drawHeader() {
   String ic;
   if (ethHasIp()) ic += "ETH ";
   if (wifiHasIp()) ic += "WiFi ";
-  if (apOn) ic += "AP";
+  if (apOn) ic += "AP ";
+  if (cloudConnected()) ic += "CHM";               // 0.6.0: polaczono z chmura Zdalio
   ic.trim();
   u8g2.drawStr(128 - u8g2.getStrWidth(ic.c_str()), 7, ic.c_str());
   u8g2.drawHLine(0, 10, 128);
@@ -167,8 +169,8 @@ void oledNet() {
   u8g2.setFont(u8g2_font_5x7_tf);
   String l1 = "ETH: " + String(!cfg.ethEn ? "wylaczony" : ethHasIp() ? ETH.localIP().toString().c_str() : (ETH.linkUp() ? "brak IP" : "brak kabla"));
   String l2 = "WiFi: " + String(!cfg.wifiEn ? "wylaczone" : wifiHasIp() ? (WiFi.localIP().toString() + " " + String(WiFi.RSSI()) + "dBm").c_str() : "laczenie...");
-  String l3 = "AP: " + String(apOn ? cfg.apSsid : "wylaczony");
-  String l4 = apOn ? "AP IP: " + WiFi.softAPIP().toString() : String("");
+  String l3 = "AP: " + String(apOn ? WiFi.softAPIP().toString().c_str() : "wylaczony");
+  String l4 = "Chmura: " + cloudShortText();                  // 0.6.0
   u8g2.drawStr(0, 18, l1.c_str());
   u8g2.drawStr(0, 26, l2.c_str());
   u8g2.drawStr(0, 34, l3.c_str());

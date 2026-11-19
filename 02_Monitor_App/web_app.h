@@ -109,7 +109,7 @@ function render(s){S=s;let html='',al=[];
  <span><i class="dot ${n.wifi.ip?'g':''}"></i>WiFi <b>${n.wifi.en?(n.wifi.ip?n.wifi.ip+' ('+n.wifi.rssi+' dBm)':'łączenie…'):'wyłączone'}</b></span>
  <span><i class="dot ${n.ap.on?'g':''}"></i>AP <b>${n.ap.on?esc(n.ap.ssid)+' ('+n.ap.cl+')':'wyłączony'}</b></span>
  <span><i class="dot ${s.sd.ok?'g':''}"></i>SD <b>${s.sd.ok?(s.sd.totalMB-s.sd.usedMB)+' MB wolne':'brak karty'}</b></span>
- <span><i class="dot ${s.mqtt?'g':''}"></i>MQTT</span><span>Modbus <b>${s.mb}</b></span>
+ <span><i class="dot ${s.cloud&&(s.cloud.st=='ok'||s.cloud.st=='noack')?'g':''}"></i>Chmura <b>${s.cloud?(s.cloud.en?({ok:'połączono',noack:'połączono',ota:'aktualizacja'}[s.cloud.st]||'brak połączenia'):'wyłączona'):''}</b></span><span>Modbus <b>${s.mb}</b></span>
  <span>Praca <b>${Math.floor(up/86400)?Math.floor(up/86400)+' d ':''}${Math.floor(up%86400/3600)} h ${Math.floor(up%3600/60)} min</b></span>${s.sn?`<span>SN <b>${esc(s.sn)}</b></span>`:''}<span>v<b>${s.fw}</b></span>`;
  if(window.onStatus)window.onStatus(s)}
 async function tick(){try{const r=await api('/api/v1/status');render(await r.json())}catch(e){if(e!==0)$('sb').textContent='Brak połączenia z urządzeniem…'}}
@@ -251,7 +251,7 @@ function netBind(p){$(p+'dhcp').onchange=()=>$(p+'st').style.display=$(p+'dhcp')
 function netVal(p){return {dhcp:$(p+'dhcp').value=='1',ip:V(p+'ip'),mask:V(p+'mask'),gw:V(p+'gw'),dns1:V(p+'dns1'),dns2:V(p+'dns2')}}
 async function save(obj,msg){const j=await post('/api/v1/config',obj);if(j.reboot){rebootWait('Zapisano ustawienia sieci. Urządzenie uruchamia się ponownie z nowymi ustawieniami.')}else{toast(msg||'Zapisano');await cfgLoad()}}
 async function cfgLoad(){C=await (await api('/api/v1/config')).json()}
-const TABS=[['siec','Sieć'],['przetworniki','Przetworniki'],['alarmy','Alarmy'],['wyjscia','Wyjścia'],['statystyki','Statystyki'],['czas','Data i czas'],['logi','Logi'],['mqtt','MQTT'],['mail','Powiadomienia'],['modbus','Modbus'],['api','API'],['konto','Konto'],['system','System']];
+const TABS=[['siec','Sieć'],['przetworniki','Przetworniki'],['alarmy','Alarmy'],['wyjscia','Wyjścia'],['statystyki','Statystyki'],['czas','Data i czas'],['logi','Logi'],['chmura','Chmura'],['mail','Powiadomienia'],['modbus','Modbus'],['api','API'],['konto','Konto'],['system','System']];
 async function settingsShow(tab){window.onStatus=null;if(!C){$('sbody').innerHTML='<div class="card muted">Wczytywanie ustawień…</div>';try{await cfgLoad()}catch(e){$('sbody').innerHTML='<div class="card">Nie udało się wczytać ustawień. <a href="javascript:location.reload()">Odśwież stronę</a></div>';return}}
  $('snav').innerHTML=TABS.map(([k,t])=>`<a href="#ustawienia/${k}" class="${k==tab?'on':''}">${t}</a>`).join('');
  const fn=SET[tab]||SET.siec;$('sbody').innerHTML='';fn($('sbody'))}
@@ -348,7 +348,7 @@ SET.alarmy=el=>{const t=C.tanks[0];const pc=t.pct||[10,20,95];el.innerHTML=`<div
  <p class="muted" style="font-size:12px">Progi w % wysokości zbiornika. Zbiorniki ppoż. mają progi stałe (zbiornik powinien być stale pełny); „Własne” – wpisz progi: krytyczny &lt; minimalny &lt; za duży ≤ 100 %.</p></div>
  <div class="card"><h2>Sygnalizator akustyczny i kasowanie alarmu</h2>
  <p class="muted" style="font-size:13px">OSTRZEŻENIE (WY2): ciągłe – poziom minimalny, przerywane – awaria czujnika. ALARM (WY3): ciągłe – poziom krytyczny, przerywane – przepełnienie, przerywane szybkie – nagły spadek poziomu.</p>
- <p class="muted" style="font-size:13px">Sygnalizator akustyczny (WY4) włącza się przy stanach ALARM (poziom krytyczny, przepełnienie, nagły spadek poziomu) i przy awarii czujnika – w rytmie migającej kontrolki (poziom krytyczny: sygnał ciągły). Kasowanie: przycisk KASOWANIE ALARMU na wejściu <b>DI1</b>, a także strona, Modbus, MQTT, API. Kontrolki świecą do ustąpienia przyczyny; nagły spadek poziomu trwa do skasowania.</p>
+ <p class="muted" style="font-size:13px">Sygnalizator akustyczny (WY4) włącza się przy stanach ALARM (poziom krytyczny, przepełnienie, nagły spadek poziomu) i przy awarii czujnika – w rytmie migającej kontrolki (poziom krytyczny: sygnał ciągły). Kasowanie: przycisk KASOWANIE ALARMU na wejściu <b>DI1</b>, a także strona, Modbus, chmura Zdalio, API. Kontrolki świecą do ustąpienia przyczyny; nagły spadek poziomu trwa do skasowania.</p>
  ${F.num('arm','Przypomnienie: ponowne włączenie sygnalizatora po [min] od skasowania (0 = wyłączone)',C.alarm.reminderMin,1)}</div></div>
  <div class="btns"><button class="btn" id="asv2">Zapisz</button></div>`;
  const PR={1:(t.presets||[])[0],2:(t.presets||[])[1]};
@@ -359,7 +359,7 @@ SET.alarmy=el=>{const t=C.tanks[0];const pc=t.pct||[10,20,95];el.innerHTML=`<div
  $('asv2').onclick=()=>{const m=+V('amo0');const o={alarmMode:m,hyst:N('ahy0'),delay:+V('ad0'),height:N('aht0')};if(!m)o.pct=[N('ac0'),N('am0'),N('ah0')];
   save({tanks:[o,{}],alarm:{reminderMin:+V('arm')}})}};
 
-const FAULTS=[[1,'awaria czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'MQTT włączone, ale brak połączenia z brokerem'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
+const FAULTS=[[1,'awaria czujnika (przetwornik odłączony / prąd poza 3,6–21 mA)'],[2,'przetwornik A/C ADS1115 nie odpowiada'],[4,'brak lub błąd karty SD'],[8,'czas nieustawiony (RTC i NTP)'],[16,'brak sieci (Ethernet i WiFi)'],[32,'chmura włączona, ale brak połączenia dłużej niż ustawiony czas (zakładka Chmura)'],[64,'ekspander wyjść PCF8575 nie odpowiada']];
 const OUTFIX=[['WY1','NORMA – kontrolka zielona','stan normalny – praca bez zakłóceń'],['WY2','OSTRZEŻENIE – kontrolka pomarańczowa','światło ciągłe: poziom minimalny · przerywane (1× na sekundę): awaria czujnika'],
  ['WY3','ALARM – kontrolka czerwona','światło ciągłe: poziom krytyczny · przerywane (1× na sekundę): przepełnienie · przerywane szybkie (4× na sekundę): nagły spadek poziomu'],
  ['WY4','Sygnalizator akustyczny','stany ALARM i awaria czujnika, w rytmie migającej kontrolki (poziom krytyczny – sygnał ciągły); przy poziomie minimalnym nie działa; kasowanie przyciskiem (DI1)'],['WY5','Przekaźnik usterki zbiorczej','zasilony, gdy brak usterki; usterka lub brak zasilania = przekaźnik puszczony (styki zwarte)'],
@@ -409,12 +409,28 @@ SET.logi=el=>{el.innerHTML=`<div class="card" style="max-width:560px"><h2>Logi n
  $('lgs').onclick=()=>save({logs:{intervalMin:+V('lgi'),retentionDays:+V('lgr')}});
  $('lgc').onclick=async()=>{if(confirm('Usunąć WSZYSTKIE logi, dziennik zdarzeń i statystyki z karty SD? Tej operacji nie można cofnąć.')){await post('/api/v1/logs/clear');toast('Usunięto logi')}}};
 
-SET.mqtt=el=>{const m=C.mqtt;el.innerHTML=`<div class="card" style="max-width:640px"><h2>MQTT</h2><div class="live">Stan: <b>${S&&S.mqtt?'połączono':esc(S&&S.mqttMsg||'brak połączenia')}</b></div>
- ${F.chk('mqe','MQTT włączone',m.en)}<div class="g2">${F.txt('mqh','Broker (adres)',m.host,'192.168.1.10')}${F.num('mqp','Port',m.port,1)}${F.txt('mqu','Użytkownik',m.user)}${F.pw('mqw','Hasło',m.hasPass?'•••••• (bez zmian)':'')}</div>
- ${F.txt('mqx','Prefiks tematów',m.prefix)}${F.num('mqi','Wysyłanie co [s]',m.intervalS,1)}${F.chk('mqc','Przyjmuj komendy (kasowanie alarmu, wyjścia ręczne)',m.cmd)}
- <p class="muted" style="font-size:12px">Tematy: ${esc(m.prefix)}/zbiornik1/poziom_cm, …/procent, …/stan, …/litry, …/zuzycie_dzis, ${esc(m.prefix)}/alarm, ${esc(m.prefix)}/status (online/offline). Komendy: ${esc(m.prefix)}/cmd/kasuj, ${esc(m.prefix)}/cmd/out/N.</p>
- <div class="btns"><button class="btn" id="mqs">Zapisz</button></div></div>`;
- $('mqs').onclick=()=>{const o={en:B('mqe'),host:V('mqh'),port:+V('mqp'),user:V('mqu'),prefix:V('mqx'),intervalS:+V('mqi'),cmd:B('mqc')};if($('mqw').value)o.pass=$('mqw').value;save({mqtt:o})}};
+SET.chmura=el=>{const c=C.cloud,s0=S&&S.cloud||{};
+ const CMD={'sys/info':'odczyt danych urządzenia','sys/log':'odczyt dziennika','tank/ack':'kasowanie alarmu','sys/reboot':'restart','sys/ota':'aktualizacja programu','sys/rotate':'wymiana hasła chmury'};
+ const live=s=>{const x=s.cloud||{};let h=`Stan: <b>${esc(x.msg||'—')}</b>`;
+  h+=`<br>ID urządzenia (do dodania w Zdalio): <b>${esc(x.hw||'—')}</b>`+(x.host?`<br>Serwer: <b>${esc(x.host)}:${x.port}</b> (z danych fabrycznych)`:'')+
+  (x.since?`<br>Połączono od: <b>${new Date(x.since*1000).toLocaleString('pl-PL')}</b>`:'')+
+  `<br>Wysłane wiadomości: <b>${x.sent||0}</b> · zdarzenia czekające na potwierdzenie: <b>${x.buf||0}</b>${x.lost?` · utracone: <b>${x.lost}</b>`:''}`+
+  `<br>Konfiguracja z chmury: <b>${x.cfgRev?'wersja '+x.cfgRev:'brak'}</b> · najstarsza wersja do cofnięcia: <b>${esc(x.fwMin||'')}</b>`;
+  $('cll')&&($('cll').innerHTML=h);
+  const t=(x.cmds||[]).map(k=>`<tr><td>${k.t>100000?new Date(k.t*1000).toLocaleString('pl-PL'):'—'}</td><td>${esc(CMD[k.name]||k.name)}</td><td>${esc(k.res)}</td></tr>`).join('');
+  $('clc')&&($('clc').innerHTML=t||'<tr><td colspan="3" class="muted">brak</td></tr>')};
+ el.innerHTML=`<div class="grid"><div class="card"><h2>Połączenie z chmurą Zdalio</h2><div class="live" id="cll"></div>
+ ${s0.id===false?'<p class="muted" style="font-size:13px">Sterownik nie ma danych chmury (nie został zaprogramowany na stanowisku produkcyjnym) – połączenia nie da się włączyć.</p>':''}
+ ${F.chk('cle','Połączenie z chmurą (wysyłanie danych i polecenia z aplikacji Zdalio)',c.en)}
+ ${F.num('clf','Usterka zbiorcza po [min] bez połączenia',c.faultMin,1)}
+ <div class="btns"><button class="btn" id="cls">Zapisz</button></div></div>
+ <div class="card"><h2>Co robi chmura</h2><p class="muted" style="font-size:13px;line-height:1.6">Po włączeniu sterownik łączy się szyfrowanym połączeniem wychodzącym (TLS) z serwerem Zdalio i wysyła: stan połączenia, pomiary (domyślnie co 60 s) oraz wszystkie wpisy dziennika zdarzeń, w tym alarmy.<br>
+ Z aplikacji Zdalio można tylko to, co pozwala ta strona: odczyt danych i dziennika, kasowanie alarmu, restart, aktualizację programu (tylko pliki podpisane kluczem MonitorUp.pl, także powrót do wcześniejszej wersji) i wybrane ustawienia (nazwa, progi i opóźnienia alarmów, histereza, nagły spadek, odbiorcy e-mail).<br>
+ Chmura <b>nie może</b> sterować wyjściami, wyłączać alarmów ani zmieniać sieci, haseł i kalibracji. Każde polecenie z chmury trafia do dziennika zdarzeń.<br>
+ Sieć obiektu musi pozwalać na połączenie wychodzące do serwera chmury (port podany wyżej) oraz HTTPS (443) do pobierania aktualizacji.<br>Integracja z BMS: Modbus TCP i API HTTP (bez zmian).</p></div>
+ <div class="card"><h2>Ostatnie polecenia z chmury</h2><table><thead><tr><th>Czas</th><th>Polecenie</th><th>Wynik</th></tr></thead><tbody id="clc"></tbody></table></div></div>`;
+ if(S)live(S);window.onStatus=live;
+ $('cls').onclick=async()=>{const en=B('cle');try{if(en!==!!c.en){await post('/api/v1/cloud',{en})}await save({cloud:{faultMin:+V('clf')}},en?'Zapisano – łączenie z chmurą':'Zapisano')}catch(e){}}};
 
 SET.mail=el=>{const m=C.mail;const K=[[1,'Poziom krytyczny'],[2,'Przepełnienie'],[4,'Nagły spadek poziomu'],[8,'Awaria czujnika'],[16,'Poziom minimalny'],[32,'Powrót do stanu normalnego'],[64,'Skasowanie alarmu'],[128,'Usterka zbiorcza'],[256,'Raport dzienny']];
  el.innerHTML=`<div class="grid"><div class="card"><h2>Serwer poczty (SMTP)</h2><div class="live">Ostatnia wysyłka: <b>${esc(S&&S.mailMsg||'—')}</b></div>
@@ -487,7 +503,7 @@ SET.system=el=>{const RR={1:'włączenie zasilania',2:'przycisk RESET',3:'restar
  <div class="btns"><button class="btn" id="sns">Zapisz</button></div><div class="live" id="sinf"></div></div>
  <div class="card"><h2>Aktualizacja programu (OTA)</h2><p class="muted" style="font-size:13px">Wybierz plik <b>MonitorUp_v&lt;wersja&gt;.bin</b> z wydania. Urządzenie przyjmuje tylko pliki <b>podpisane kluczem MonitorUp.pl</b> – inny plik zostanie odrzucony, a dotychczasowa wersja zostaje. Po wgraniu urządzenie uruchomi się ponownie.</p>
  <input type="file" id="ofile" accept=".bin"><div class="btns"><button class="btn" id="oup">Wgraj</button></div><div id="oprog" class="muted"></div></div>
- <div class="card"><h2>Kopia ustawień</h2>${F.chk('bks','Dołącz hasła WiFi, AP i MQTT (kopia zaszyfrowana hasłem)',false)}<div class="g2">${F.pw('bkp','Hasło kopii (min. 8 znaków)')}${F.pw('bkp2','Powtórz hasło')}</div><div class="btns"><button class="btn sec" id="bkd">Pobierz kopię</button></div>
+ <div class="card"><h2>Kopia ustawień</h2>${F.chk('bks','Dołącz hasła WiFi, AP i serwera poczty (kopia zaszyfrowana hasłem)',false)}<div class="g2">${F.pw('bkp','Hasło kopii (min. 8 znaków)')}${F.pw('bkp2','Powtórz hasło')}</div><div class="btns"><button class="btn sec" id="bkd">Pobierz kopię</button></div>
  <label>Wgraj kopię (plik .json)</label><input type="file" id="rfile" accept=".json">${F.pw('rpw','Hasło kopii (tylko dla kopii z hasłami)')}<div class="btns"><button class="btn" id="rup">Wgraj kopię</button></div>
  <p class="muted" style="font-size:12px">Kopia nie zawiera loginu, hasła ani tokenów API.</p></div>
  <div class="card"><h2>Restart i ustawienia fabryczne</h2><div class="btns"><button class="btn sec" id="srb">Uruchom ponownie</button></div>
@@ -519,7 +535,7 @@ onhashchange();tick();setInterval(tick,1500);histLoad().then(tick);setInterval(h
 
 static const char MODBUS_CSV[] PROGMEM = R"CSV(typ;adres;adres_SCADA;nazwa;typ_danych;jednostka_opis
 FC04 rejestr wejsciowy;0;30001;Wersja programu;UINT16;20 = 0.2.0
-FC04 rejestr wejsciowy;1;30002;Status urzadzenia;UINT16 bity;b0 SD, b1 ADS1115, b2 RTC, b3 czas OK, b4 Ethernet, b5 WiFi, b6 MQTT, b7 alarm aktywny, b8 alarm skasowany, b9 test wyjsc
+FC04 rejestr wejsciowy;1;30002;Status urzadzenia;UINT16 bity;b0 SD, b1 ADS1115, b2 RTC, b3 czas OK, b4 Ethernet, b5 WiFi, b6 chmura Zdalio połączona, b7 alarm aktywny, b8 alarm skasowany, b9 test wyjsc
 FC04 rejestr wejsciowy;2-3;30003;Czas pracy;UINT32;s
 FC04 rejestr wejsciowy;4;30005;Rok;UINT16;czas lokalny
 FC04 rejestr wejsciowy;5;30006;Miesiac;UINT16;1-12

@@ -45,7 +45,7 @@ static PubSubClient mq(net);
 static SemaphoreHandle_t mux = nullptr;
 struct Lock { Lock() { xSemaphoreTakeRecursive(mux, portMAX_DELAY); } ~Lock() { xSemaphoreGiveRecursive(mux); } };
 
-static volatile uint8_t st = CS_OFF;
+static volatile uint8_t cst = CS_OFF;
 static volatile bool applyReq = false;
 static uint32_t nextTry = 0, retryMs = RETRY_MIN_MS, fails = 0, downSinceMs = 0, lastTele = 0;
 static time_t sinceT = 0;
@@ -150,20 +150,20 @@ static void result(const std::string &name, const std::string &cid, const char *
 }
 
 // ---------------- stan ----------------
-bool cloudConnected() { return st == CS_OK || st == CS_NOACK; }
-uint8_t cloudState() { return st; }
+bool cloudConnected() { return cst == CS_OK || cst == CS_NOACK; }
+uint8_t cloudState() { return cst; }
 int cloudOtaPct() { return otaPct; }
-bool cloudOtaBusy() { return st == CS_OTA; }
+bool cloudOtaBusy() { return cst == CS_OTA; }
 String cloudHwId() { return hwId; }
 String cloudHwLabel() { return hwLabel(hwId).c_str(); }
 
 const char *cloudStCode() {
   static const char *C[] = {"off", "noid", "nonet", "conn", "ok", "noack", "ota", "dns", "tcp", "tls", "auth"};
-  return st <= CS_AUTH ? C[st] : "?";
+  return cst <= CS_AUTH ? C[cst] : "?";
 }
 
 String cloudStatusText() {
-  switch (st) {
+  switch (cst) {
     case CS_OFF: return "Wyłączone";
     case CS_NOID: return "Brak danych chmury (sterownik niezaprogramowany)";
     case CS_NONET: return "Brak sieci";
@@ -171,7 +171,7 @@ String cloudStatusText() {
     case CS_OK: case CS_NOACK: {
       String s = "Połączono";
       if (sinceT > 100000) { char b[24]; fmtTime(b, sizeof(b), "%Y-%m-%d %H:%M", sinceT); s += String(" od ") + b; }
-      if (st == CS_NOACK) s += ", chmura nie potwierdza danych";
+      if (cst == CS_NOACK) s += ", chmura nie potwierdza danych";
       return s;
     }
     case CS_OTA: return String("Aktualizacja z chmury: ") + (otaPct < 0 ? 0 : otaPct) + " %";
@@ -184,7 +184,7 @@ String cloudStatusText() {
 }
 
 String cloudShortText() {
-  switch (st) {
+  switch (cst) {
     case CS_OFF: return "wyl.";
     case CS_NOID: return "brak danych";
     case CS_NONET: return "brak sieci";
@@ -201,7 +201,7 @@ String cloudShortText() {
 }
 
 bool cloudFault() {
-  if (!cfg.cloudEn || !fabProgrammed() || cloudConnected() || st == CS_OTA) return false;
+  if (!cfg.cloudEn || !fabProgrammed() || cloudConnected() || cst == CS_OTA) return false;
   return millis() - downSinceMs > (uint32_t)cfg.cloudFaultMin * 60000UL;
 }
 
@@ -439,7 +439,7 @@ static void doOta() {
   { Lock l; while (!outbox.empty() && mq.connected()) { pubStr(outbox.front().sfx.c_str(), outbox.front().body, outbox.front().retain); outbox.pop_front(); } }
   if (mq.connected()) { pubStr("status", "{\"st\":\"offline\",\"why\":\"ota\"}", true); mq.disconnect(); }
   net.stop();
-  st = CS_OTA; otaPct = 0;
+  cst = CS_OTA; otaPct = 0;
   std::string code;
   const char *r = otaRun(code);
   otaPct = -1;
@@ -449,24 +449,24 @@ static void doOta() {
     noteCmd(name, "restart");
     logPost(String("Chmura: plik ") + tryRec.to + " sprawdzony (SHA-256, podpis, wersja) – restart");
     mainPost(MR_REBOOT, "", cid);
-    st = CS_CONN; nextTry = millis() + 60000;
+    cst = CS_CONN; nextTry = millis() + 60000;
     return;
   }
   result(name, cid, r, code.c_str());
   JsonDocument e; e["ota"] = "failed"; e["code"] = code; e["fw"] = FW_VERSION;
   evtPush("sys", e);
-  st = CS_CONN; nextTry = millis();
+  cst = CS_CONN; nextTry = millis();
 }
 
 // ---------------- polaczenie ----------------
 static void failRetry(uint8_t s, uint32_t ms) {
-  st = s; fails++;
+  cst = s; fails++;
   nextTry = millis() + ms;
   if (s == CS_DNS || s == CS_TCP) retryMs = min(retryMs * 2, RETRY_MAX_MS);
 }
 
 static void doConnect() {
-  st = CS_CONN;
+  cst = CS_CONN;
   IPAddress ip;
   if (!WiFi.hostByName(fab.cloudHost, ip)) { failRetry(CS_DNS, retryMs); return; }
   net.setCACert(CLOUD_CA_PEM);
@@ -491,7 +491,7 @@ static void doConnect() {
       if (rotating) {                                             // nowe haslo nie dziala - wracamy do starego
         rotating = false;
         result("sys/rotate", rotCid, "err", "auth");
-        nextTry = millis(); st = CS_CONN; return;
+        nextTry = millis(); cst = CS_CONN; return;
       }
       failRetry(CS_AUTH, RETRY_AUTH_MS);
       logPost("Chmura: logowanie odrzucone");
@@ -504,7 +504,7 @@ static void doConnect() {
     else result("sys/rotate", rotCid, "err", "nvs");
     memset(rotPass, 0, sizeof(rotPass));
   }
-  st = CS_OK; fails = 0; retryMs = RETRY_MIN_MS; sinceT = time(nullptr);
+  cst = CS_OK; fails = 0; retryMs = RETRY_MIN_MS; sinceT = time(nullptr);
   char on[40]; snprintf(on, sizeof(on), "{\"st\":\"online\",\"boot\":\"%s\"}", bootId);
   pubStr("status", on, true);
   pubInfo();
@@ -541,8 +541,8 @@ static void cloudStep() {
     if (!cfg.cloudEn) { Lock l; buf->clear(); outbox.clear(); }
     fails = 0; retryMs = RETRY_MIN_MS; nextTry = millis(); downSinceMs = millis();
   }
-  if (!cfg.cloudEn) { st = CS_OFF; return; }
-  if (!idOk()) { st = CS_NOID; return; }
+  if (!cfg.cloudEn) { cst = CS_OFF; return; }
+  if (!idOk()) { cst = CS_NOID; return; }
   if (pendingVerify && millis() > OTA_CONFIRM_MS) {
     logPost(String("Chmura: wersja ") + FW_VERSION + " nie połączyła się w 10 min – powrót do " + tryRec.from);
     vTaskDelay(pdMS_TO_TICKS(1500));                              // czas na zapis w dzienniku
@@ -552,12 +552,12 @@ static void cloudStep() {
     if (mq.connected()) mq.disconnect();
     net.stop();
     if (cloudConnected()) downSinceMs = millis();
-    st = CS_NONET; return;
+    cst = CS_NONET; return;
   }
   if (ota.on) { doOta(); return; }
   if (rotating && mq.connected()) { mq.disconnect(); net.stop(); nextTry = millis(); }
   if (!mq.connected()) {
-    if (cloudConnected()) { logPost("Chmura: rozłączono"); downSinceMs = millis(); st = CS_CONN; }
+    if (cloudConnected()) { logPost("Chmura: rozłączono"); downSinceMs = millis(); cst = CS_CONN; }
     if ((int32_t)(millis() - nextTry) < 0) return;
     doConnect();
     return;
@@ -583,7 +583,7 @@ static void cloudStep() {
     pub(name.c_str(), body.data(), body.size(), false);
   }
   if (!lastTele || millis() - lastTele >= (uint32_t)cfg.cloudTeleS * 1000UL) { lastTele = millis(); pubTele(); }
-  { Lock l; st = buf->maxStep() >= 2 ? CS_NOACK : CS_OK; }
+  { Lock l; cst = buf->maxStep() >= 2 ? CS_NOACK : CS_OK; }
 }
 
 static void cloudTask(void *) {
@@ -617,7 +617,7 @@ void cloudBootCheck() {
     }
   }
   if (s == ESP_OTA_IMG_PENDING_VERIFY && !pendingVerify) esp_ota_mark_app_valid_cancel_rollback();   // OTA lokalne / USB
-  (void)MU_FW_TAG[0];
+  Serial.printf("Znacznik wersji: %s\n", MU_FW_TAG);    // uzycie = znacznik zostaje w obrazie (linker)
 }
 
 void cloudBegin() {
