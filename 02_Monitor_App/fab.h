@@ -46,6 +46,7 @@ extern FabState fabState;
 void        fabLoad();                        // przy starcie, PRZED cfgLoad()
 bool        fabProgrammed();
 const char *fabSn();                          // numer seryjny ("" = brak)
+String      fabMac();                         // MAC z eFuse (Wi-Fi STA) – poprawny takze przy wylaczonym Wi-Fi
 bool        fabCal(CalTable &out);            // fabryczna tabela kalibracji pradu (false = brak)
 bool        fabIsStartPanelPass(const char *pw); // czy to haslo startowe z naklejki (zakaz ponownego ustawienia)
 void        fabLoop();                        // polecenia PROV-* z portu szeregowego (petla glowna)

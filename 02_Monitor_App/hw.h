@@ -4,7 +4,7 @@
 #include <Wire.h>
 #include <freertos/semphr.h>
 
-#define FW_VERSION "0.5.6-dev"
+#define FW_VERSION "0.5.7-dev"
 #define HW_NAME    "KinCony B8M"   // plytka (PCB)
 #define HW_VERSION "1.0"           // wersja sprzetu MonitorUp na tej plytce
 

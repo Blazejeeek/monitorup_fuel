@@ -41,7 +41,7 @@ Uruchomić: `produkcja.py make --partia <oznaczenie partii>` (opcjonalnie `--skl
 | 1 | odczytuje MAC i wersję oprogramowania przez USB | – |
 | 2 | pobiera kolejny numer z rejestru, losuje hasła (Wi-Fi, panel, chmura, kod aktywacji) | – |
 | 3 | zapisuje dane fabryczne w sterowniku, sprawdza je odczytem kontrolnym | – |
-| 4 | drukuje naklejkę wewnętrzną z hasłami | odłożyć naklejkę przy sterowniku |
+| 4 | drukuje naklejkę wewnętrzną z hasłami, ID urządzenia (z adresu MAC) i kodem aktywacji | odłożyć naklejkę przy sterowniku |
 | 5 | test: układy płytki, wyjścia OUT1–OUT8 po kolei | potwierdzić, że zapaliły się kolejno wszystkie wyjścia |
 | 6 | test: wejście DI1 | w ciągu 20 s nacisnąć przycisk kasowania |
 | 7 | test 4–20 mA w 5 punktach (4, 8, 12, 16, 20 mA), zapis kalibracji fabrycznej, kontrola przy 12 mA (±0,05 mA) | – |
@@ -61,7 +61,7 @@ Wynik: komunikat **GOTOWE: MU-…** i stan **gotowy**.
 
 1. Sprawdzić stan: `rejestr.py szukaj MU-…` – musi być **gotowy**.
 2. Zapisać wydanie: `rejestr.py wydaj MU-… --dokument "WZ 12/11/2026" --odbiorca "Nazwa firmy"`.
-3. Przekazać klientowi sterownik z naklejką wewnętrzną. Kod aktywacji służy do przypisania urządzenia w aplikacji MonitorUp.pl.
+3. Przekazać klientowi sterownik z naklejką wewnętrzną. ID urządzenia i kod aktywacji z naklejki służą do dodania sterownika w chmurze MonitorUp.pl.
 
 Przy pierwszym logowaniu do panelu (login **admin**, hasło startowe z naklejki) sterownik wymusza zmianę hasła; do tego czasu panel działa tylko w trybie podglądu.
 

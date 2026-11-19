@@ -84,7 +84,7 @@ static void mqttPublishAll() {
   o = ""; serializeJson(w, o);
   mqttPub("wyjscia", o);
   JsonDocument u;                                   // 0.5.6: dane urzadzenia (numer seryjny)
-  u["sn"] = fabSn(); u["fw"] = FW_VERSION; u["hw"] = HW_VERSION; u["mac"] = WiFi.macAddress();
+  u["sn"] = fabSn(); u["fw"] = FW_VERSION; u["hw"] = HW_VERSION; u["mac"] = fabMac();
   o = ""; serializeJson(u, o);
   mqttPub("urzadzenie", o);
 }

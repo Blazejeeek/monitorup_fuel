@@ -5,6 +5,7 @@
 #include <WiFi.h>
 #include <mbedtls/sha256.h>
 #include <esp_random.h>
+#include <esp_mac.h>
 #include "hw.h"
 #include "config.h"
 #include "sensors.h"
@@ -119,9 +120,17 @@ static bool okSn(const char *s) {
   return true;
 }
 
+String fabMac() {
+  uint8_t m[6] = {0};
+  esp_read_mac(m, ESP_MAC_WIFI_STA);   // WiFi.macAddress() zwraca 00:..:00, gdy Wi-Fi nie jest uruchomione (praca na Ethernecie)
+  char b[18];
+  snprintf(b, sizeof(b), "%02X:%02X:%02X:%02X:%02X:%02X", m[0], m[1], m[2], m[3], m[4], m[5]);
+  return b;
+}
+
 static void info() {
   JsonDocument d;
-  d["mac"] = WiFi.macAddress();
+  d["mac"] = fabMac();
   d["fw"] = FW_VERSION;
   d["board"] = HW_NAME;
   d["programmed"] = fabProgrammed();

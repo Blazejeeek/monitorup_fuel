@@ -306,7 +306,7 @@ static void hStatus() {
   w["en"] = (bool)cfg.wifiEn; w["ssid"] = cfg.wifiSsid;
   w["ip"] = wifiHasIp() ? WiFi.localIP().toString() : "";
   w["rssi"] = wifiHasIp() ? WiFi.RSSI() : 0;
-  w["mac"] = WiFi.macAddress();
+  w["mac"] = fabMac();
   if (wifiHasIp()) { w["mask"] = WiFi.subnetMask().toString(); w["gw"] = WiFi.gatewayIP().toString(); w["dns"] = WiFi.dnsIP().toString(); }
   JsonObject ap = n["ap"].to<JsonObject>();
   ap["on"] = apOn; ap["ssid"] = cfg.apSsid;
