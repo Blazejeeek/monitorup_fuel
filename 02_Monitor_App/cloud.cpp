@@ -56,6 +56,8 @@ static char hwId[HW_ID_LEN + 1], base[40], bootId[9];
 static EvtBuffer *buf = nullptr;
 static CidCache cids;
 static int64_t rejectedRev = -1;
+static volatile uint32_t testUntil = 0;                   // PROV-CLOUDTEST: chmura wlaczona tylko w RAM (test na stanowisku)
+static bool cloudOn() { return cfg.cloudEn || (testUntil && (int32_t)(testUntil - millis()) > 0); }
 
 struct Out { std::string sfx, body; bool retain; };
 static std::deque<Out> outbox;                            // publikacje zlecone z callbacku i petli glownej
@@ -106,7 +108,7 @@ static void envelope(JsonDocument &d, int64_t seq) {
 
 // Zdarzenie do bufora (dowolne zadanie). Za duze tresci skracane do limitu protokolu.
 static void evtPush(const char *name, JsonDocument &data) {
-  if (!cfg.cloudEn || !idOk() || !buf) return;
+  if (!cloudOn() || !idOk() || !buf) return;
   Lock l;
   uint32_t seq = buf->allocSeq();
   JsonDocument d;
@@ -201,12 +203,12 @@ String cloudShortText() {
 }
 
 bool cloudFault() {
-  if (!cfg.cloudEn || !fabProgrammed() || cloudConnected() || cst == CS_OTA) return false;
+  if (!cloudOn() || !fabProgrammed() || cloudConnected() || cst == CS_OTA) return false;
   return millis() - downSinceMs > (uint32_t)cfg.cloudFaultMin * 60000UL;
 }
 
 void cloudStatusJson(JsonObject o) {
-  o["en"] = (bool)cfg.cloudEn;
+  o["en"] = (bool)cfg.cloudEn;  if (testUntil && cloudOn()) o["test"] = true;
   o["st"] = cloudStCode();
   o["msg"] = cloudStatusText();
   o["hw"] = cloudHwLabel();
@@ -538,10 +540,13 @@ static void cloudStep() {
     applyReq = false;
     if (mq.connected()) { pubStr("status", "{\"st\":\"offline\"}", true); mq.disconnect(); }
     net.stop();
-    if (!cfg.cloudEn) { Lock l; buf->clear(); outbox.clear(); }
+    if (!cloudOn()) { Lock l; buf->clear(); outbox.clear(); }
     fails = 0; retryMs = RETRY_MIN_MS; nextTry = millis(); downSinceMs = millis();
   }
-  if (!cfg.cloudEn) { cst = CS_OFF; return; }
+  if (!cloudOn()) {                                                 // takze koniec testu PROV-CLOUDTEST
+    if (mq.connected()) { pubStr("status", "{\"st\":\"offline\"}", true); mq.disconnect(); net.stop(); }
+    cst = CS_OFF; return;
+  }
   if (!idOk()) { cst = CS_NOID; return; }
   if (pendingVerify && millis() > OTA_CONFIRM_MS) {
     logPost(String("Chmura: wersja ") + FW_VERSION + " nie połączyła się w 10 min – powrót do " + tryRec.from);
@@ -634,8 +639,14 @@ void cloudBegin() {
   xTaskCreatePinnedToCore(cloudTask, "cloud", 12288, nullptr, 1, nullptr, 0);
 }
 
+void cloudTest(uint16_t s) {
+  testUntil = s ? millis() + s * 1000UL : 0;
+  if (s && !testUntil) testUntil = 1;
+  applyReq = true;
+}
+
 void cloudApply() {
-  if (!cfg.cloudEn && pendingVerify) {                              // wylaczenie na miejscu konczy probe - wersja zostaje
+  if (!cloudOn() && pendingVerify) {                              // wylaczenie na miejscu konczy probe - wersja zostaje
     pendingVerify = false;
     esp_ota_mark_app_valid_cancel_rollback();
     tryClear();
@@ -645,7 +656,7 @@ void cloudApply() {
 }
 
 void cloudOnLog(const char *type, const String &msg) {
-  if (!mux || !cfg.cloudEn || !idOk()) return;
+  if (!mux || !cloudOn() || !idOk()) return;
   JsonDocument d;
   d["type"] = type; d["msg"] = msg;
   const char *name = "sys";

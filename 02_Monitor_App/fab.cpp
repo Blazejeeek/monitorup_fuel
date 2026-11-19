@@ -12,6 +12,7 @@
 #include "outputs.h"
 #include "logger.h"
 #include "cloudproto.h"
+#include "cloud.h"
 
 void pwHash(const uint8_t salt[16], const char *pw, uint8_t out[32]);   // config.cpp
 
@@ -158,6 +159,8 @@ static void info() {
   JsonDocument d;
   d["mac"] = fabMac();
   d["hw_id"] = fabHwId();                       // 0.6.0: login do chmury Zdalio
+  d["cloud"] = cloudStCode();                    // 0.6.0: stan polaczenia z chmura (test na stanowisku)
+  d["cloud_en"] = (bool)cfg.cloudEn;
   d["fw"] = FW_VERSION;
   d["board"] = HW_NAME;
   d["programmed"] = fabProgrammed();
@@ -266,6 +269,11 @@ static bool tooLong = false;
 static void handle() {
   if (line == "PROV-INFO") { info(); return; }
   if (line == "PROV-MEAS") { meas(); return; }
+  if (line == "PROV-CLOUDTEST" || line == "PROV-CLOUDTEST 0") {   // 0.6.0: test polaczenia z chmura (5 min, bez zapisu)
+    if (line.endsWith(" 0")) { cloudTest(0); Serial.println("PROV-OK chmura test koniec"); return; }
+    if (!fabProgrammed()) { Serial.println("PROV-ERR najpierw PROVISION"); return; }
+    cloudTest(300); Serial.println("PROV-OK chmura test 300 s"); return;
+  }
   if (line == "PROV-OUTTEST") { outputsTestStart(); Serial.println("PROV-OK test wyjsc"); return; }
   bool isProv = line.startsWith("PROVISION "), isCal = line.startsWith("PROV-CAL ");
   if (!isProv && !isCal) return;

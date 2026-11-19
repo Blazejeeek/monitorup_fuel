@@ -16,6 +16,7 @@
 //   PROV-CAL {json}           fabryczna kalibracja wejscia A4 (format pliku kalibracji) - raz, potem tylko z "serwis":true i "sn"
 //   PROV-MEAS                 pomiar A4 (raw, mA), wejscia DI, wyjscia - do testu na stanowisku
 //   PROV-OUTTEST              test wyjsc OUT1..OUT8 po kolei (jak z panelu)
+//   PROV-CLOUDTEST [0]        0.6.0: polaczenie z chmura na 5 min tylko w RAM (stan w PROV-INFO "cloud"), 0 = koniec
 #pragma once
 #include <Arduino.h>
 #include "calib.h"

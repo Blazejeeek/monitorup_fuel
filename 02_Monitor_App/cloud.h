@@ -14,6 +14,7 @@ enum CloudSt : uint8_t { CS_OFF, CS_NOID, CS_NONET, CS_CONN, CS_OK, CS_NOACK, CS
 void        cloudBootCheck();               // setup(), po fabLoad(): potwierdzenie / wykrycie cofniecia po OTA z chmury
 void        cloudBegin();                   // setup(): start zadania
 void        cloudApply();                   // po zmianie cfg.cloudEn (petla glowna)
+void        cloudTest(uint16_t s);          // PROV-CLOUDTEST: chmura wlaczona tylko w RAM na s sekund (0 = koniec), ustawienia bez zmian
 void        cloudLoop();                    // petla glowna: polecenia z chmury, dziennik, ustawienia
 void        cloudOnLog(const char *type, const String &msg);   // hak z logEvent(): wpis dziennika -> zdarzenie evt/*
 bool        cloudConnected();               // polaczono (takze bez potwierdzen zdarzen)
