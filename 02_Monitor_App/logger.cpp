@@ -1,5 +1,6 @@
 // MonitorUp - karta SD: dzienne logi CSV, dziennik zdarzen, rotacja, historia minutowa w PSRAM
 #include "logger.h"
+#include "cloud.h"
 #include <Arduino.h>
 #include <SPI.h>
 #include <SD.h>
@@ -62,6 +63,7 @@ void logEvent(const char *type, const String &msg) {
   evHead = (evHead + 1) % EV_RAM;
   if (evCount < EV_RAM) evCount++;
   Serial.printf("[ZDARZENIE] %s: %s\n", type, msg.c_str());
+  cloudOnLog(type, msg);                     // 0.6.0: kazdy wpis dziennika trafia do chmury (evt/alarm, evt/tank, evt/sys)
   if (!sdMounted || !timeValid()) return;
   char fn[32]; fmtTime(fn, sizeof(fn), "/events/%Y-%m.csv");
   bool isNew = !SD.exists(fn);

@@ -11,6 +11,7 @@
 #include "sensors.h"
 #include "outputs.h"
 #include "logger.h"
+#include "cloudproto.h"
 
 void pwHash(const uint8_t salt[16], const char *pw, uint8_t out[32]);   // config.cpp
 
@@ -80,6 +81,31 @@ void fabLoad() {
 }
 
 bool fabProgrammed() { return fabState == FAB_OK; }
+
+// 0.6.0: haslo chmury po wymianie (cmd/sys/rotate) - osobny klucz, uklad FabData bez zmian
+static char cloudPassCur[33] = {0};
+const char *fabCloudPass() {
+  static bool loaded = false;
+  if (!loaded) {
+    loaded = true;
+    Preferences p;
+    if (p.begin("fab", true)) { if (p.isKey("cp")) p.getString("cp", cloudPassCur, sizeof(cloudPassCur)); p.end(); }
+  }
+  return cloudPassCur[0] ? cloudPassCur : fab.cloudPass;
+}
+bool fabCloudPassCommit(const char *pw) {
+  Preferences p;
+  if (!p.begin("fab", false)) return false;
+  bool ok = p.putString("cp", pw) == strlen(pw);
+  p.end();
+  if (ok) strlcpy(cloudPassCur, pw, sizeof(cloudPassCur));
+  return ok;
+}
+String fabHwId() {
+  uint8_t m[6] = {0};
+  esp_read_mac(m, ESP_MAC_WIFI_STA);
+  return hwFromMac(m).c_str();
+}
 const char *fabSn() { return fab.sn; }
 
 bool fabCal(CalTable &out) {
@@ -131,6 +157,7 @@ String fabMac() {
 static void info() {
   JsonDocument d;
   d["mac"] = fabMac();
+  d["hw_id"] = fabHwId();                       // 0.6.0: login do chmury Zdalio
   d["fw"] = FW_VERSION;
   d["board"] = HW_NAME;
   d["programmed"] = fabProgrammed();
@@ -142,7 +169,7 @@ static void info() {
     d["hw"] = fab.hw; d["date"] = fab.date;
     d["cloud_host"] = fab.cloudHost; d["cloud_port"] = fab.cloudPort;
     JsonObject c = d["chk"].to<JsonObject>();
-    c["ap"] = chk(fab.apPass); c["panel"] = hex4(fab.chkPanel); c["cloud"] = chk(fab.cloudPass);
+    c["ap"] = chk(fab.apPass); c["panel"] = hex4(fab.chkPanel); c["cloud"] = chk(fabCloudPass());
     CalTable t;
     d["cal"] = fabCal(t) ? t.n : 0;
     d["cal_active"] = calTab.n;
@@ -187,7 +214,9 @@ static String provision(JsonDocument &d) {
   Preferences p;
   if (!p.begin("fab", false)) return "blad otwarcia pamieci NVS";
   size_t w = p.putBytes("d", &f, sizeof(f));
+  p.remove("cp");                                  // 0.6.0: haslo z wymiany chmury traci waznosc
   p.end();
+  cloudPassCur[0] = 0;
   if (w != sizeof(f)) return "blad zapisu NVS";
   if (!eeSnSave(f.sn)) return "zapisano w NVS, ale blad zapisu kopii numeru w EEPROM";
   const bool service = fabProgrammed();

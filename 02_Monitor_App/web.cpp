@@ -23,7 +23,7 @@
 #include <WiFi.h>
 #include <mbedtls/sha256.h>
 #include "modbus.h"
-#include "mqtt.h"
+#include "cloud.h"
 #include "crypt.h"
 #include "summary.h"
 #include "web_pages.h"
@@ -256,8 +256,7 @@ static void hStatus() {
   d["ads"] = adsOk;
   d["pcf"] = pcfOk;
   d["fault"] = faultBits();
-  d["mqtt"] = mqttConnected();
-  d["mqttMsg"] = mqttStatusText();
+  cloudStatusJson(d["cloud"].to<JsonObject>());               // 0.6.0: zamiast mqtt/mqttMsg
   d["mailMsg"] = mailStatusText();
   d["mb"] = mbClientCount();
   d["rtcTemp"] = rtcInfo.temp;
@@ -331,7 +330,7 @@ static void applyAfterChange(JsonObjectConst r, bool &reboot) {
   reboot = r["ap"].is<JsonObjectConst>() || r["wifi"].is<JsonObjectConst>() || r["eth"].is<JsonObjectConst>();
   if (r["tanks"].is<JsonArrayConst>()) sensorsReset();
   if (r["time"].is<JsonObjectConst>()) timeApply();
-  if (r["mqtt"].is<JsonObjectConst>()) mqttApply();
+  if (r["cloud"].is<JsonObjectConst>()) cloudApply();
   if (r["modbus"].is<JsonObjectConst>()) mbApply();
 }
 
@@ -787,7 +786,7 @@ static void hBackup() {
   secHeaders();
   server.send(200, "application/json", out);
 }
-// POST {pass}: kopia z haslami WiFi/AP/MQTT, zaszyfrowana haslem kopii (AES-256-GCM, PBKDF2-SHA256)
+// POST {pass}: kopia z haslami WiFi/AP/SMTP, zaszyfrowana haslem kopii (AES-256-GCM, PBKDF2-SHA256)
 static void hBackupEnc() {
   if (!auth(A_ADMIN)) return;
   JsonDocument b;
@@ -883,6 +882,24 @@ static void hFactory() {
   scheduleReboot(2000);
 }
 
+// 0.6.0: POST {"en":true|false} - jeden przelacznik polaczenia z chmura Zdalio (tylko zalogowany uzytkownik)
+static void hCloud() {
+  if (!auth(A_ADMIN)) return;
+  JsonDocument d;
+  if (!parseBody(d)) return;
+  if (!d["en"].is<bool>()) { sendErr(400, "Podaj en: true albo false"); return; }
+  bool en = d["en"];
+  if (en && !fabProgrammed()) { sendErr(400, "Sterownik bez danych chmury – wymagane programowanie na stanowisku"); return; }
+  if ((bool)cfg.cloudEn != en) {
+    cfg.cloudEn = en;
+    cfgSave();
+    cloudApply();
+    logEvent("CHMURA", String(en ? "Chmura włączona" : "Chmura wyłączona") + " (" + who() + ")");
+  }
+  JsonDocument o; o["ok"] = true; cloudStatusJson(o["cloud"].to<JsonObject>());
+  sendJson(200, o);
+}
+
 static bool otaAllowed = false;
 static String otaErr;
 static uint32_t otaLastData = 0;
@@ -900,6 +917,7 @@ static void hOtaUpload() {
     otaErr = "";
     if (!otaAllowed) { otaErr = "Wymagane logowanie"; return; }
     if (cfg.mustChange) { otaErr = "Najpierw zmień hasło startowe"; otaAllowed = false; return; }
+    if (cloudOtaBusy()) { otaErr = "Trwa aktualizacja z chmury"; otaAllowed = false; return; }
     if (!u.filename.endsWith(".bin")) { otaErr = "Wybierz plik .bin"; otaAllowed = false; return; }
     int cmd = server.arg("type") == "fs" ? U_SPIFFS : U_FLASH;
     if (!Update.begin(UPDATE_SIZE_UNKNOWN, cmd)) { otaErr = Update.errorString(); otaAllowed = false; return; }
@@ -997,6 +1015,7 @@ void webBegin() {
   server.on("/api/v1/reboot", HTTP_POST, hReboot);
   server.on("/api/v1/factory", HTTP_POST, hFactory);
   server.on("/api/v1/ota", HTTP_POST, hOtaDone, hOtaUpload);
+  server.on("/api/v1/cloud", HTTP_POST, hCloud);
   server.on("/api/v1/modbus/map.csv", HTTP_GET, hModbusMap);
   server.on("/api/v1/summary", HTTP_GET, hSummary);
 

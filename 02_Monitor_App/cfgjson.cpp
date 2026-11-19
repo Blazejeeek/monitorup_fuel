@@ -37,7 +37,7 @@ template <size_t N> static void cpyStr(char (&dst)[N], JsonVariantConst v) { if 
 template <typename T> static T numOr(JsonVariantConst v, T def) { return (v.is<float>() || v.is<int>()) ? v.as<T>() : def; }
 static uint8_t boolOr(JsonVariantConst v, uint8_t def) { return v.is<bool>() ? (uint8_t)v.as<bool>() : v.is<int>() ? (uint8_t)(v.as<int>() != 0) : def; }
 
-// secrets = true: dolacz hasla WiFi/AP/MQTT (kopia ustawien), skroty hasla i tokenow nigdy nie wychodza poza kopie
+// secrets = true: dolacz hasla WiFi/AP/SMTP (kopia ustawien), skroty hasla i tokenow nigdy nie wychodza poza kopie
 void cfgToJson(JsonObject r, bool secrets, bool backup) {
   JsonObject dev = r["device"].to<JsonObject>();
   dev["name"] = cfg.devName;
@@ -105,11 +105,8 @@ void cfgToJson(JsonObject r, bool secrets, bool backup) {
   JsonObject lg = r["logs"].to<JsonObject>();
   lg["intervalMin"] = cfg.logIntervalMin; lg["retentionDays"] = cfg.logRetentionDays;
 
-  JsonObject mq = r["mqtt"].to<JsonObject>();
-  mq["en"] = (bool)cfg.mqttEn; mq["host"] = cfg.mqttHost; mq["port"] = cfg.mqttPort; mq["user"] = cfg.mqttUser;
-  if (secrets) mq["pass"] = cfg.mqttPass;
-  mq["hasPass"] = cfg.mqttPass[0] != 0;
-  mq["prefix"] = cfg.mqttPrefix; mq["intervalS"] = cfg.mqttIntervalS; mq["ha"] = (bool)cfg.mqttHa; mq["cmd"] = (bool)cfg.mqttCmdEn;
+  JsonObject cl = r["cloud"].to<JsonObject>();      // 0.6.0: chmura Zdalio (adres i haslo w danych fabrycznych, nie w ustawieniach)
+  cl["en"] = (bool)cfg.cloudEn; cl["faultMin"] = cfg.cloudFaultMin;
 
   JsonObject mb = r["modbus"].to<JsonObject>();
   mb["en"] = (bool)cfg.mbEn; mb["port"] = cfg.mbPort; mb["unit"] = cfg.mbUnit; mb["write"] = (bool)cfg.mbWriteEn;
@@ -267,16 +264,12 @@ String cfgFromJson(JsonObjectConst r) {
     if (cfg.logIntervalMin < 1 || cfg.logIntervalMin > 60) return fail("Interwał logu: 1–60 min");
     if (cfg.logRetentionDays < 7) cfg.logRetentionDays = 7;
   }
-  if (r["mqtt"].is<JsonObjectConst>()) {
-    JsonObjectConst m = r["mqtt"];
-    cfg.mqttEn = boolOr(m["en"], cfg.mqttEn); cpyStr(cfg.mqttHost, m["host"]); cfg.mqttPort = numOr(m["port"], cfg.mqttPort); cpyStr(cfg.mqttUser, m["user"]);
-    if (m["pass"].is<const char *>() && (strlen(m["pass"]) > 0 || m["clearPass"] == true)) cpyStr(cfg.mqttPass, m["pass"]);
-    cpyStr(cfg.mqttPrefix, m["prefix"]); cfg.mqttIntervalS = numOr(m["intervalS"], cfg.mqttIntervalS); cfg.mqttHa = boolOr(m["ha"], cfg.mqttHa); cfg.mqttCmdEn = boolOr(m["cmd"], cfg.mqttCmdEn);
-    if (cfg.mqttEn && !cfg.mqttHost[0]) return fail("Podaj adres brokera MQTT");
-    if (cfg.mqttIntervalS < 2) cfg.mqttIntervalS = 2;
-    size_t L = strlen(cfg.mqttPrefix);
-    while (L && cfg.mqttPrefix[L - 1] == '/') cfg.mqttPrefix[--L] = 0;
-    if (!L) return fail("Podaj prefiks tematów MQTT");
+  // 0.6.0: sekcja "mqtt" (MQTT dla BMS, wersje <= 0.5.x) jest pomijana - funkcja usunieta
+  if (r["cloud"].is<JsonObjectConst>()) {
+    JsonObjectConst c = r["cloud"];
+    cfg.cloudEn = boolOr(c["en"], cfg.cloudEn);
+    cfg.cloudFaultMin = numOr(c["faultMin"], cfg.cloudFaultMin);
+    if (cfg.cloudFaultMin < 1 || cfg.cloudFaultMin > 1440) return fail("Usterka chmury: 1–1440 min");
   }
   if (r["mail"].is<JsonObjectConst>()) {
     JsonObjectConst m = r["mail"];

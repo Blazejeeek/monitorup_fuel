@@ -8,12 +8,11 @@
 #include "outputs.h"
 #include "timesync.h"
 #include "net.h"
-#include "mqtt.h"
+#include "cloud.h"
 #include "logger.h"
 #include "fab.h"
 #include <SD.h>
 
-#define FW_NUM 56            // wersja programu w rejestrze 0 (30 = 0.3.0)
 #define MB_MAX_CLIENTS 4
 
 static WiFiServer *mbServer = nullptr;
@@ -40,7 +39,7 @@ static bool mbInput(uint16_t a, uint16_t &v) {
       case 1: {
         v = 0;
         if (sdMounted) v |= 1; if (adsOk) v |= 2; if (rtcInfo.ok) v |= 4; if (timeOk()) v |= 8;
-        if (ethHasIp()) v |= 16; if (wifiHasIp()) v |= 32; if (mqttConnected()) v |= 64;
+        if (ethHasIp()) v |= 16; if (wifiHasIp()) v |= 32; if (cloudConnected()) v |= 64;   // 0.6.0: bit 6 = polaczenie z chmura Zdalio
         if (alarmActive) v |= 128; if (alarmAcked) v |= 256; if (outTestRun) v |= 512;
         return true;
       }

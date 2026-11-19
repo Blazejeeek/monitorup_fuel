@@ -4,7 +4,13 @@
 #include <Wire.h>
 #include <freertos/semphr.h>
 
-#define FW_VERSION "0.5.7-dev"
+#define FW_VERSION "0.6.0-dev"
+#define FW_NUM     60              // numer wersji: rejestr Modbus 0, info chmury, znacznik w obrazie (60 = 0.6.0)
+#define FW_NUM_STR "60"            // ten sam numer jako tekst (znacznik MUFWTAG1 w cloud.cpp)
+// Najstarsza wersja, do ktorej chmura moze cofnac program (pierwsza z obsluga chmury Zdalio). Podnosimy ja w nowym
+// firmware, gdy starsza wersja ma luke bezpieczenstwa - cofniecie ponizej przejdzie wtedy tylko lokalnie albo przez USB.
+#define FW_MIN     "0.6.0"
+#define FW_MIN_NUM 60
 #define HW_NAME    "KinCony B8M"   // plytka (PCB)
 #define HW_VERSION "1.0"           // wersja sprzetu MonitorUp na tej plytce
 

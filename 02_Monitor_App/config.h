@@ -56,7 +56,7 @@ struct TankExtra {
 
 // Funkcje wyjsc
 // Usterka zbiorcza: przyczyny (bity w cfg.faultMask i w faultBits())
-enum FaultBit : uint8_t { FAULT_SENSOR = 1, FAULT_ADS = 2, FAULT_SD = 4, FAULT_TIME = 8, FAULT_NET = 16, FAULT_MQTT = 32, FAULT_PCF = 64 };
+enum FaultBit : uint8_t { FAULT_SENSOR = 1, FAULT_ADS = 2, FAULT_SD = 4, FAULT_TIME = 8, FAULT_NET = 16, FAULT_CLOUD = 32, FAULT_PCF = 64 };
 #define FAULT_DEFAULT (FAULT_SENSOR | FAULT_ADS | FAULT_SD)
 
 enum OutFunc : uint8_t { OF_OFF = 0, OF_MANUAL, OF_SIREN, OF_LAMP, OF_COMMON, OF_TANK1, OF_TANK2, OF_WARN,
@@ -185,6 +185,11 @@ struct Config {
   MailRcpt rcpt[MAIL_RCPT_N];
   uint8_t  mailDailyHour;   // godzina raportu dziennego (0-23)
   uint16_t mailGapMin;      // ten sam rodzaj zdarzenia najwyzej raz na X min
+  // Chmura Zdalio (0.6.0) - pola mqtt* wyzej zostaja nieuzywane (uklad NVS bez zmian)
+  uint8_t  cloudEn;         // jeden przelacznik: polaczenie z chmura (odczyt i zapis)
+  uint16_t cloudFaultMin;   // usterka zbiorcza po X min bez polaczenia (gdy chmura wlaczona)
+  uint32_t cloudCfgRev;     // numer ostatnio zastosowanej konfiguracji z chmury (cfg.rev)
+  uint16_t cloudTeleS;      // interwal tele/* [s], 30-600
 };
 
 extern Config cfg;

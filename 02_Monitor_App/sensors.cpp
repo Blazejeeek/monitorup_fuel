@@ -5,7 +5,7 @@
 #include "config.h"
 #include "calib.h"
 
-// Nazwy jak na panelu (strona, dziennik zdarzen, e-mail) - stateName() zostaje dla Modbus/MQTT/CSV (zgodnosc)
+// Nazwy jak na panelu (strona, dziennik zdarzen, e-mail) - stateName() zostaje dla Modbus/API/CSV/chmury (zgodnosc)
 const char *statePanelName(uint8_t s) {
   switch (s) {
     case ST_NORMAL: return "stan normalny";

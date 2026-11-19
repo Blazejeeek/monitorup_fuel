@@ -2,7 +2,8 @@
 //
 // Zapis raz na stanowisku produkcyjnym przez USB (tools/produkcja.py w repo rejestr-produkcji), osobna przestrzen NVS "fab":
 //  - klucz "d"   FabData: numer seryjny, wersja sprzetu, data produkcji, haslo Wi-Fi (AP), skrot hasla startowego panelu,
-//                dane chmury MonitorUp.pl (login = numer seryjny, haslo, adres) - chmura jeszcze nieuzywana,
+//                dane chmury Zdalio (haslo, adres; login = hw_id z MAC - od 0.6.0 uzywane przez cloud.cpp),
+//  - klucz "cp"  haslo chmury po wymianie z chmury (cmd/sys/rotate) - zastepuje cloudPass; kasowany przy PROVISION,
 //  - klucz "cal" fabryczna tabela kalibracji pradu wejscia A4 (CalTable) z testu na stanowisku,
 //  - klucze "crt" / "key" zarezerwowane na certyfikat urzadzenia (mTLS) - nieuzywane.
 // Ustawienia fabryczne, reset DOWNLOAD, kopia/odtwarzanie ustawien i aktualizacja programu NIE kasuja przestrzeni "fab".
@@ -48,5 +49,8 @@ bool        fabProgrammed();
 const char *fabSn();                          // numer seryjny ("" = brak)
 String      fabMac();                         // MAC z eFuse (Wi-Fi STA) – poprawny takze przy wylaczonym Wi-Fi
 bool        fabCal(CalTable &out);            // fabryczna tabela kalibracji pradu (false = brak)
+const char *fabCloudPass();                   // 0.6.0: aktualne haslo chmury (po wymianie cmd/sys/rotate - nowe)
+bool        fabCloudPassCommit(const char *p);  // 0.6.0: zapis nowego hasla po udanym logowaniu (NVS "fab"/"cp")
+String      fabHwId();                        // 0.6.0: numer egzemplarza z MAC (11 zn., jak w rejestrze Zdalio)
 bool        fabIsStartPanelPass(const char *pw); // czy to haslo startowe z naklejki (zakaz ponownego ustawienia)
 void        fabLoop();                        // polecenia PROV-* z portu szeregowego (petla glowna)

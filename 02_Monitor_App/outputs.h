@@ -1,4 +1,4 @@
-// MonitorUp - logika alarmu, kasowanie (DI1 / WWW / Modbus / MQTT / API), wyjscia MOSFET z programowym PWM
+// MonitorUp - logika alarmu, kasowanie (DI1 / WWW / Modbus / chmura / API), wyjscia MOSFET z programowym PWM
 #pragma once
 #include <Arduino.h>
 
@@ -13,7 +13,7 @@ uint8_t tankEffState(uint8_t i);   // stan z poziomu + nagly spadek
 uint8_t faultBits();               // aktywne przyczyny usterki (FAULT_*), bez maski
 bool isAlarmState(uint8_t s);
 bool isWarnState(uint8_t s);
-void alarmAck(uint8_t src);        // 0 DI1, 1 WWW, 2 Modbus, 3 MQTT, 4 API - kasuje alarm i wycisza buzer WY4
+void alarmAck(uint8_t src);        // 0 DI1, 1 WWW, 2 Modbus, 3 chmura, 4 API - kasuje alarm i wycisza buzer WY4
 bool buzzerSilenced();
 void outputsBegin();
 void outputsTestStart();

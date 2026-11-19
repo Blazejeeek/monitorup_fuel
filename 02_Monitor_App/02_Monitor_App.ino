@@ -24,7 +24,7 @@
 #include "net.h"
 #include "display.h"
 #include "modbus.h"
-#include "mqtt.h"
+#include "cloud.h"
 #include "summary.h"
 #include "web.h"
 
@@ -99,6 +99,7 @@ void setup() {
   Serial.printf("PCF8575: %s\n", pcfOk ? "OK" : "BLAD");
 
   fabLoad();                                   // 0.5.6: dane fabryczne (numer, hasla startowe) - przed ustawieniami
+  cloudBootCheck();                            // 0.6.0: hw_id, proba nowej wersji po OTA z chmury
   cfgLoad();
   calLoad();                                   // 0.4.8: tabela kalibracji pradu A4 (NVS / kopia EEPROM)
   Serial.printf("Kalibracja pradu: %s (%u pkt)\n", calSource.c_str(), calTab.n);
@@ -119,7 +120,7 @@ void setup() {
   timeApply();
   mbApply();
   webBegin();
-  mqttBegin();
+  cloudBegin();
   mailBegin();
 
   esp_task_wdt_config_t wc = {.timeout_ms = WDT_TIMEOUT_MS, .idle_core_mask = 0, .trigger_panic = true};
@@ -136,7 +137,7 @@ void loop() {
   fabLoop();                     // 0.5.6: polecenia produkcyjne PROV-* z USB
   webLoop();
   mbLoop();
-  mqttLoop();
+  cloudLoop();
   mailLoop();
 
   uint32_t now = millis();

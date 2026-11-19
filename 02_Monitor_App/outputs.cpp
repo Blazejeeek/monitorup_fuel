@@ -1,4 +1,4 @@
-// MonitorUp - logika alarmu, kasowanie (DI1 / WWW / Modbus / MQTT), wyjscia MOSFET z programowym PWM
+// MonitorUp - logika alarmu, kasowanie (DI1 / WWW / Modbus / chmura / API), wyjscia MOSFET z programowym PWM
 #include "outputs.h"
 #include <Arduino.h>
 #include "hw.h"
@@ -7,7 +7,7 @@
 #include "logger.h"
 #include "stats.h"
 #include "net.h"
-#include "mqtt.h"
+#include "cloud.h"
 #include "mail.h"
 
 bool alarmAcked = false;
@@ -36,7 +36,7 @@ uint8_t faultBits() {
   if (!sdMounted) f |= FAULT_SD;
   if (!timeValid()) f |= FAULT_TIME;
   if (!ethHasIp() && !wifiHasIp()) f |= FAULT_NET;
-  if (cfg.mqttEn && !mqttConnected()) f |= FAULT_MQTT;
+  if (cloudFault()) f |= FAULT_CLOUD;               // 0.6.0: chmura wlaczona, brak polaczenia > cfg.cloudFaultMin
   if (!pcfOk) f |= FAULT_PCF;
   return f;
 }
@@ -44,9 +44,9 @@ uint8_t faultBits() {
 bool isAlarmState(uint8_t s) { return s == ST_CRIT || s == ST_HIGH || s == ST_DROP; }
 bool isWarnState(uint8_t s) { return s == ST_MIN || s == ST_FAULT; }
 
-const char *ackSrcName(uint8_t s) { static const char *n[] = {"przycisk DI1", "WWW", "Modbus", "MQTT", "API"}; return s < 5 ? n[s] : "?"; }
+const char *ackSrcName(uint8_t s) { static const char *n[] = {"przycisk DI1", "WWW", "Modbus", "chmura", "API"}; return s < 5 ? n[s] : "?"; }
 
-// 0.4.8: buzer (WY4) wyciszany wejsciem DI1 / strona / Modbus / MQTT - przy alarmie poziomu i przy bledzie czujnika
+// 0.4.8: buzer (WY4) wyciszany wejsciem DI1 / strona / Modbus / chmura - przy alarmie poziomu i przy bledzie czujnika
 static bool buzzSilenced = false;
 
 void alarmAck(uint8_t src) {
@@ -58,7 +58,7 @@ void alarmAck(uint8_t src) {
   if (!changed) return;
   ackTime = millis();
   logEvent("ALARM", String("Skasowano alarm (") + ackSrcName(src) + ")");
-  static const char *ACKPL[] = {"przycisk KASOWANIE ALARMU", "strona WWW sterownika", "Modbus TCP", "MQTT", "API HTTP"};
+  static const char *ACKPL[] = {"przycisk KASOWANIE ALARMU", "strona WWW sterownika", "Modbus TCP", "chmura Zdalio", "API HTTP"};
   mailEvent(MK_ACK, 0, String("Źródło skasowania: ") + (src < 5 ? ACKPL[src] : "?"));
 }
 
@@ -149,7 +149,7 @@ void alarmLoop() {
   static uint8_t sysPrev = 0;
   const uint8_t sys = fb & cfg.faultMask & ~FAULT_SENSOR;
   if (sys & ~sysPrev) {
-    static const char *FN[] = {"czujnik", "przetwornik A/C", "karta SD", "czas nieustawiony", "brak sieci", "brak połączenia MQTT", "ekspander wejść/wyjść"};
+    static const char *FN[] = {"czujnik", "przetwornik A/C", "karta SD", "czas nieustawiony", "brak sieci", "brak połączenia z chmurą", "ekspander wejść/wyjść"};
     String why;
     for (uint8_t b = 1; b < 7; b++) if (sys & ~sysPrev & (1 << b)) { if (why.length()) why += ", "; why += FN[b]; }
     mailEvent(MK_SYSFAULT, 0, "Przyczyna: " + why);

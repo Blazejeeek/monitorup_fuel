@@ -127,10 +127,8 @@ void cfgDefaultsV2() {
   cfg.ntpIntervalMin = 60;
   cfg.logIntervalMin = 5;
   cfg.logRetentionDays = 3650;      // 10 lat (0.4.5)
-  cfg.mqttEn = 0; cfg.mqttHost[0] = 0; cfg.mqttPort = 1883;
-  cfg.mqttUser[0] = 0; cfg.mqttPass[0] = 0;
-  strlcpy(cfg.mqttPrefix, "monitorup/monitor", sizeof(cfg.mqttPrefix));
-  cfg.mqttIntervalS = 10; cfg.mqttHa = 1; cfg.mqttCmdEn = 1;
+  // pola mqtt* nieuzywane od 0.6.0 (zera z memset)
+  cfg.cloudEn = 0; cfg.cloudFaultMin = 15; cfg.cloudCfgRev = 0; cfg.cloudTeleS = 60;   // 0.6.0: chmura domyslnie wylaczona
   cfg.mbEn = 0; cfg.mbPort = 502; cfg.mbUnit = 1; cfg.mbWriteEn = 0;
   memset(cfg.mbAllowIp, 0, sizeof(cfg.mbAllowIp));
   memset(cfg.tok, 0, sizeof(cfg.tok));
@@ -273,11 +271,21 @@ void cfgLoad() {
   bool ok = false;
   prefs.begin("monitor", true);
   size_t len = prefs.getBytesLength("cfg");
-  // Starsza wersja (krotszy blok) = prefiks obecnej struktury: wczytaj na wartosci domyslne nowych pol
+  // Starsza wersja (krotszy blok) = prefiks obecnej struktury: wczytaj na wartosci domyslne nowych pol.
+  // 0.6.0: blok dluzszy (zapisany przez nowsza wersje, np. po cofnieciu wersji z chmury) - bierzemy znany prefiks,
+  // nieznane pola na koncu pomijamy, wiec ustawienia zostaja.
   if (len >= offsetof(Config, tx) && len <= sizeof(cfg)) {
     cfgDefaults();
     prefs.getBytes("cfg", &cfg, len);
     ok = cfg.magic == CFG_MAGIC;
+  } else if (len > sizeof(cfg) && len <= 16384) {
+    uint8_t *tmp = (uint8_t *)malloc(len);
+    if (tmp && prefs.getBytes("cfg", tmp, len) == len) {
+      cfgDefaults();
+      memcpy(&cfg, tmp, sizeof(cfg));
+      ok = cfg.magic == CFG_MAGIC;
+    }
+    free(tmp);
   }
   prefs.end();
   if (ok) {

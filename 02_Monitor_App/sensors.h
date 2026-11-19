@@ -20,7 +20,7 @@ struct TankState {
 
 extern bool adsOk;
 
-const char *stateName(uint8_t s);        // nazwy w protokolach (Modbus/MQTT/CSV) - bez zmian
+const char *stateName(uint8_t s);        // nazwy w protokolach (Modbus/API/CSV/chmura) - bez zmian
 const char *statePanelName(uint8_t s);   // nazwy jak na panelu (strona, dziennik zdarzen, e-mail)
 TankState tankGet(uint8_t i);
 float tankVolumeL(uint8_t i, float cm);
