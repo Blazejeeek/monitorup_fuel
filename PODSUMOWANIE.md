@@ -40,7 +40,7 @@ Pominięte: foldery `build/` (artefakty kompilacji, ok. 75 MB, i tak były stars
 - **Czas:** DS3231 + NTP (2 serwery), strefa Polska z czasem letnim.
 - **Logi na SD:** dzienne CSV, dziennik zdarzeń, rotacja, historia 24 h w PSRAM; wykresy i eksport CSV na stronie.
 - **Statystyki zużycia:** zużycie dzienne, wykrywanie tankowań, średnie 7/30 dni, prognoza „wystarczy na X dni”, **alarm nagłego spadku** (Y cm w T min + okno nocne).
-- **Modbus TCP** (port 502, zapis domyślnie wyłączony, mapa w `MODBUS.md`), **MQTT** z autodiscovery Home Assistant, **API HTTP** `/api/v1` z **tokenami** (Bearer, 3 poziomy uprawnień, skrót SHA-256).
+- **Modbus TCP** (port 502, zapis domyślnie wyłączony, mapa w `MODBUS.md`), **chmura Zdalio** (od 0.6.0, zamiast MQTT dla BMS), **API HTTP** `/api/v1` z **tokenami** (Bearer, 3 poziomy uprawnień, skrót SHA-256).
 - **System:** **OTA** przez stronę, **kopia ustawień** JSON (pobierz/wgraj), ustawienia fabryczne, watchdog 30 s, przyciemnianie OLED.
 - **Ustawienia:** NVS + kopia kalibracji i progów w EEPROM 24C02 (CRC); nowe pola dopisywane na końcu struktury, więc aktualizacja nie kasuje konfiguracji.
 
@@ -60,7 +60,7 @@ Pominięte: foldery `build/` (artefakty kompilacji, ok. 75 MB, i tak były stars
 | `net.h/.cpp` | Ethernet, WiFi, AP, mDNS |
 | `display.h/.cpp` | OLED (U8g2) |
 | `modbus.h/.cpp` | serwer Modbus TCP |
-| `mqtt.h/.cpp` | MQTT + Home Assistant |
+| `cloud.h/.cpp`, `cloudproto.h/.cpp` | chmura Zdalio (od 0.6.0) |
 | `web.h/.cpp` | serwer WWW, logowanie, tokeny, API JSON |
 | `web_pages.h`, `web_app.h` | strony WWW wbudowane w program, mapa Modbus CSV |
 | `partitions.csv` | 2 × 3 MB OTA + ok. 9,9 MB LittleFS + coredump |
@@ -94,7 +94,7 @@ Jeśli wgrywanie przez USB nie startuje: przytrzymaj DOWNLOAD i naciśnij RESET.
 
 - Paczka **nie zawiera** haseł ustawionych przez użytkownika, tokenów API ani pliku kopii ustawień – są tylko w pamięci urządzenia.
 - W kodzie są wyłącznie fabryczne wartości domyślne (opisane w README): logowanie admin/admin z wymuszoną zmianą przy pierwszym logowaniu, hasło AP `monitor123`, w programie testowym hasło AP `b8mtest123`.
-- Kopia ustawień JSON pobierana ze strony **zawiera hasła WiFi/AP/MQTT** – nie udostępniaj jej osobom trzecim.
+- Kopia ustawień JSON pobierana ze strony **zawiera hasła WiFi/AP/SMTP** – nie udostępniaj jej osobom trzecim.
 - HTTP nie jest szyfrowane – do dostępu zdalnego używaj VPN.
 
 ## 8. Stan prac i otwarte sprawy
@@ -105,4 +105,4 @@ Jeśli wgrywanie przez USB nie startuje: przytrzymaj DOWNLOAD i naciśnij RESET.
   - czy buzzer w lampce milknie przy obniżonej jasności PWM (zależy od lampki),
   - dopuszczalny prąd wyjść MOSFET (producent nie podaje jednoznacznie).
 - Drobne niespójności w dokumentacji: `README.md` i `MODBUS.md` podają jeszcze wersję 0.2.0 i opisują dwa zbiorniki (ppoż. A3 + paliwo A4), a rejestr 0 Modbus w kodzie zwraca już 30 (= 0.3.0). Kod jest aktualny, dokumenty warto odświeżyć.
-- Gdy broker MQTT jest niedostępny, próba połączenia co 15 s może na ok. 3 s spowolnić stronę (pomiar i alarmy działają niezależnie).
+- Chmura działa we własnym zadaniu – niedostępny serwer nie spowalnia strony, pomiaru ani alarmów.

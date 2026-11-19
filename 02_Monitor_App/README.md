@@ -17,13 +17,13 @@ Plan: [PLAN.md](PLAN.md) · API: [API.md](API.md) · Modbus: [MODBUS.md](MODBUS.
 - **Pomiar:** domyślnie jeden zbiornik – paliwo na A4; drugi kanał (A3) można włączyć w ustawieniach (wejście i typ 4–20 mA / 0–5 V wybieralne), próbki co 100 ms, wynik co 1 s ze średniej z 2 s z odrzuceniem skrajnych, opcjonalne wygładzanie. Błąd czujnika < 3,6 mA lub > 21 mA.
 - **Kalibracja** dwupunktowa (bieżący odczyt jako MIN/MAX albo ręcznie), przesunięcie sondy, rezystor pomiarowy (domyślnie 150 Ω, ustawiany w Przetwornikach). **Litry** (opcja): walec leżący, walec stojący, prostopadłościan, tabela cm→litry.
 - **Progi** w cm: KRYTYCZNY < MINIMALNY < ZA DUŻY, histereza, opóźnienie.
-- **Wyjścia:** OUT1 syrena, OUT2 lampka, OUT3 alarm zbiorczy (domyślnie), funkcje dowolnie przypisywane, programowy PWM 100 Hz / 10 poziomów (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalnie sprzętowy PWM lampki na GPIO13/14/21. **Kasowanie** DI1 (zbocze), strona, Modbus, MQTT, API; nowy gorszy stan ponownie uruchamia syrenę; przypomnienie po X min.
+- **Wyjścia:** OUT1 syrena, OUT2 lampka, OUT3 alarm zbiorczy (domyślnie), funkcje dowolnie przypisywane, programowy PWM 100 Hz / 10 poziomów (jasność przed i po skasowaniu), tryb przerywany, sterowanie ręczne, opcjonalnie sprzętowy PWM lampki na GPIO13/14/21. **Kasowanie** DI1 (zbocze), strona, Modbus, chmura Zdalio, API; nowy gorszy stan ponownie uruchamia syrenę; przypomnienie po X min.
 - **Start:** logo MONITORUP + www.monitorup.pl 5 s, test OUT1–OUT6 (pomijany po restarcie programowym).
 - **Sieć:** Ethernet i WiFi (DHCP/statyczny), skanowanie WiFi, Access Point (zawsze / awaryjnie / wył.), mDNS. Zmiana sieci = restart.
 - **Czas:** DS3231 (UTC), NTP (2 serwery, interwał), ustawianie z przeglądarki lub ręcznie, strefa Polska z czasem letnim.
 - **Logi SD:** `/logs/RRRR/MM/RRRR-MM-DD.csv` co X min + przy zmianie stanu, dziennik zdarzeń `/events/RRRR-MM.csv`, rotacja (dni / < 10 % wolnego), historia 24 h w PSRAM. Strona Logi: wykres z powiększaniem, CSV, zużycie dzienne (słupki), zdarzenia, lista plików.
 - **Statystyki:** zużycie dzienne (poziom o północy − teraz + tankowania), rozpoznawanie tankowań, średnie 7/30 dni, prognoza „wystarczy na X dni”, ostrzeżenie prognozy, **alarm nagłego spadku** (Y cm w T min + okno nocne), wstrzymanie na planowany pobór. `/stats/RRRR.csv`.
-- **Modbus TCP** (port 502, mapa w MODBUS.md, zapis domyślnie wyłączony), **MQTT** (bez autodiscovery Home Assistant; we własnym zadaniu – strona i Modbus nie zwalniają przy niedostępnym brokerze), **API** z tokenami (Bearer).
+- **Modbus TCP** (port 502, mapa w MODBUS.md, zapis domyślnie wyłączony), **chmura Zdalio** (0.6.0: jedno szyfrowane połączenie wychodzące, przełącznik w Ustawieniach → Chmura; moduł `cloud`), **API** z tokenami (Bearer).
 - **System:** OTA przez stronę, kopia ustawień JSON (pobierz/wgraj; z hasłami tylko zaszyfrowana hasłem kopii – AES-256-GCM, PBKDF2-SHA256), restart, ustawienia fabryczne, watchdog 30 s, przyciemnianie OLED.
 - **Ustawienia:** NVS + kopia kalibracji i progów w EEPROM 24C02 (CRC). Nowe pola dopisywane na końcu struktury, więc aktualizacja programu nie kasuje ustawień.
 
@@ -58,7 +58,8 @@ Partycje: `partitions.csv` (2 × 3 MB OTA + 9,9 MB LittleFS). Rdzeń esp32 3.3.x
 | `outputs.h` | alarm, kasowanie, wyjścia, PWM |
 | `net.h` | Ethernet, WiFi, AP |
 | `display.h` | OLED |
-| `modbus.h`, `mqtt.h` | Modbus TCP, MQTT/HA (zadanie FreeRTOS, kolejka poleceń) |
+| `modbus.h` | Modbus TCP |
+| `cloud.h`, `cloudproto.h`, `cloud_ca.h` | chmura Zdalio: MQTT przez TLS, protokół v1 (zdarzenia z ack, polecenia z cid/exp, cfg), OTA z linku z powrotem do poprzedniej partycji; logika bez Arduino testowana na PC (`tests/cloudproto_test.cpp`) |
 | `crypt.h` | szyfrowanie kopii ustawień z hasłami |
 | `web.h`, `web_pages.h`, `web_app.h` | serwer, API, strony, mapa Modbus CSV |
 
@@ -67,7 +68,7 @@ Partycje: `partitions.csv` (2 × 3 MB OTA + 9,9 MB LittleFS). Rdzeń esp32 3.3.x
 - Bez karty SD działają pomiar, alarmy i wykres 24 h; logi, statystyki dzienne i dziennik na karcie wymagają karty (FAT32).
 - Rezystor pomiarowy wejść 4–20 mA B8M nie jest podany przez producenta (domyślnie 150 Ω) – ustaw go w Przetwornikach tak, by przy znanym prądzie odczyt mA był poprawny (wpływa na wykrywanie błędu czujnika, nie na kalibrację cm).
 - PWM na wyjściach idzie przez ekspander I2C; czy buzzer w lampce milknie przy obniżonej jasności, trzeba sprawdzić na konkretnej lampce.
-- Gdy broker MQTT jest niedostępny, zadanie MQTT ponawia połączenie co 15 s, potem coraz rzadziej (do 5 min); stan i czas następnej próby widać w Ustawieniach → MQTT.
-- Urządzenie pracuje w sieci lokalnej (dostęp dla BMS przez Modbus TCP, MQTT, API). HTTP, Modbus i MQTT nie są szyfrowane – nie wystawiaj urządzenia do internetu.
+- Gdy serwer chmury jest niedostępny, zadanie `cloud` ponawia połączenie co 15 s, potem coraz rzadziej (do 5 min; błąd certyfikatu co 5 min, odrzucone logowanie co 30 min); stan w Ustawieniach → Chmura.
+- Urządzenie pracuje w sieci lokalnej (dostęp dla BMS przez Modbus TCP i API). HTTP i Modbus nie są szyfrowane – nie wystawiaj urządzenia do internetu. Chmura Zdalio: tylko połączenie wychodzące TLS z weryfikacją serwera (CA Zdalio + ISRG Root X1).
 
 Funkcje i historia wszystkich wersji: [../FUNKCJE.md](../FUNKCJE.md).

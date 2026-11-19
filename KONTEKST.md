@@ -3,7 +3,7 @@
 Ten plik ma pozwolić podjąć pracę bez czytania całej historii rozmów. Aktualizowany przy każdej wersji, razem z `FUNKCJE.md` (funkcje i historia wersji).
 
 ## Co to jest
-Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytce **KinCony B8M** (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM). Oznaczenie sprzętu: **HW 1.0** (`HW_NAME`, `HW_VERSION` w `hw.h`). Przetwornik 4–20 mA na A4, zbiornik paliwa (walec leżący). Urządzenie pracuje w sieci lokalnej, dostęp dla BMS przez Modbus TCP / MQTT / API.
+Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytce **KinCony B8M** (ESP32-S3-WROOM-1U N16R8, 16 MB flash, 8 MB PSRAM). Oznaczenie sprzętu: **HW 1.0** (`HW_NAME`, `HW_VERSION` w `hw.h`). Przetwornik 4–20 mA na A4, zbiornik paliwa (walec leżący). Urządzenie pracuje w sieci lokalnej, dostęp dla BMS przez Modbus TCP / API; od 0.6.0 opcjonalnie chmura Zdalio (MQTT przez TLS, moduł `cloud`).
 
 ## Gdzie co jest
 | Co | Gdzie |
@@ -15,20 +15,22 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 | Dokumentacja | `FUNKCJE.md` (funkcje + historia), `02_Monitor_App/README.md`, `API.md`, `MODBUS.md`, `PLAN.md` (plan wyjściowy), `dokumentacja/KinCony_B8M.md` |
 
 ## Moduły firmware
-`02_Monitor_App.ino` start i pętla · `hw` piny, I2C, wersje, `wdtFeed()` · `config` struktura ustawień (NVS + EEPROM) · `cfgjson` ustawienia ↔ JSON · `sensors` pomiar · `outputs` alarmy, wyjścia, usterka zbiorcza, miganie WY1–WY3 · `stats` zużycie, tankowania, alarm nagłego spadku · `summary` podsumowania doba/miesiąc/rok/lata · `logger` karta SD · `display` OLED · `net` sieć · `modbus` · `mqtt` (osobne zadanie FreeRTOS + kolejka do pętli głównej) · `web`, `web_pages.h`, `web_app.h` strona i API · `crypt` szyfrowanie kopii ustawień.
+`02_Monitor_App.ino` start i pętla · `hw` piny, I2C, wersje, `wdtFeed()` · `config` struktura ustawień (NVS + EEPROM) · `cfgjson` ustawienia ↔ JSON · `sensors` pomiar · `outputs` alarmy, wyjścia, usterka zbiorcza, miganie WY1–WY3 · `stats` zużycie, tankowania, alarm nagłego spadku · `summary` podsumowania doba/miesiąc/rok/lata · `logger` karta SD · `display` OLED · `net` sieć · `modbus` · `cloud` (0.6.0: chmura Zdalio, zadanie FreeRTOS + kolejka do pętli głównej; logika bez Arduino w `cloudproto`, testy PC `tests/cloudproto_test.cpp`; certyfikaty `cloud_ca.h`) · `fab` dane fabryczne i polecenia PROV-* · `web`, `web_pages.h`, `web_app.h` strona i API · `crypt` szyfrowanie kopii ustawień.
 
 ## Zasady, których trzeba pilnować
 - **Ustawienia:** nowe pola tylko na **końcu** `struct Config` (config.h) i domyślna wartość w `config.cpp`; starsze bloki NVS wczytują się jako prefiks. Nie zmieniaj kolejności ani typów istniejących pól.
 - **Funkcje wyjść (`OutFunc`)** i bity usterki (`FaultBit`) tylko dopisywane na końcu (wartości są zapisane w urządzeniach).
 - **Domyślne wartości** dotyczą nowych urządzeń i ustawień fabrycznych – działające płytki zachowują zapisane ustawienia.
-- **Zgodność integracji:** nie zmieniaj adresów rejestrów Modbus ani kluczy MQTT; usunięte dane zwracają „brak danych” (np. prognoza = 65535), stary klucz MQTT `skwitowany` zostaje obok `skasowany`.
+- **Zgodność integracji:** nie zmieniaj adresów rejestrów Modbus ani pól API; usunięte dane zwracają „brak danych” (np. prognoza = 65535). MQTT dla BMS usunięty w 0.6.0 (produkt niesprzedany). Protokół chmury: Zdalio v1 – nowe pola tylko dopisywane, zmiana niezgodna = `v2` w temacie.
+- **Cofanie wersji z chmury:** `FW_MIN`/`FW_MIN_NUM` w `hw.h` = najstarsza wersja, do której chmura może cofnąć program; podnieś, gdy starsza wersja ma lukę. `cfgLoad()` od 0.6.0 czyta dłuższy blok ustawień (znany prefiks) – nie usuwaj tego.
+- **Zadanie chmury** nie pisze na kartę SD i nie zmienia ustawień – zleca to pętli głównej (`cloudLoop`). Każdy `logEvent` trafia do chmury (`cloudOnLog`).
 - **Watchdog:** w kodzie używaj `wdtFeed()` zamiast `esp_task_wdt_reset()`.
 - **Karta SD:** wolno pisać tylko z pętli głównej (zadanie MQTT przekazuje zdarzenia kolejką).
 - **Strona:** po zmianach w `web_app.h` sprawdź składnię JS (`node --check` na bloku `R"JS(…)JS"`).
 - Nazwa produktu zawsze **„MonitorUp.pl”** (duże M i U).
 
 ## Kompilacja i wgrywanie
-- Kompilacja (serwer agenta): `./build.sh 02_Monitor_App` – arduino-cli `~/.local/bin`, rdzeń esp32 **3.3.12**, biblioteki ArduinoJson 7.4.2, U8g2 2.35.30, PubSubClient 2.8 (program testowy: OneWire, DallasTemperature). Windows: `upload.ps1`.
+- Kompilacja (serwer agenta): `./build.sh 02_Monitor_App` – arduino-cli `~/.local/bin`, rdzeń esp32 **3.3.12**, biblioteki ArduinoJson 7.4.2, U8g2 2.35.30, PubSubClient 2.8 (klient MQTT chmury) (program testowy: OneWire, DallasTemperature). Windows: `upload.ps1`.
 - Partycje: `partitions.csv` (2 × 3 MB OTA, LittleFS, coredump).
 - **Podpis aktualizacji (od 0.5.4):** sterownik przyjmuje przez stronę/API tylko pliki z podpisem ECDSA P-256 (`otasig.cpp`, klucz publiczny `ota_pub.h`, odcisk w pliku). Klucz prywatny: `~/.config/monitorup/ota_sign_key.pem` na serwerze agenta (poza repo, chmod 600) – **zgubienie = brak aktualizacji przez sieć** (zostaje USB). `build.sh` robi `build/MonitorUp_v<SW>.bin` (podpisany) – ten plik idzie na kartę i do OTA. Sprawdzenie: `python3 sign_fw.py --sprawdz plik.bin`.
 - Wgranie przez stanowisko zdalne (Windows DESKTOP-IQTQJI5 przez WireGuard, `ssh esp-lab`, płytka na COM8): sam program pod `0x10000` – ustawienia (NVS) zostają:
@@ -38,7 +40,7 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Strona sterownika (192.168.0.12) nie jest osiągalna z sieci stanowiska, dopóki stanowisko nie dostanie adresu 192.168.0.x (polecenie w karcie #139).
 
 ## Wydanie wersji (po każdej zmianie)
-1. `FW_VERSION` w `hw.h`, `FW_NUM` w `modbus.cpp`, wpis w `FUNKCJE.md`, aktualizacja tego pliku, `README.md`/`MODBUS.md`/`API.md`, gdy dotyczy.
+1. `FW_VERSION`, `FW_NUM`, `FW_NUM_STR` w `hw.h` (od 0.6.0; `FW_MIN` tylko przy decyzji o granicy cofania), wpis w `FUNKCJE.md`, aktualizacja tego pliku, `README.md`/`MODBUS.md`/`API.md`, gdy dotyczy.
 2. Kompilacja bez ostrzeżeń (`build.sh` podpisuje `build/MonitorUp_vX.Y.Z.bin`), `node --check` dla JS, commit na `dev`, **tag `vX.Y.Z`**, `git push origin dev --tags`.
 3. Karta #139: załącznik `MonitorUp_vX.Y.Z.bin` – **podpisany** z `build/` (stare zostają), podmiana `MonitorUp_funkcje_i_wersje.md` (najpierw usuń stary załącznik `?type=file` i plik `Deck/…` przez WebDAV, inaczej Nextcloud dopisze „(2)”), komentarz z opisem wersji, aktualny opis karty (wersja, czy wgrana, lista ✋).
 
@@ -49,6 +51,12 @@ Firmware sterownika poziomu paliwa **MonitorUp.pl** (www.monitorup.pl) na płytc
 - Różnice między wersjami: `git diff v0.4.5 v0.4.7 -- 02_Monitor_App/`.
 - Wycofanie zmiany na `dev` bez przepisywania historii: `git revert <commit>`.
 - Gotowe pliki `.bin` każdej wersji są też w załącznikach karty #139.
+
+## Stan na 19.11.2026 (0.6.0-dev – NIEWYDANA, wgrana na płytkę testową przez USB, karta #179)
+Chmura Zdalio zamiast MQTT dla BMS – opis w FUNKCJE.md (0.6.0-dev) i w planie karty #179. Na płytce (MU-2611-0002, `hw_id` 4MN682PJPCX): start OK, ustawienia i dane fabryczne zachowane, `PROV-CLOUDTEST` → DNS/TCP/TLS OK, logowanie odrzucone (brak konta na brokerze). Pełny test chmury (polecenia, OTA, rotate, cfg) czeka na konto urządzenia i konto testowe mostu na brokerze oraz na hasło panelu płytki na Pi (`MA_PASS`).
+- Polecenia USB bez zatrzymywania usługi logu na masim: `printf "PROV-INFO\n" > /dev/serial/by-id/*94:A9:90:2B:4A:CC*`, odpowiedź w `/var/lib/monitorapp-sim/serial/<data>.log`.
+- `verifyRollbackLater()` zwraca true (cloud.cpp): nowy program po OTA potwierdza `cloudBootCheck()` – po OTA lokalnym od razu, po OTA z chmury dopiero po połączeniu z chmurą.
+- Produkcja: `produkcja.py 1.3` (repo rejestr-produkcji) – konto brokera, `iot.register_produced('e-tank')`, test `PROV-CLOUDTEST`; do czasu typu `e-tank` w Zdalio (#182) tylko `--bez-zdalio`.
 
 ## Stan na 19.11.2026 (0.5.7-dev – NIEWYDANA, wgrana na płytkę testową 19.11 10:43 przez OTA z Pi masim)
 0.5.7-dev = 0.5.6-dev + MAC z eFuse (`fabMac()`, `esp_read_mac(ESP_MAC_WIFI_STA)`) w PROV-INFO, MQTT `urzadzenie` i `/api/v1/status` – `WiFi.macAddress()` zwraca 00:00:00:00:00:00, gdy Wi-Fi STA nie jest uruchomione (płytka na Ethernecie). Nie używać `WiFi.macAddress()` jako identyfikatora.

@@ -14,7 +14,8 @@ MonitorUp.pl jest sterownikiem do ciągłego pomiaru poziomu cieczy w zbiorniku 
 - sygnalizuje stany alarmowe kontrolkami, sygnałem akustycznym i stykiem usterki,
 - wykrywa przepełnienie, poziom minimalny i krytyczny, nagły spadek poziomu (możliwy wyciek lub pobór nieuprawniony) oraz awarię czujnika,
 - rejestruje pomiary, zużycie i tankowania na karcie pamięci,
-- udostępnia dane systemom nadrzędnym (BMS, SCADA) przez Modbus TCP, MQTT i API.
+- udostępnia dane systemom nadrzędnym (BMS, SCADA) przez Modbus TCP i API,
+- opcjonalnie łączy się z chmurą Zdalio (podgląd i obsługa zdalna w aplikacji).
 
 Typowe zastosowania: zbiorniki paliwa agregatów prądotwórczych, zbiorniki ppoż. wody i paliwa, zbiorniki technologiczne.
 
@@ -61,7 +62,7 @@ Panel w drzwiach obudowy zawiera trzy kontrolki stanu, przycisk kasowania alarmu
 - Sygnalizator akustyczny włącza się przy stanach ALARM oraz przy awarii czujnika i pracuje w rytmie migającej kontrolki. Przy poziomie minimalnym sygnalizator nie działa.
 - Przycisk **KASOWANIE ALARMU** wycisza sygnalizator i potwierdza alarm. Kontrolka ALARM świeci dalej, dopóki przyczyna nie ustąpi.
 - Wystąpienie nowego, poważniejszego stanu ponownie włącza sygnalizator.
-- Alarm można też skasować ze strony WWW, przez Modbus, MQTT lub API.
+- Alarm można też skasować ze strony WWW, przez Modbus, API lub z aplikacji Zdalio.
 - Tryb kasowania (ręczny lub automatyczny po powrocie poziomu do normy) oraz przypomnienie po zadanym czasie ustawia się w konfiguracji (rozdz. 7.6).
 
 ### 3.4 Styk usterki zbiorczej
@@ -174,8 +175,8 @@ Alarm zadziała, gdy poziom spadnie o zadaną wartość w zadanym czasie (fabryc
 
 ### 7.6 Kasowanie i usterka zbiorcza
 
-- **Kasowanie** (Ustawienia → Alarmy → Sygnalizator akustyczny i kasowanie alarmu): ręczne (przycisk, strona, Modbus, MQTT, API; opcjonalne przypomnienie po X min) lub automatyczne – alarm gaśnie po powrocie poziomu do normy.
-- **Usterka zbiorcza:** w **Ustawienia → Wyjścia** wybrać przyczyny (awaria czujnika, przetwornika A/C, karty pamięci, brak synchronizacji czasu, brak sieci, brak połączenia MQTT); podgląd stanu na żywo.
+- **Kasowanie** (Ustawienia → Alarmy → Sygnalizator akustyczny i kasowanie alarmu): ręczne (przycisk, strona, Modbus, API, aplikacja Zdalio; opcjonalne przypomnienie po X min) lub automatyczne – alarm gaśnie po powrocie poziomu do normy.
+- **Usterka zbiorcza:** w **Ustawienia → Wyjścia** wybrać przyczyny (awaria czujnika, przetwornika A/C, karty pamięci, brak synchronizacji czasu, brak sieci, brak połączenia z chmurą); podgląd stanu na żywo.
 
 ### 7.7 Powiadomienia e-mail (Ustawienia → Powiadomienia)
 
@@ -191,7 +192,7 @@ Sterownik może wysyłać wiadomości e-mail o zdarzeniach i raport dzienny. Wym
 | Awaria czujnika, poziom minimalny | wystąpienie stanu OSTRZEŻENIE |
 | Powrót do stanu normalnego | ustąpienie alarmu lub ostrzeżenia |
 | Skasowanie alarmu | potwierdzenie alarmu przyciskiem, ze strony lub systemu nadrzędnego |
-| Usterka zbiorcza | pojawienie się przyczyny usterki (karta SD, sieć, czas, MQTT) |
+| Usterka zbiorcza | pojawienie się przyczyny usterki (karta SD, sieć, czas, chmura) |
 | Raport dzienny | codziennie o wybranej godzinie: poziom, objętość, zużycie |
 
 Wiadomość zawiera nazwę urządzenia i zbiornika, czas zdarzenia, poziom, objętość, stan oraz zalecane działanie. Ten sam rodzaj zdarzenia jest wysyłany najwyżej raz na ustawiony czas (fabrycznie 15 min). Nieudana wysyłka jest ponawiana przez 24 h. Ustawienia powiadomień może zmienić wyłącznie zalogowany użytkownik.
@@ -204,15 +205,26 @@ Wiadomość zawiera nazwę urządzenia i zbiornika, czas zdarzenia, poziom, obj�
 - **Pobierz podsumowanie (CSV)** – wartości dobowe (widok miesiąca) lub miesięczne (widok roku): poziom minimalny, średni i maksymalny, zużycie, tankowania.
 - Brak lub uszkodzenie karty nie zatrzymuje pomiaru ani alarmów (ostatnie 24 h dostępne w pamięci sterownika).
 
-## 9. Integracja z systemami nadrzędnymi
+## 9. Integracja z systemami nadrzędnymi i chmura
 
 | Interfejs | Parametry | Uwagi |
 |---|---|---|
 | Modbus TCP | port 502, Unit ID 1 | fabrycznie wyłączony; zapis fabrycznie wyłączony |
-| MQTT | broker w sieci lokalnej | publikacja poziomu, stanu i alarmu co 10 s i przy zmianie; kasowanie alarmu |
 | API HTTP | `/api/v1`, tokeny Bearer | uprawnienia, termin ważności i limit zapytań tokenu |
+| Chmura Zdalio | połączenie wychodzące TLS | fabrycznie wyłączona; aplikacja Zdalio – Załącznik B |
 
-Szczegóły: **Załącznik A** (Modbus TCP), **Załącznik B** (MQTT), **Załącznik C** (API HTTP). Pełną mapę rejestrów w formacie CSV (do importu w systemie SCADA) można pobrać ze strony sterownika: **Ustawienia → Modbus → Pobierz mapę rejestrów**. Transmisja HTTP, Modbus i MQTT nie jest szyfrowana – stosować wyłącznie w wydzielonej sieci lokalnej.
+Szczegóły: **Załącznik A** (Modbus TCP), **Załącznik B** (chmura Zdalio), **Załącznik C** (API HTTP). Pełną mapę rejestrów w formacie CSV (do importu w systemie SCADA) można pobrać ze strony sterownika: **Ustawienia → Modbus → Pobierz mapę rejestrów**. Transmisja HTTP i Modbus nie jest szyfrowana – stosować wyłącznie w wydzielonej sieci lokalnej. Połączenie z chmurą jest szyfrowane.
+
+### 9.1 Chmura Zdalio (Ustawienia → Chmura)
+
+1. Podłączyć sterownik do sieci z dostępem do internetu (Ethernet lub Wi-Fi).
+2. Włączyć **Połączenie z chmurą** i zapisać. Stan „Połączono” potwierdza działanie.
+3. W aplikacji Zdalio wybrać **Dodaj urządzenie** i zeskanować kod QR z naklejki wewnątrz obudowy albo wpisać **ID** i **Kod** z tej naklejki.
+
+- Jeden przełącznik obejmuje wysyłanie danych i obsługę z aplikacji. Wyłączenie zatrzymuje oba.
+- Sieć obiektu musi przepuszczać połączenia wychodzące do serwera chmury (port wyświetlany w zakładce **Chmura**) i HTTPS (port 443).
+- Urządzenie można dodać w aplikacji tylko raz. Zmianę właściciela, wymianę kodu i odpięcie urządzenia wykonuje właściciel w aplikacji Zdalio albo serwis.
+- Kod z naklejki zna każdy, kto ma dostęp do wnętrza obudowy. Po odbiorze instalacji zaleca się wymienić kod w aplikacji Zdalio.
 
 ## 10. Konserwacja i serwis
 
@@ -244,7 +256,7 @@ Szczegóły: **Załącznik A** (Modbus TCP), **Załącznik B** (MQTT), **Załąc
 | Okres pomiaru | próbkowanie 100 ms, wynik co 1 s |
 | Wyjścia | 5 × tranzystorowe (MOSFET), napięcie zasilania, ≤ 2 A ciągłego na wyjście |
 | Wejście kasowania | styk bezpotencjałowy, izolacja optoelektroniczna |
-| Komunikacja | Ethernet 10/100 (RJ45), Wi-Fi 2,4 GHz, Modbus TCP, MQTT, HTTP API |
+| Komunikacja | Ethernet 10/100 (RJ45), Wi-Fi 2,4 GHz, Modbus TCP, HTTP API, chmura Zdalio (TLS) |
 | Rejestracja | karta microSD (FAT32), do 10 lat pomiarów |
 | Zegar | RTC z podtrzymaniem bateryjnym, synchronizacja NTP |
 | Wyświetlacz | OLED 128 × 64 |
@@ -274,7 +286,7 @@ Szczegóły: **Załącznik A** (Modbus TCP), **Załącznik B** (MQTT), **Załąc
 | Adres | Nazwa | Typ / jednostka |
 |---|---|---|
 | 0 | wersja oprogramowania | UINT16, np. 55 = 0.5.5 |
-| 1 | status: b0 karta SD, b1 przetwornik A/C, b2 RTC, b3 czas ustawiony, b4 Ethernet, b5 Wi-Fi, b6 MQTT, b7 alarm, b8 alarm skasowany | bity |
+| 1 | status: b0 karta SD, b1 przetwornik A/C, b2 RTC, b3 czas ustawiony, b4 Ethernet, b5 Wi-Fi, b6 połączenie z chmurą, b7 alarm, b8 alarm skasowany | bity |
 | 2–3 | czas pracy | UINT32, s |
 | 4–9 | rok, miesiąc, dzień, godzina, minuta, sekunda | czas lokalny |
 | 10 | najgorszy stan | kod stanu (A.5) |
@@ -325,7 +337,7 @@ Szczegóły: **Załącznik A** (Modbus TCP), **Załącznik B** (MQTT), **Załąc
 
 Zapis progów 100–102 przełącza tryb alarmów na „własne”; wymagana kolejność: krytyczny < minimalny < przepełnienie ≤ wysokość (inaczej wyjątek 03). Kalibracji nie można zmienić przez Modbus.
 
-### A.5 Kody stanu (Modbus, MQTT, API)
+### A.5 Kody stanu (Modbus, API, chmura)
 
 | Kod | Nazwa w protokole | Stan na panelu |
 |---|---|---|
@@ -337,26 +349,26 @@ Zapis progów 100–102 przełącza tryb alarmów na „własne”; wymagana kol
 | 5 | WYŁĄCZONY | zbiornik nieaktywny |
 | 6 | NAGŁY SPADEK | ALARM – nagły spadek poziomu |
 
-## Załącznik B – MQTT
+## Załącznik B – Chmura Zdalio
 
-Konfiguracja: **Ustawienia → MQTT** (adres brokera, port, użytkownik, hasło, prefiks tematów, interwał). Prefiks fabryczny: `monitorup/monitor`. Wiadomości publikowane są z flagą retain co 10 s oraz natychmiast przy zmianie stanu lub alarmu.
+**Połączenie:** szyfrowane (TLS) połączenie wychodzące do serwera Zdalio. Adres serwera i indywidualne hasło urządzenia zapisuje producent; nie są widoczne na stronie ani w kopii ustawień. Sterownik nie przyjmuje połączeń przychodzących z internetu.
 
-| Temat (po prefiksie) | Kierunek | Treść |
-|---|---|---|
-| `status` | publikacja | `online` / `offline` (ostatnia wola przy utracie połączenia) |
-| `zbiornik1/poziom_cm` | publikacja | poziom, cm (pusty – brak pomiaru) |
-| `zbiornik1/procent` | publikacja | wypełnienie, % |
-| `zbiornik1/mA` | publikacja | prąd przetwornika, mA |
-| `zbiornik1/stan` | publikacja | nazwa stanu wg tabeli A.5, np. `NORMALNY` |
-| `zbiornik1/litry` | publikacja | objętość, l (gdy skonfigurowana) |
-| `zbiornik1/zuzycie_dzis` | publikacja | zużycie od północy (l lub cm) |
-| `zbiornik1/zuzycie_7d` | publikacja | średnie zużycie 7 dni |
-| `alarm` | publikacja | JSON: `{"aktywny":true,"skasowany":false}` |
-| `alarm_aktywny` | publikacja | `1` / `0` |
-| `wyjscia` | publikacja | JSON ze stanem wyjść `out1`…`out8` (0–100) |
-| `cmd/kasuj` | subskrypcja | dowolna treść – kasowanie alarmu (gdy polecenia są włączone) |
+**Wysyłane dane:** stan połączenia, dane urządzenia (numer seryjny, wersja programu, progi alarmów), pomiary (poziom, wypełnienie, objętość, prąd, stan, wyjścia, usterka zbiorcza – domyślnie co 60 s), wszystkie wpisy dziennika zdarzeń, w tym alarmy, skasowania i zmiany ustawień. Zdarzenia czekają w pamięci sterownika (do 200) do potwierdzenia zapisu przez chmurę.
 
-Przykład: temat `monitorup/monitor/zbiornik1/poziom_cm`, treść `152.4`.
+**Działania z aplikacji Zdalio** (tylko te, które umożliwia strona sterownika):
+
+| Działanie | Uwagi |
+|---|---|
+| odczyt danych i dziennika zdarzeń | do 200 ostatnich wpisów |
+| kasowanie alarmu | jak przycisk KASOWANIE ALARMU; trwający warunek alarmu jest dalej sygnalizowany zgodnie z ustawieniami |
+| restart | |
+| aktualizacja programu | tylko pliki podpisane przez producenta; nowa wersja, która nie połączy się z chmurą w 10 min, jest automatycznie wycofywana |
+| powrót do wcześniejszej wersji | tylko jawnym poleceniem i nie niżej niż najstarsza wersja z obsługą chmury (zakładka **Chmura**) |
+| zmiana ustawień | nazwa, tryb i progi alarmów, histereza, opóźnienie, parametry nagłego spadku, odbiorcy e-mail, interwał danych |
+
+Z chmury **nie można**: sterować wyjściami, testować wyjść, wyłączać alarmów, zmieniać sieci, haseł, kalibracji, Modbus i tokenów API. Każde polecenie z chmury jest zapisywane w dzienniku zdarzeń i widoczne w zakładce **Chmura** (ostatnie 10).
+
+**Stany połączenia:** Wyłączone · Brak danych chmury · Brak sieci · Łączenie · Połączono · Połączono, chmura nie potwierdza danych · Aktualizacja z chmury · Nie znaleziono serwera (DNS) · Serwer niedostępny (port zablokowany w sieci) · Błąd certyfikatu serwera · Logowanie odrzucone. Brak połączenia dłużej niż ustawiony czas (fabrycznie 15 min) może włączać usterkę zbiorczą.
 
 ## Załącznik C – API HTTP
 
@@ -381,6 +393,7 @@ Przykład: `curl -H "Authorization: Bearer <token>" http://192.168.0.12/api/v1/s
 | GET | `/api/v1/events` | odczyt | dziennik zdarzeń |
 | GET | `/api/v1/modbus/map.csv` | odczyt | mapa rejestrów Modbus |
 | POST | `/api/v1/alarm/ack` | sterowanie | kasowanie alarmu |
+| POST | `/api/v1/cloud` | zalogowany użytkownik | połączenie z chmurą: `{"en":true}` / `{"en":false}` |
 | POST | `/api/v1/config` | konfiguracja | zmiana progów, np. `{"tanks":[{"alarmMode":0,"pct":[10,20,95]}]}` |
 
 Kody błędów: 400 błędne dane, 401 brak lub zły token, 403 brak uprawnień, 404 nieznany adres, 429 przekroczony limit zapytań. Kody stanu w polu `state` – tabela A.5.

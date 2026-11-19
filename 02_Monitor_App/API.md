@@ -44,6 +44,12 @@ Kody stanu zbiornika (`state`): 0 NORMALNY, 1 MINIMALNY, 2 KRYTYCZNY, 3 ZA DUŻY
 | POST | `/api/v1/config` | zapis częściowy, np. `{"tanks":[{"thrMin":70},{}]}` |
 | POST | `/api/v1/config` | tryb alarmów (od 0.5.0): `{"tanks":[{"alarmMode":0,"pct":[10,20,95]},{}]}` – 0 własne progi w % wysokości (krytyczny, minimalny, za duży), 1 zbiornik ppoż. wody (90/95/98 %), 2 zbiornik ppoż. paliwa (80/90/95 %). Progi w cm (`thrCrit`, `thrMin`, `thrHigh`) nadal działają – przełączają na tryb własny i przeliczają %. |
 
+## Chmura Zdalio (0.6.0)
+
+`GET /api/v1/status` → `cloud`: `en` (przełącznik), `st` (`off`, `noid`, `nonet`, `conn`, `ok`, `noack`, `ota`, `dns`, `tcp`, `tls`, `auth`), `msg` (opis), `hw` (ID urządzenia XXXX-XXXX-XXX), `host`/`port`, `since`, `sent`, `buf`, `lost`, `ota` (postęp %), `fwMin`, `cfgRev`, `cmds` (ostatnie 10 poleceń z chmury). Pola `mqtt` i `mqttMsg` usunięte w 0.6.0.
+`POST /api/v1/cloud {"en":true|false}` – tylko zalogowany użytkownik (sesja); bez danych fabrycznych włączenie zwraca 400.
+`GET/POST /api/v1/config` – sekcja `cloud {"en","faultMin"}`; sekcja `mqtt` z kopii starszych wersji jest pomijana.
+
 ## Tylko po zalogowaniu na stronie
 
 `GET /api/v1/config`, `GET /api/v1/wifi/scan[?start=1]`, `POST /api/v1/calibrate {"tank":0,"point":"level","cm":120}` (od 0.5.0: zmierzony poziom koryguje przesunięcie sondy; `"point":"min"|"max"` – kalibracja dwupunktowa),

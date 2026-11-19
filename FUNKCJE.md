@@ -53,6 +53,17 @@ Repozytorium: https://github.com/Blazejeeek/monitorup_fuel (gałąź `dev`). Kar
 
 ## Historia wersji
 
+### 0.6.0-dev – w przygotowaniu (karta #179, chmura Zdalio zamiast MQTT dla BMS)
+- **Usunięty klient MQTT konfigurowany przez użytkownika** (zakładka MQTT, sekcja `mqtt` w API i kopii – przy wczytaniu pomijana). Pola `mqtt*` zostają w strukturze ustawień jako nieużywane. Integracja BMS: Modbus TCP i API (bez zmian).
+- **Chmura Zdalio** (`cloud.cpp`): jeden przełącznik w Ustawieniach → Chmura (domyślnie wyłączony; bez danych fabrycznych nieaktywny), stan połączenia (11 stanów), ID urządzenia `hw_id` z MAC, ostatnie polecenia. MQTT przez TLS (CA Zdalio + ISRG Root X1) do serwera z danych fabrycznych, login `hw_id`, hasło z produkcji. Tematy `e-tank/<hw_id>/v1/…`: `status` (LWT), `info`, `tele/tank`, `tele/sys` (co 60 s), `evt/alarm|tank|sys|log` (każdy wpis dziennika, bufor 200 w PSRAM do `ack`), `res`.
+- **Polecenia z chmury** tylko w granicach strony: `sys/info`, `sys/log`, `tank/ack` (źródło kasowania „chmura”), `sys/reboot`, `sys/ota`, `sys/rotate`, `cfg` (lista zamknięta: nazwa, tryb i progi alarmów, histereza, opóźnienie, nagły spadek cm/min, odbiorcy e-mail, interwał). `cid` bez powtórzeń, `exp` + wiarygodny zegar dla restartu, OTA i wymiany hasła; każde polecenie w dzienniku. Brak sterowania wyjściami i wyłączania alarmów.
+- **OTA z linku**: HTTPS (pakiet CA Mozilli), SHA-256, podpis ECDSA jak OTA lokalne, numer wersji odczytany z pliku (znacznik `MUFWTAG1`) – starsza wersja tylko z `downgrade:true`, nigdy poniżej `FW_MIN` 0.6.0. Na czas pobierania MQTT rozłączone. Nowa wersja potwierdza się po połączeniu z chmurą; brak połączenia w 10 min albo restart przed potwierdzeniem = powrót do poprzedniej partycji (rollback bootloadera), zdarzenie `rollback`.
+- **Wymiana hasła chmury** (`sys/rotate`): logowanie nowym hasłem, przy odmowie powrót do starego; nowe hasło w NVS `fab`/`cp` (kasowane przy PROVISION).
+- Modbus IR 1 bit 6 = chmura połączona; usterka zbiorcza bit 32 = brak połączenia z chmurą dłużej niż `faultMin` (15 min); OLED: „CHM” w nagłówku, wiersz „Chmura: …” na ekranie sieci.
+- Ustawienia zapisane przez nowszą wersję (dłuższy blok) wczytują się bez utraty (znany prefiks) – warunek bezpiecznego cofnięcia wersji.
+- Produkcja: `PROV-INFO` z `hw_id` i stanem chmury, `PROV-CLOUDTEST [0]` – chmura włączona tylko w RAM na 5 min (test stanowiska).
+- `FW_NUM` przeniesiony do `hw.h` (60).
+
 ### 0.5.6-dev – w przygotowaniu (karta #177, rejestr produkcji)
 - **Dane fabryczne egzemplarza** (osobna pamięć `fab`, nie kasują jej ustawienia fabryczne, reset DOWNLOAD, kopia ustawień ani aktualizacja): numer seryjny MU-RRMM-NNNN, wersja sprzętu, data produkcji, indywidualne hasło Wi-Fi (AP), hasło startowe panelu (tylko skrót), dane chmury MonitorUp.pl (na przyszłość), fabryczna kalibracja prądu A4. Kopia numeru z CRC w EEPROM 24C02 (adres 232).
 - **Programowanie przez USB** na stanowisku: `PROV-INFO`, `PROVISION`, `PROV-CAL`, `PROV-MEAS`, `PROV-OUTTEST`; ponowny zapis tylko z flagą serwisową i obecnym numerem. Hasła nigdy nie są wypisywane.

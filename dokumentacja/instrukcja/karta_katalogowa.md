@@ -8,7 +8,7 @@
 
 ## Opis
 
-MonitorUp.pl to sterownik do ciągłego pomiaru poziomu i objętości cieczy w zbiornikach paliwa i wody. Współpracuje z hydrostatycznym przetwornikiem 4–20 mA, sygnalizuje stany alarmowe na panelu obudowy i przekazuje dane do systemów nadrzędnych przez Modbus TCP, MQTT i API. Pomiary, zużycie i tankowania są rejestrowane lokalnie przez 10 lat.
+MonitorUp.pl to sterownik do ciągłego pomiaru poziomu i objętości cieczy w zbiornikach paliwa i wody. Współpracuje z hydrostatycznym przetwornikiem 4–20 mA, sygnalizuje stany alarmowe na panelu obudowy i przekazuje dane do systemów nadrzędnych przez Modbus TCP i API oraz – opcjonalnie – do chmury Zdalio. Pomiary, zużycie i tankowania są rejestrowane lokalnie przez 10 lat.
 
 ![Panel sterownika – kontrolki i legenda](panel_skrot.jpg)
 
@@ -27,7 +27,8 @@ MonitorUp.pl to sterownik do ciągłego pomiaru poziomu i objętości cieczy w z
 - Kalibracja jednym pomiarem miarką; korekta gęstości cieczy; opcjonalna tabela kalibracji prądu.
 - Automatyczne rozpoznawanie tankowań, zużycie dobowe, miesięczne i roczne.
 - Rejestracja na karcie microSD: pomiary co 5 min, dziennik zdarzeń, pliki CSV, wykresy na stronie WWW.
-- Integracja z BMS/SCADA: Modbus TCP, MQTT, HTTP API z tokenami.
+- Integracja z BMS/SCADA: Modbus TCP, HTTP API z tokenami.
+- Chmura Zdalio (opcja): szyfrowane połączenie wychodzące, podgląd, kasowanie alarmu, zdalna aktualizacja podpisanego programu; bez zdalnego sterowania wyjściami.
 - Bezpieczeństwo: logowanie z blokadą prób, tokeny z uprawnieniami, aktualizacje wyłącznie podpisane cyfrowo przez producenta, szyfrowana kopia ustawień.
 
 ## Sygnalizacja
@@ -51,7 +52,7 @@ MonitorUp.pl to sterownik do ciągłego pomiaru poziomu i objętości cieczy w z
 | Wyjścia | 5 × tranzystorowe MOSFET (kontrolki, sygnalizator, usterka zbiorcza), ≤ 2 A na wyjście |
 | Wejście | kasowanie alarmu, styk bezpotencjałowy, izolacja optoelektroniczna |
 | Komunikacja | Ethernet 10/100 RJ45, Wi-Fi 2,4 GHz (klient i punkt dostępowy) |
-| Protokoły | Modbus TCP, MQTT, HTTP API (JSON), NTP, mDNS |
+| Protokoły | Modbus TCP, HTTP API (JSON), chmura Zdalio (szyfrowana, TLS), NTP, mDNS |
 | Rejestracja | microSD (FAT32), do 10 lat pomiarów |
 | Zegar | RTC z podtrzymaniem bateryjnym |
 | Wyświetlacz | OLED 128 × 64 |

@@ -79,8 +79,8 @@ Ustawienia → Powiadomienia.
 | 4 | Awaria czujnika | `[MonitorUp.pl] OSTRZEŻENIE – Awaria czujnika – <zbiornik>` | prąd przetwornika poniżej 3,6 mA lub powyżej 21 mA | wezwać serwis | Poprzedni stan: … |
 | 5 | Poziom minimalny | `[MonitorUp.pl] OSTRZEŻENIE – Poziom minimalny – <zbiornik>` | poziom spadnie do progu minimalnego | zaplanować uzupełnienie | Poprzedni stan: … |
 | 6 | Powrót do stanu normalnego | `[MonitorUp.pl] INFORMACJA – Powrót do stanu normalnego – <zbiornik>` | ustąpi alarm lub ostrzeżenie | – | Poprzedni stan: … |
-| 7 | Skasowanie alarmu | `[MonitorUp.pl] INFORMACJA – Skasowanie alarmu – <zbiornik>` | alarm zostanie potwierdzony | – | Źródło skasowania: przycisk KASOWANIE ALARMU / strona WWW sterownika / Modbus TCP / MQTT / API HTTP |
-| 8 | Usterka zbiorcza | `[MonitorUp.pl] OSTRZEŻENIE – Usterka zbiorcza – <zbiornik>` | pojawi się nowa przyczyna usterki zbiorczej wybrana w ustawieniach wyjść | sprawdzić stan urządzenia na stronie sterownika | Przyczyna: przetwornik A/C, karta SD, czas nieustawiony, brak sieci, brak połączenia MQTT, ekspander wejść/wyjść |
+| 7 | Skasowanie alarmu | `[MonitorUp.pl] INFORMACJA – Skasowanie alarmu – <zbiornik>` | alarm zostanie potwierdzony | – | Źródło skasowania: przycisk KASOWANIE ALARMU / strona WWW sterownika / Modbus TCP / chmura Zdalio / API HTTP |
+| 8 | Usterka zbiorcza | `[MonitorUp.pl] OSTRZEŻENIE – Usterka zbiorcza – <zbiornik>` | pojawi się nowa przyczyna usterki zbiorczej wybrana w ustawieniach wyjść | sprawdzić stan urządzenia na stronie sterownika | Przyczyna: przetwornik A/C, karta SD, czas nieustawiony, brak sieci, brak połączenia z chmurą, ekspander wejść/wyjść |
 | 9 | Raport dzienny | `[MonitorUp.pl] RAPORT – Raport dzienny – <zbiornik>` | codziennie o ustawionej godzinie (fabrycznie 7:00), gdy czas jest zsynchronizowany | – | zużycie dziś, wczoraj i średnie z 7 dni (w litrach lub cm) |
 | 10 | – (przycisk „Wyślij test”) | `[MonitorUp.pl] TEST – Wiadomość testowa – <zbiornik>` | użytkownik wybierze „Wyślij test” na stronie sterownika | – | Konfiguracja serwera SMTP jest poprawna. |
 
