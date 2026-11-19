@@ -72,10 +72,12 @@ static uint8_t lcHead = 0, lcCount = 0;
 
 // rotacja hasla (cmd/sys/rotate)
 static bool rotating = false;
+static uint32_t rotSince = 0;
+static const uint32_t ROT_TIMEOUT_MS = 300000;
 static char rotPass[33], rotCid[CidCache::MAX_CID + 1];
 
 // OTA z chmury
-struct OtaReq { bool on; std::string url, sha, fw, cid; uint32_t size, num; bool down; };
+struct OtaReq { bool on; std::string url, sha, fw, cid; uint32_t size, num; bool down; int64_t exp; };
 static OtaReq ota;
 // Zapis w NVS "cloud"/"try" na czas proby nowej wersji (przezywa restart)
 struct TryRec { uint8_t active, down; char part[17], from[24], to[24], cid[41]; uint16_t fromNum, toNum; };
@@ -83,8 +85,10 @@ static TryRec tryRec;
 static bool pendingVerify = false, rolledBack = false, tryAnnounced = false;
 
 // ---------------- pomocnicze ----------------
-static void mainPost(MrKind k, const std::string &a = "", const std::string &cid = "", int32_t n = 0) {
-  Lock l; if (mainQ.size() < 24) mainQ.push_back(MainReq{k, a, cid, n});
+static bool mainPost(MrKind k, const std::string &a = "", const std::string &cid = "", int32_t n = 0) {
+  Lock l; if (mainQ.size() >= 24) return false;
+  mainQ.push_back(MainReq{k, a, cid, n});
+  return true;
 }
 static void logPost(const String &s) { mainPost(MR_LOG, s.c_str()); }
 static void outPost(const char *sfx, const std::string &body, bool retain = false) {
@@ -155,7 +159,7 @@ static void result(const std::string &name, const std::string &cid, const char *
 bool cloudConnected() { return cst == CS_OK || cst == CS_NOACK; }
 uint8_t cloudState() { return cst; }
 int cloudOtaPct() { return otaPct; }
-bool cloudOtaBusy() { return cst == CS_OTA; }
+bool cloudOtaBusy() { return cst == CS_OTA || ota.on; }
 String cloudHwId() { return hwId; }
 String cloudHwLabel() { return hwLabel(hwId).c_str(); }
 
@@ -260,6 +264,8 @@ static void pubInfo() {
   for (size_t i = 0; i < CLOUD_CFG_KEYS_N; i++) k.add(CLOUD_CFG_KEYS[i]);
   JsonArray m = x["mail_rcpt"].to<JsonArray>();
   for (auto &r : cfg.rcpt) if (r.addr[0]) { JsonObject o = m.add<JsonObject>(); o["addr"] = r.addr; o["mask"] = r.mask; }
+  if (measureJson(d) > CLOUD_MAX_PAYLOAD) x.remove("cfg_keys");          // limit protokolu (5 dlugich adresow e-mail)
+  if (measureJson(d) > CLOUD_MAX_PAYLOAD) { size_t n = m.size(); x.remove("mail_rcpt"); x["mail_rcpt_n"] = n; }
   pubDoc("info", d, true);
 }
 
@@ -301,9 +307,15 @@ static bool isHex64(const char *s) {
   return true;
 }
 
+static bool safeId(const std::string &x, size_t mx) {                 // cid i nazwa trafiaja do dziennika (CSV)
+  if (x.empty() || x.size() > mx) return false;
+  for (char c : x) if (!(isalnum((uint8_t)c) || c == '/' || c == '_' || c == '-' || c == '.')) return false;
+  return true;
+}
+
 static void onCmd(const std::string &name, JsonDocument &in) {
   std::string cid = in["cid"] | "";
-  if (cid.empty() || cid.size() > CidCache::MAX_CID) return;          // bez cid nie da sie odpowiedziec
+  if (!safeId(cid, CidCache::MAX_CID) || !safeId(name, 24)) return;   // bez poprawnego cid nie da sie odpowiedziec
   { Lock l; const std::string *r = cids.find(cid); if (r) { outPost("res", *r); return; } }   // powtorzenie - ten sam wynik
   const char *ex = cmdExpCheck(name, timeOk(), (int64_t)time(nullptr), in["exp"] | (int64_t)0);
   if (*ex) { result(name, cid, ex, timeOk() ? "" : "clock"); return; }
@@ -312,16 +324,25 @@ static void onCmd(const std::string &name, JsonDocument &in) {
   if (name == "sys/info") { infoReq = true; result(name, cid, "ok"); return; }
   if (name == "sys/log") {
     int n = data["n"] | 50; n = constrain(n, 1, 200);
-    mainPost(MR_SYSLOG, "", cid, n); return;                          // karta SD tylko z petli glownej
+    if (!mainPost(MR_SYSLOG, "", cid, n)) { result(name, cid, "busy"); return; }   // karta SD tylko z petli glownej
+    { Lock l; cids.put(cid, resBody(cid, "busy", "", nullptr)); }   // powtorzenie przed wykonaniem = busy, bez drugiego wykonania
+    return;
   }
-  if (name == "tank/ack") { mainPost(MR_ACK, "", cid); return; }
-  if (name == "sys/reboot") { result(name, cid, "ok"); mainPost(MR_REBOOT, "", cid); return; }
+  if (name == "tank/ack") {
+    if (!mainPost(MR_ACK, "", cid)) { result(name, cid, "busy"); return; }
+    { Lock l; cids.put(cid, resBody(cid, "busy", "", nullptr)); }
+    return;
+  }
+  if (name == "sys/reboot") {
+    if (!mainPost(MR_REBOOT, "", cid)) { result(name, cid, "busy"); return; }
+    result(name, cid, "ok"); return;
+  }
   if (name == "sys/rotate") {
     const char *p = data["pass"] | "";
     if (!okPass(p)) { result(name, cid, "err", "pass"); return; }
     if (rotating) { result(name, cid, "busy"); return; }
     strlcpy(rotPass, p, sizeof(rotPass)); strlcpy(rotCid, cid.c_str(), sizeof(rotCid));
-    rotating = true;                                                    // ponowne logowanie nowym haslem w cloudStep()
+    rotating = true; rotSince = millis();                              // ponowne logowanie nowym haslem w cloudStep()
     noteCmd(name, "busy");
     return;
   }
@@ -336,7 +357,7 @@ static void onCmd(const std::string &name, JsonDocument &in) {
     std::string vc = otaVersionCheck(num, FW_NUM, FW_MIN_NUM, down);
     if (vc == "denied") { result(name, cid, "denied", "fw_min"); return; }
     if (vc.size()) { result(name, cid, "err", vc.c_str()); return; }
-    ota = OtaReq{true, url, sha, fw, cid, size, num, down};
+    ota = OtaReq{true, url, sha, fw, cid, size, num, down, in["exp"] | (int64_t)0};
     JsonDocument r; r["phase"] = "download";
     outPost("res", resBody(cid, "busy", "", &r));
     noteCmd(name, "busy");
@@ -361,6 +382,8 @@ static void onMsg(char *topic, byte *payload, unsigned int len) {
   }
   if (sfx == "cfg") {
     int64_t rev = in["rev"] | (int64_t)-1;
+    if (!cfg.cloudEn) return;                                          // PROV-CLOUDTEST: ustawienia bez zmian
+    if (rev > 0x7FFFFFFF) return;
     if (rev < 0 || rev == (int64_t)cfg.cloudCfgRev || rev == rejectedRev) return;
     std::string b((const char *)payload, len);
     mainPost(MR_CFG, b, "", (int32_t)rev);
@@ -401,6 +424,7 @@ static const char *otaRun(std::string &code) {
     size_t av = s->available();
     if (!av) {
       if (!http.connected() || millis() - tData > OTA_IDLE_MS || millis() - t0 > OTA_TOTAL_MS) { ok = false; code = "net"; break; }
+      if (!cloudOn() || applyReq) { ok = false; code = "cancel"; break; }   // chmura wylaczona w trakcie pobierania
       vTaskDelay(pdMS_TO_TICKS(5)); continue;
     }
     int n = s->readBytes(b, min<size_t>(av, min<size_t>(4096, ota.size - got)));
@@ -424,24 +448,36 @@ static const char *otaRun(std::string &code) {
     else if (otaVersionCheck(tag.num(), FW_NUM, FW_MIN_NUM, ota.down).size()) { ok = false; code = "ver"; }   // numer z pliku, nie z polecenia
   }
   if (!ok) { Update.abort(); return "err"; }
-  if (!Update.end(true)) { code = "flash"; return "err"; }
-  // proba nowej wersji: potwierdzenie po polaczeniu z chmura, inaczej powrot (cloudBootCheck / cloudStep)
+  // proba nowej wersji: zapis PRZED przelaczeniem partycji (bez zapisu nowa wersja nie mialaby powrotu)
   memset(&tryRec, 0, sizeof(tryRec));
   tryRec.active = 1; tryRec.down = ota.down;
   strlcpy(tryRec.part, np->label, sizeof(tryRec.part));
   strlcpy(tryRec.from, FW_VERSION, sizeof(tryRec.from)); strlcpy(tryRec.to, ota.fw.c_str(), sizeof(tryRec.to));
   strlcpy(tryRec.cid, ota.cid.c_str(), sizeof(tryRec.cid));
   tryRec.fromNum = FW_NUM; tryRec.toNum = ota.num;
-  Preferences p; p.begin("cloud", false); p.putBytes("try", &tryRec, sizeof(tryRec)); p.end();
+  Preferences p;
+  bool w = p.begin("cloud", false) && p.putBytes("try", &tryRec, sizeof(tryRec)) == sizeof(tryRec);
+  TryRec chk;
+  w = w && p.getBytes("try", &chk, sizeof(chk)) == sizeof(chk) && !memcmp(&chk, &tryRec, sizeof(chk));
+  p.end();
+  if (!w) { Update.abort(); tryClear(); code = "nvs"; return "err"; }
+  if (!Update.end(true)) { tryClear(); code = "flash"; return "err"; }
   return "ok";
 }
 
 static void doOta() {
   // zapowiedz (res busy) juz w kolejce - wyslij, potem rozlacz MQTT na czas pobierania (pamiec na drugie polaczenie TLS)
-  { Lock l; while (!outbox.empty() && mq.connected()) { pubStr(outbox.front().sfx.c_str(), outbox.front().body, outbox.front().retain); outbox.pop_front(); } }
+  while (mq.connected()) {
+    Out o;
+    { Lock l; if (outbox.empty()) break; o = outbox.front(); outbox.pop_front(); }
+    pubStr(o.sfx.c_str(), o.body, o.retain);
+  }
+  if (ota.exp > 0 && (!timeOk() || (int64_t)time(nullptr) > ota.exp)) {   // np. polecenie przyjete przed dluga przerwa sieci
+    ota.on = false; result("sys/ota", ota.cid, "expired"); return;
+  }
   if (mq.connected()) { pubStr("status", "{\"st\":\"offline\",\"why\":\"ota\"}", true); mq.disconnect(); }
   net.stop();
-  cst = CS_OTA; otaPct = 0;
+  cst = CS_OTA; otaPct = 0; downSinceMs = millis();
   std::string code;
   const char *r = otaRun(code);
   otaPct = -1;
@@ -457,7 +493,7 @@ static void doOta() {
   result(name, cid, r, code.c_str());
   JsonDocument e; e["ota"] = "failed"; e["code"] = code; e["fw"] = FW_VERSION;
   evtPush("sys", e);
-  cst = CS_CONN; nextTry = millis();
+  cst = CS_CONN; nextTry = millis(); downSinceMs = millis();
 }
 
 // ---------------- polaczenie ----------------
@@ -469,6 +505,7 @@ static void failRetry(uint8_t s, uint32_t ms) {
 
 static void doConnect() {
   cst = CS_CONN;
+  if (!timeOk()) { nextTry = millis() + 5000; return; }               // certyfikat serwera wymaga poprawnej daty (NTP/RTC)
   IPAddress ip;
   if (!WiFi.hostByName(fab.cloudHost, ip)) { failRetry(CS_DNS, retryMs); return; }
   net.setCACert(CLOUD_CA_PEM);
@@ -491,7 +528,7 @@ static void doConnect() {
     net.stop();
     if (s == MQTT_CONNECT_BAD_CREDENTIALS || s == MQTT_CONNECT_UNAUTHORIZED) {
       if (rotating) {                                             // nowe haslo nie dziala - wracamy do starego
-        rotating = false;
+        rotating = false; memset(rotPass, 0, sizeof(rotPass));
         result("sys/rotate", rotCid, "err", "auth");
         nextTry = millis(); cst = CS_CONN; return;
       }
@@ -535,17 +572,30 @@ static void doConnect() {
   }
 }
 
+// Wylaczenie chmury / koniec testu: nic z kolejek nie wykona sie pozniej (OTA, wymiana hasla, zdarzenia)
+static void dropPending() {
+  Lock l;
+  buf->clear(); outbox.clear();
+  for (auto it = mainQ.begin(); it != mainQ.end();) it = it->kind == MR_LOG ? it + 1 : mainQ.erase(it);
+  ota.on = false; rotating = false; memset(rotPass, 0, sizeof(rotPass));
+}
+
 static void cloudStep() {
   if (applyReq) {
     applyReq = false;
     if (mq.connected()) { pubStr("status", "{\"st\":\"offline\"}", true); mq.disconnect(); }
     net.stop();
-    if (!cloudOn()) { Lock l; buf->clear(); outbox.clear(); }
+    if (!cloudOn()) dropPending();
     fails = 0; retryMs = RETRY_MIN_MS; nextTry = millis(); downSinceMs = millis();
   }
   if (!cloudOn()) {                                                 // takze koniec testu PROV-CLOUDTEST
     if (mq.connected()) { pubStr("status", "{\"st\":\"offline\"}", true); mq.disconnect(); net.stop(); }
+    if (cst != CS_OFF) dropPending();
     cst = CS_OFF; return;
+  }
+  if (rotating && millis() - rotSince > ROT_TIMEOUT_MS) {            // brak lacznosci zbyt dlugo - wymiana hasla porzucona
+    rotating = false; memset(rotPass, 0, sizeof(rotPass));
+    result("sys/rotate", rotCid, "err", "timeout");
   }
   if (!idOk()) { cst = CS_NOID; return; }
   if (pendingVerify && millis() > OTA_CONFIRM_MS) {
@@ -587,7 +637,7 @@ static void cloudStep() {
     }
     pub(name.c_str(), body.data(), body.size(), false);
   }
-  if (!lastTele || millis() - lastTele >= (uint32_t)cfg.cloudTeleS * 1000UL) { lastTele = millis(); pubTele(); }
+  if (!lastTele || millis() - lastTele >= (uint32_t)constrain(cfg.cloudTeleS, 30, 600) * 1000UL) { lastTele = millis(); pubTele(); }
   { Lock l; cst = buf->maxStep() >= 2 ? CS_NOACK : CS_OK; }
 }
 
@@ -635,8 +685,18 @@ void cloudBegin() {
   mq.setCallback(onMsg);
   downSinceMs = millis();
   if (rolledBack) logEvent("CHMURA", String("Nieudana próba wersji ") + tryRec.to + " – przywrócono " + FW_VERSION);
+  if (pendingVerify && (!cfg.cloudEn || !idOk())) {                  // chmura wylaczona: nie ma czym potwierdzic - wersja zostaje
+    pendingVerify = false;
+    esp_ota_mark_app_valid_cancel_rollback();
+    tryClear();
+    logEvent("CHMURA", String("Wersja ") + FW_VERSION + " zatwierdzona lokalnie (chmura wyłączona)");
+  }
   if (pendingVerify) logEvent("CHMURA", String("Nowa wersja ") + FW_VERSION + " z chmury – czeka na połączenie (10 min)");
   xTaskCreatePinnedToCore(cloudTask, "cloud", 12288, nullptr, 1, nullptr, 0);
+}
+
+void cloudLocalOta() {                                              // OTA ze strony konczy probe wersji z chmury
+  if (tryRec.active || pendingVerify) { pendingVerify = false; tryClear(); }
 }
 
 void cloudTest(uint16_t s) {
@@ -681,10 +741,31 @@ static void applyCfg(const std::string &raw, int32_t rev) {
   JsonObjectConst d = in["data"];
   if (d.isNull()) { rejectCfg(rev, "", "brak data"); return; }
   for (JsonPairConst p : d) if (!cloudCfgKeyAllowed(p.key().c_str())) { rejectCfg(rev, p.key().c_str(), "pole spoza listy"); return; }
+  // Granice wartosci: chmura nie moze w praktyce wylaczyc alarmu (nieosiagalny prog, wielogodzinne opoznienie, pusta lista)
+  auto num = [&](const char *k, float mn, float mx) -> bool {
+    if (d[k].isNull()) return true;
+    if (!(d[k].is<float>() || d[k].is<int>())) { rejectCfg(rev, k, "wymagana liczba"); return false; }
+    float v = d[k].as<float>();
+    if (!(v >= mn && v <= mx)) { rejectCfg(rev, k, String("zakres ") + mn + "–" + mx); return false; }
+    return true;
+  };
+  const float H = cfg.tank[0].heightCm > 0 ? cfg.tank[0].heightCm : 1000;
+  if (!num("alarm_mode", 0, 2) || !num("hyst_cm", 0, 20) || !num("delay_s", 0, 600) || !num("drop_cm", 1, H) || !num("drop_min", 1, 240) || !num("tele_s", 30, 600)) return;
+  if (!d["thr_pct"].isNull()) {
+    JsonArrayConst t = d["thr_pct"];
+    if (t.isNull() || t.size() != 3) { rejectCfg(rev, "thr_pct", "trzy liczby: krytyczny, minimalny, za duży"); return; }
+    float q0 = t[0] | -1.0f, q1 = t[1] | -1.0f, q2 = t[2] | -1.0f;
+    if (!(q0 >= 3 && q1 >= q0 + 2 && q2 >= q1 + 2 && q2 <= 98)) { rejectCfg(rev, "thr_pct", "wymagane 3 ≤ krytyczny < minimalny < za duży ≤ 98 (odstęp ≥ 2)"); return; }
+  }
+  if (!d["mail_rcpt"].isNull()) {
+    int had = 0; for (auto &r : cfg.rcpt) had += r.addr[0] != 0;
+    JsonArrayConst m = d["mail_rcpt"];
+    if (m.isNull() || (had && m.size() == 0)) { rejectCfg(rev, "mail_rcpt", "lista nie może być pusta"); return; }
+    for (JsonObjectConst r : m) if (!r["addr"].is<const char *>() || !strchr(r["addr"].as<const char *>(), '@')) { rejectCfg(rev, "mail_rcpt", "adres e-mail"); return; }
+  }
   int tele = cfg.cloudTeleS;
   if (!d["tele_s"].isNull()) {
-    tele = d["tele_s"] | -1;
-    if (tele < 30 || tele > 600) { rejectCfg(rev, "tele_s", "interwał 30–600 s"); return; }
+    tele = d["tele_s"].as<int>();
   }
   if (!d["name"].isNull() && (!d["name"].is<const char *>() || !strlen(d["name"].as<const char *>()) || strlen(d["name"].as<const char *>()) >= sizeof(cfg.devName))) {
     rejectCfg(rev, "name", "nazwa 1–23 znaki"); return;
@@ -723,7 +804,7 @@ static void sysLog(const std::string &cid, int n) {
     time_t now = time(nullptr);
     for (int mo = 0; mo < 2 && (int)lines.size() < n; mo++) {
       struct tm tm; localtime_r(&now, &tm);
-      tm.tm_mon -= mo; mktime(&tm);
+      tm.tm_mday = 1; tm.tm_mon -= mo; mktime(&tm);
       char fn[32]; strftime(fn, sizeof(fn), "/events/%Y-%m.csv", &tm);
       File f = SD.open(fn);
       if (!f) continue;

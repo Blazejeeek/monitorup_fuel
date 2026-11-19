@@ -15,6 +15,7 @@ void        cloudBootCheck();               // setup(), po fabLoad(): potwierdze
 void        cloudBegin();                   // setup(): start zadania
 void        cloudApply();                   // po zmianie cfg.cloudEn (petla glowna)
 void        cloudTest(uint16_t s);          // PROV-CLOUDTEST: chmura wlaczona tylko w RAM na s sekund (0 = koniec), ustawienia bez zmian
+void        cloudLocalOta();                // po udanym OTA ze strony (kasuje probe wersji z chmury)
 void        cloudLoop();                    // petla glowna: polecenia z chmury, dziennik, ustawienia
 void        cloudOnLog(const char *type, const String &msg);   // hak z logEvent(): wpis dziennika -> zdarzenie evt/*
 bool        cloudConnected();               // polaczono (takze bez potwierdzen zdarzen)

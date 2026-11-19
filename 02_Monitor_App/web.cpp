@@ -938,6 +938,7 @@ static void hOtaDone() {
     sendErr(otaErr == "Wymagane logowanie" ? 401 : 400, otaErr.length() ? otaErr.c_str() : "Błąd aktualizacji");
     return;
   }
+  cloudLocalOta();
   logEvent("OTA", "Aktualizacja zakończona – restart");
   JsonDocument r; r["ok"] = true; r["reboot"] = true;
   sendJson(200, r);
